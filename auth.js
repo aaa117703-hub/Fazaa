@@ -27,7 +27,7 @@
       root.innerHTML =
         '<div class="auth-box">' +
           '<div class="auth-hero">' +
-            '<img src="assets/logo.svg" width="84" height="84" alt="">' +
+            '<img src="logo.svg" width="84" height="84" alt="">' +
             '<h1>فزعة</h1>' +
             '<p>فزعتك بضغطة — أقرب كرين لسيارتك</p>' +
           '</div>' +
