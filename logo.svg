@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="فزعة">
+  <rect width="120" height="120" rx="26" fill="#070B14"/>
+  <circle cx="60" cy="60" r="48" fill="#FBBF24"/>
+  <g fill="none" stroke="#070B14" stroke-width="9" stroke-linecap="round">
+    <circle cx="60" cy="27" r="7"/>
+    <path d="M60 34 V66"/>
+    <path d="M60 66 A18 18 0 0 1 24 66" transform="translate(12 0)"/>
+    <path d="M36 66 V56"/>
+  </g>
+</svg>
