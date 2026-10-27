@@ -13,19 +13,19 @@ const SHELL_FILES = [
   './',
   './index.html',
   './manifest.json',
-  './css/style.css',
-  './js/data.js',
-  './js/auth.js',
-  './js/home.js',
-  './js/driver.js',
-  './js/packages.js',
-  './js/profile.js',
-  './js/admin.js',
-  './js/app.js',
-  './assets/logo.svg',
-  './assets/icons/icon-192.png',
-  './assets/icons/icon-512.png',
-  './assets/icons/apple-touch-icon.png'
+  './style.css',
+  './data.js',
+  './auth.js',
+  './home.js',
+  './driver.js',
+  './packages.js',
+  './profile.js',
+  './admin.js',
+  './app.js',
+  './logo.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (e) => {
