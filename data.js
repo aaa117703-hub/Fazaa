@@ -232,49 +232,93 @@
     return 'تعذّر تحديد موقعك. حدّده يدوياً على الخريطة.';
   };
 
+  /* ---------- الخريطة: MapLibre GL + OpenFreeMap (مجانية، بدون مفتاح) ---------- */
+  // نجرّب النمط الداكن، وإذا ما انفتح نرجع للنمط الافتراضي.
+  F.MAP_STYLES = [
+    'https://tiles.openfreemap.org/styles/dark',
+    'https://tiles.openfreemap.org/styles/liberty'
+  ];
+  F.hasMap = () => !!window.maplibregl;
+
+  let rtlTried = false;
+  // يخلي أسماء الشوارع تظهر بالعربي (name:ar) إذا موجودة بخرائط OSM
+  F.localizeMap = function (map) {
+    try {
+      (map.getStyle().layers || []).forEach((l) => {
+        const tf = l.layout && l.layout['text-field'];
+        if (tf && JSON.stringify(tf).indexOf('name') > -1) {
+          map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', 'name:ar'], ['get', 'name']]);
+        }
+      });
+    } catch (e) {}
+  };
+
+  F.createMap = function (container, center, zoom) {
+    const ml = window.maplibregl;
+    if (!ml) return null;
+    if (!rtlTried) {
+      rtlTried = true;
+      try { ml.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js', true); } catch (e) {}
+    }
+    let idx = 0, loaded = false;
+    const map = new ml.Map({
+      container: container,
+      style: F.MAP_STYLES[0],
+      center: [center.lng, center.lat],
+      zoom: zoom || 13,
+      attributionControl: { compact: true },
+      dragRotate: false,
+      pitchWithRotate: false
+    });
+    try { map.touchZoomRotate.disableRotation(); } catch (e) {}
+    map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-left');
+    map.on('style.load', () => { loaded = true; F.localizeMap(map); });
+    map.on('error', () => {
+      if (!loaded && idx < F.MAP_STYLES.length - 1) { idx++; map.setStyle(F.MAP_STYLES[idx]); }
+    });
+    return map;
+  };
+
+  // دبوس: عنصر خارجي (MapLibre يحرّكه) + عنصر داخلي (نحن ننسّقه)
+  F.marker = function (map, lat, lng, cls, emoji, popupHtml) {
+    const el = document.createElement('div');
+    el.innerHTML = '<div class="pin ' + cls + '">' + (emoji || '') + '</div>';
+    const m = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]);
+    if (popupHtml) m.setPopup(new maplibregl.Popup({ offset: 22, closeButton: false }).setHTML(popupHtml));
+    return m.addTo(map);
+  };
+  F.markerSet = function (m, lat, lng, cls, popupHtml) {
+    m.setLngLat([lng, lat]);
+    const inner = m.getElement().firstChild;
+    if (inner) inner.className = 'pin ' + cls;
+    if (popupHtml && m.getPopup()) m.getPopup().setHTML(popupHtml);
+  };
+
   // اختيار موقع بالنقر على الخريطة. يرجّع Promise<{lat,lng}|null>
   F.pickLocation = function (initial) {
     return new Promise((resolve) => {
-      if (!window.L) { F.toast('الخريطة غير متوفرة حالياً (تحتاج إنترنت أول مرة)', 'err'); return resolve(null); }
-      let chosen = null, done = false;
+      if (!F.hasMap()) { F.toast('الخريطة غير متوفرة حالياً (تحتاج إنترنت أول مرة)', 'err'); return resolve(null); }
+      let chosen = null, done = false, map = null;
       const m = F.modal(
         '<h2>حدّد الموقع على الخريطة</h2>' +
         '<p class="muted small">اضغط على الخريطة لتثبيت الدبوس.</p>' +
         '<div id="pick-map" class="map map-pick"></div>' +
         '<div class="row mt"><button class="btn grow" id="pick-ok" disabled>تأكيد الموقع</button>' +
         '<button class="btn secondary" id="pick-cancel">إلغاء</button></div>',
-        { onClose: () => { if (!done) { done = true; resolve(null); } } }
+        { onClose: () => { try { if (map) map.remove(); } catch (e) {} if (!done) { done = true; resolve(null); } } }
       );
       const start = initial || F.CENTER;
-      const map = L.map(F.$('#pick-map', m.el)).setView([start.lat, start.lng], 14);
-      F.tiles(map);
+      map = F.createMap(F.$('#pick-map', m.el), start, 14);
       let pin = null;
       map.on('click', (e) => {
-        chosen = { lat: e.latlng.lat, lng: e.latlng.lng };
-        if (pin) pin.setLatLng(e.latlng);
-        else pin = L.marker(e.latlng).addTo(map);
+        chosen = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+        if (pin) pin.setLngLat(e.lngLat);
+        else pin = new maplibregl.Marker({ color: '#FF6B2C' }).setLngLat(e.lngLat).addTo(map);
         F.$('#pick-ok', m.el).disabled = false;
       });
-      setTimeout(() => map.invalidateSize(), 250);
+      setTimeout(() => { try { map.resize(); } catch (e) {} }, 250);
       F.$('#pick-ok', m.el).onclick = () => { done = true; m.close(); resolve(chosen); };
       F.$('#pick-cancel', m.el).onclick = () => m.close();
-    });
-  };
-
-  F.tiles = function (map) {
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
-    }).addTo(map);
-  };
-
-  F.pinIcon = function (cls, emoji) {
-    return L.divIcon({
-      className: '',
-      html: '<div class="pin ' + cls + '">' + (emoji || '') + '</div>',
-      iconSize: cls === 'me' ? [34, 34] : [34, 34],
-      iconAnchor: [17, 17],
-      popupAnchor: [0, -16]
     });
   };
 

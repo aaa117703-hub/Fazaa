@@ -1,13 +1,13 @@
 /* فزعة — Service Worker
  * - ملفات التطبيق: تُخزَّن عند أول فتح ويشتغل الموقع بدون إنترنت.
- * - Leaflet والخط: يُخزَّنون أول مرة يُحمَّلون.
+ * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'fazaa-v1';
+const VERSION = 'fazaa-v2';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
-const MAX_TILES = 250;
+const MAX_TILES = 600;
 
 const SHELL_FILES = [
   './',
@@ -55,16 +55,16 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // بلاطات الخريطة: كاش أولاً
-  if (url.hostname.endsWith('tile.openstreetmap.org')) {
+  // خريطة OpenFreeMap: النمط وملف TileJSON شبكة أولاً (لأنهم يتغيّرون)، والبلاطات والخطوط كاش أولاً
+  if (url.hostname.endsWith('openfreemap.org')) {
+    const fresh = url.pathname.startsWith('/styles/') || url.pathname === '/planet';
     e.respondWith(
       caches.open(TILES).then(async (cache) => {
         const hit = await cache.match(req);
-        if (hit) return hit;
+        if (hit && !fresh) return hit;
         try {
           const res = await fetch(req);
-          cache.put(req, res.clone());
-          trim(TILES, MAX_TILES);
+          if (res && res.ok) { cache.put(req, res.clone()); trim(TILES, MAX_TILES); }
           return res;
         } catch (err) {
           return hit || Response.error();
@@ -82,7 +82,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // ملفاتنا + Leaflet + الخط: stale-while-revalidate
+  // ملفاتنا + MapLibre + الخط: stale-while-revalidate
   const sameOrigin = url.origin === self.location.origin;
   const cdn = ['unpkg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname);
   if (sameOrigin || cdn) {

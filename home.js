@@ -89,8 +89,8 @@
   function renderMap(list) {
     if (!map) return;
     const me = F.loc();
-    if (!meMarker) meMarker = L.marker([me.lat, me.lng], { icon: F.pinIcon('me'), zIndexOffset: 1000 }).addTo(map).bindPopup('موقعك');
-    else meMarker.setLatLng([me.lat, me.lng]);
+    if (!meMarker) meMarker = F.marker(map, me.lat, me.lng, 'me', '', 'موقعك');
+    else F.markerSet(meMarker, me.lat, me.lng, 'me');
 
     const keep = {};
     list.forEach((c) => {
@@ -98,14 +98,14 @@
       const cls = c.status === 'available' ? 'green' : 'red';
       const pop = '<b>' + F.esc(c.name) + '</b><br>' + F.esc(c.type) + ' · ' + F.fmtDist(c.d);
       if (markers[c.id]) {
-        markers[c.id].setLatLng([c.lat, c.lng]).setIcon(F.pinIcon(cls, '🚛')).setPopupContent(pop);
+        F.markerSet(markers[c.id], c.lat, c.lng, cls, pop);
       } else {
-        const m = L.marker([c.lat, c.lng], { icon: F.pinIcon(cls, '🚛') }).addTo(map).bindPopup(pop);
-        m.on('click', () => focusCard(c.id));
+        const m = F.marker(map, c.lat, c.lng, cls, '🚛', pop);
+        m.getElement().addEventListener('click', () => focusCard(c.id));
         markers[c.id] = m;
       }
     });
-    Object.keys(markers).forEach((id) => { if (!keep[id]) { map.removeLayer(markers[id]); delete markers[id]; } });
+    Object.keys(markers).forEach((id) => { if (!keep[id]) { markers[id].remove(); delete markers[id]; } });
   }
 
   function focusCard(id) {
@@ -119,9 +119,11 @@
 
   function fitMap() {
     if (!map) return;
-    const pts = [[F.loc().lat, F.loc().lng]];
-    Object.values(markers).forEach((m) => pts.push([m.getLatLng().lat, m.getLatLng().lng]));
-    map.fitBounds(pts, { padding: [30, 30], maxZoom: 15 });
+    const l = F.loc();
+    const b = new maplibregl.LngLatBounds();
+    b.extend([l.lng, l.lat]);
+    Object.values(markers).forEach((m) => b.extend(m.getLngLat()));
+    map.fitBounds(b, { padding: 50, maxZoom: 15, duration: 700 });
   }
 
   function refresh() {
@@ -171,10 +173,13 @@
     el.innerHTML = TEMPLATE;
     ready = true;
 
-    if (window.L) {
-      const c = F.loc();
-      map = L.map('map', { zoomControl: true }).setView([c.lat, c.lng], 13);
-      F.tiles(map);
+    if (F.hasMap()) {
+      try {
+        map = F.createMap(F.$('#map', el), F.loc(), 13);
+      } catch (e) {
+        map = null;
+        F.$('#map', el).innerHTML = '<div class="empty">تعذّر تشغيل الخريطة على هذا الجهاز. القائمة تشتغل عادي.</div>';
+      }
     } else {
       F.$('#map', el).innerHTML = '<div class="empty">الخريطة غير متوفرة بدون إنترنت أول مرة. القائمة تشتغل عادي.</div>';
     }
@@ -203,7 +208,7 @@
     show: function () {
       if (!ready) init();
       else refresh();
-      if (map) setTimeout(() => map.invalidateSize(), 60);
+      if (map) setTimeout(() => { try { map.resize(); } catch (e) {} }, 60);
     },
     refresh: refresh
   };
