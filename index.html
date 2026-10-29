@@ -19,6 +19,63 @@
 </head>
 <body>
 
+<!-- شاشة الدخول: خريطة هادئة، موقعك، وكرين يوصلك -->
+<div id="splash" aria-hidden="true">
+  <svg viewBox="0 0 360 400" role="presentation">
+    <g class="sp-roads" fill="none" stroke="#2C3036" stroke-width="1.2" stroke-linecap="round">
+      <path d="M0 120H360M0 250H360M60 0V400M180 0V400M300 0V400"/>
+      <path d="M0 330 360 70" stroke-dasharray="2 7"/>
+    </g>
+    <path class="sp-base" d="M20 320C96 322 104 262 146 240S176 208 180 194" fill="none" stroke="#3a3f46" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+    <path id="sp-path" class="sp-route" pathLength="1" d="M20 320C96 322 104 262 146 240S176 208 180 194" fill="none" stroke="#FF6B2C" stroke-width="3.5" stroke-linecap="round"/>
+    <circle class="sp-ring" cx="180" cy="190" r="6"/>
+    <circle class="sp-ring r2" cx="180" cy="190" r="6"/>
+    <circle class="sp-ring r3" cx="180" cy="190" r="6"/>
+    <circle class="sp-you" cx="180" cy="190" r="7" fill="#3B82F6" stroke="#fff" stroke-width="2.5"/>
+    <g>
+      <animateMotion dur="1.35s" begin="0.5s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".45 0 .2 1">
+        <mpath href="#sp-path"/>
+      </animateMotion>
+      <g class="sp-truck">
+        <circle r="19" fill="#FF6B2C"/>
+        <g transform="translate(-12 -12)" fill="none" stroke="#1a0a02" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6.8" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>
+          <path d="M4.8 18H2.5v-4.5h12V11H18l3.5 3.5V18H19"/><path d="M8.8 18H15"/>
+          <path d="m11.5 13.5-5.7-7.7"/><path d="M5.8 5.8v3.9"/><circle cx="5.8" cy="11.1" r="1.4"/>
+        </g>
+      </g>
+    </g>
+    <g transform="translate(180 190)">
+      <g class="sp-ok">
+        <circle r="21" fill="#10B981"/>
+        <path class="sp-check" pathLength="1" d="m-8 0.5 5.5 5.5L8.5 -5" fill="none" stroke="#04130d" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+  </svg>
+  <div class="sp-text">
+    <div class="sp-name">فزعة</div>
+    <div class="sp-tag">فزعتك بضغطة</div>
+  </div>
+</div>
+<script>
+(function () {
+  var s = document.getElementById('splash');
+  if (!s) return;
+  var seen = false;
+  try { seen = sessionStorage.getItem('fz_splash') === '1'; sessionStorage.setItem('fz_splash', '1'); } catch (e) {}
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (seen || reduce) { s.remove(); return; }
+  var done = function () {
+    if (!s.parentNode) return;
+    s.classList.add('out');
+    setTimeout(function () { if (s.parentNode) s.remove(); }, 500);
+  };
+  setTimeout(done, 2800);
+  s.addEventListener('click', done);
+})();
+</script>
+
+
 <!-- شاشة الدخول -->
 <div id="auth" class="auth" hidden></div>
 
@@ -49,6 +106,7 @@
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="data.js"></script>
+<script src="icons.js"></script>
 <script src="auth.js"></script>
 <script src="home.js"></script>
 <script src="driver.js"></script>
