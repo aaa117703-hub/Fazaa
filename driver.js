@@ -54,7 +54,7 @@
     }
     F.updateCrane(c.id, { status: 'available', lat: loc.lat, lng: loc.lng, updatedAt: Date.now() });
     startWatch();
-    F.toast('أنت الحين «متاح» ✅', 'ok');
+    F.toast('أنت الحين «متاح»', 'ok');
     render();
   }
 
@@ -97,10 +97,10 @@
   /* ---------- الشاشات ---------- */
   function renderRegister(u) {
     el.innerHTML =
-      '<h1>🚛 كن سائق كرين</h1>' +
+      '<h1>' + F.icon('crane') + ' كن سائق كرين</h1>' +
       '<p class="lead">سجّل كرينك حتى يلكوك الزبائن على الخريطة ويتصلون بيك مباشرة.</p>' +
       '<form class="card" id="d-form" novalidate>' + formHtml(null, u) +
-        '<div class="promo">🎁 أول 20 سائق: 3 أشهر مجاناً بدون أي التزام.</div>' +
+        '<div class="promo">' + F.icon('gift') + ' أول 20 سائق: 3 أشهر مجاناً بدون أي التزام.</div>' +
         '<label class="check"><input type="checkbox" id="d-agree">' +
           '<span>أفهم إن موقعي يتحدّث فقط وأنا «متاح» والتطبيق مفتوح، وإن اسمي ورقمي يظهرون للزبائن.</span></label>' +
         '<div class="err" id="de-agree" style="margin:-8px 0 10px"></div>' +
@@ -134,15 +134,15 @@
     const avail = c.status === 'available';
 
     el.innerHTML =
-      '<h1>🚛 وضع السائق</h1>' +
+      '<h1>' + F.icon('crane') + ' وضع السائق</h1>' +
       '<p class="lead">' + F.esc(c.name) + ' · ' + F.esc(c.type) +
         (c.verified ? ' <span class="badge green">موثق</span>' : '') + '</p>' +
 
       '<div class="card">' +
         '<h2>حالتك الحين</h2>' +
         '<div class="status-switch">' +
-          '<button id="d-on" class="' + (avail ? 'on-green' : '') + '"><span class="ic">✅</span>متاح</button>' +
-          '<button id="d-off" class="' + (!avail ? 'on-red' : '') + '"><span class="ic">⛔</span>مشغول</button>' +
+          '<button id="d-on" class="' + (avail ? 'on-green' : '') + '">' + F.icon('check-circle') + 'متاح</button>' +
+          '<button id="d-off" class="' + (!avail ? 'on-red' : '') + '">' + F.icon('pause-circle') + 'مشغول</button>' +
         '</div>' +
         '<p class="muted small mt-s">آخر تحديث: ' + F.ago(c.updatedAt) + '. ' +
           (avail ? 'موقعك يتحدّث طول ما التطبيق مفتوح.' : 'موقعك ما يتحدّث وأنت «مشغول».') + '</p>' +
@@ -172,7 +172,7 @@
       '</div>' +
 
       '<div class="row wrap mt">' +
-        '<button class="btn secondary" id="d-edit">✏️ تعديل بياناتي</button>' +
+        '<button class="btn secondary" id="d-edit">' + F.icon('pencil') + ' تعديل بياناتي</button>' +
         '<button class="btn danger" id="d-remove">حذف تسجيلي كسائق</button>' +
       '</div>';
 

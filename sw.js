@@ -3,7 +3,7 @@
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'fazaa-v2';
+const VERSION = 'fazaa-v3';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -15,6 +15,7 @@ const SHELL_FILES = [
   './manifest.json',
   './style.css',
   './data.js',
+  './icons.js',
   './auth.js',
   './home.js',
   './driver.js',

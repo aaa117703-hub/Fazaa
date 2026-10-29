@@ -5,17 +5,17 @@
 
   const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', admin: 'v-admin' };
   const NAV = [
-    ['home', '🏠', 'الرئيسية'],
-    ['driver', '🚛', 'سائق'],
-    ['packages', '💎', 'الباقات'],
-    ['profile', '👤', 'حسابي']
+    ['home', 'home', 'الرئيسية'],
+    ['driver', 'wheel', 'سائق'],
+    ['packages', 'gem', 'الباقات'],
+    ['profile', 'user', 'حسابي']
   ];
   let ready = false, current = '';
   const ORDER = ['home', 'driver', 'packages', 'profile', 'admin'];
 
   function buildNav() {
     const html = NAV.map((n) =>
-      '<button data-nav="' + n[0] + '"><span class="ic">' + n[1] + '</span><span>' + n[2] + '</span></button>').join('');
+      '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>').join('');
     F.$('#nav-top').innerHTML = html;
     F.$('#nav-bottom').innerHTML = html;
     F.$$('[data-nav]').forEach((b) => { b.onclick = () => { location.hash = '#' + b.dataset.nav; }; });

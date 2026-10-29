@@ -10,11 +10,11 @@
     const mine = F.events().filter((e) => e.type === 'call' && e.by && e.by.phone === u.phone);
 
     el.innerHTML =
-      '<h1>👤 حسابي</h1>' +
+      '<h1>' + F.icon('user') + ' حسابي</h1>' +
       '<div class="card">' +
         '<div class="row"><div class="grow"><h2 style="margin:0">' + F.esc(u.name) + '</h2>' +
           '<div class="muted small" style="direction:ltr;text-align:right">' + F.esc(u.phone) + '</div>' +
-          '<div class="muted small">🚗 ' + F.esc(u.car) + '</div></div>' +
+          '<div class="muted small">' + F.icon('car') + ' ' + F.esc(u.car) + '</div></div>' +
           '<button class="btn sm secondary" id="p-edit">تعديل</button></div>' +
       '</div>' +
 
@@ -27,15 +27,15 @@
 
       '<div class="card"><h2>بياناتي وخصوصيتي</h2>' +
         '<div class="stack">' +
-          '<button class="btn secondary" id="p-priv">📄 سياسة الخصوصية</button>' +
-          '<button class="btn secondary" id="p-export">⬇️ تنزيل بياناتي</button>' +
-          '<button class="btn danger" id="p-delete">🗑 حذف حسابي وكل بياناتي</button>' +
+          '<button class="btn secondary" id="p-priv">' + F.icon('doc') + ' سياسة الخصوصية</button>' +
+          '<button class="btn secondary" id="p-export">' + F.icon('download') + ' تنزيل بياناتي</button>' +
+          '<button class="btn danger" id="p-delete">' + F.icon('trash') + ' حذف حسابي وكل بياناتي</button>' +
         '</div>' +
       '</div>' +
 
       '<div class="row wrap mt">' +
         '<button class="btn ghost" id="p-logout">تسجيل خروج</button>' +
-        '<button class="btn ghost" id="p-admin">🔐 لوحة الإدارة</button>' +
+        '<button class="btn ghost" id="p-admin">' + F.icon('lock') + ' لوحة الإدارة</button>' +
       '</div>' +
       '<p class="muted small mt center">فزعة · النسخة التجريبية 1.0</p>';
 

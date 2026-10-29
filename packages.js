@@ -11,9 +11,9 @@
     const c = F.myCrane();
 
     el.innerHTML =
-      '<h1>💎 الباقات</h1>' +
+      '<h1>' + F.icon('gem') + ' الباقات</h1>' +
       '<p class="lead">للسائقين فقط. الزبون يستخدم فزعة مجاناً دائماً.</p>' +
-      '<div class="promo">🎁 أول 20 سائق: 3 أشهر مجاناً كاملة، وبعدها تختار باقتك أو توقف بدون أي التزام.</div>' +
+      '<div class="promo">' + F.icon('gift') + ' أول 20 سائق: 3 أشهر مجاناً كاملة، وبعدها تختار باقتك أو توقف بدون أي التزام.</div>' +
       '<div class="pkgs">' +
       F.PACKAGES.map((p) => {
         const current = c && c.package === p.id;

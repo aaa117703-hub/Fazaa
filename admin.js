@@ -81,7 +81,7 @@
         '<td>' + F.ago(c.updatedAt) + '</td>' +
         '<td><div class="row">' +
           '<button class="btn sm secondary" data-a="toggle" data-id="' + F.esc(c.id) + '">' + (c.status === 'available' ? 'مشغول' : 'متاح') + '</button>' +
-          '<button class="btn sm ' + (c.verified ? 'green' : 'secondary') + '" data-a="verify" data-id="' + F.esc(c.id) + '">' + (c.verified ? 'موثق ✓' : 'وثّق') + '</button>' +
+          '<button class="btn sm ' + (c.verified ? 'green' : 'secondary') + '" data-a="verify" data-id="' + F.esc(c.id) + '">' + (c.verified ? F.icon('check') + ' موثق' : 'وثّق') + '</button>' +
           '<button class="btn sm danger" data-a="del" data-id="' + F.esc(c.id) + '">حذف</button>' +
         '</div></td></tr>').join('');
     return (
@@ -105,8 +105,8 @@
   function data() {
     return (
       '<div class="card"><h2>البيانات</h2><div class="stack">' +
-        '<button class="btn secondary" data-a="export">⬇️ تصدير كل البيانات (JSON)</button>' +
-        '<button class="btn secondary" data-a="export-csv">⬇️ تصدير سجل الاتصالات (CSV)</button>' +
+        '<button class="btn secondary" data-a="export">' + F.icon('download') + ' تصدير كل البيانات (JSON)</button>' +
+        '<button class="btn secondary" data-a="export-csv">' + F.icon('download') + ' تصدير سجل الاتصالات (CSV)</button>' +
         '<button class="btn secondary" data-a="rm-demo">حذف الكرينات التجريبية</button>' +
         '<button class="btn secondary" data-a="pin">تغيير رمز الإدارة</button>' +
         '<button class="btn danger" data-a="reset">تصفير كل شي على هذا الجهاز</button>' +
@@ -119,7 +119,7 @@
     const el = F.$('#v-admin');
     const body = { overview: overview, cranes: cranes, activity: activity, data: data }[tab]();
     el.innerHTML =
-      '<h1>🔐 لوحة الإدارة</h1>' +
+      '<h1>' + F.icon('lock') + ' لوحة الإدارة</h1>' +
       '<div class="warn">القفل هنا خفيف ومحلي: أي شخص يستخدم نفس الجهاز ويعرف المتصفح يكدر يوصل للبيانات. الأمان الحقيقي مع Supabase لاحقاً.</div>' +
       '<div class="tabs">' + TABS.map((t) => '<button class="chip ' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
       body;
@@ -132,13 +132,13 @@
       '<div class="field"><label>الاسم</label><input id="ad-name" maxlength="40"></div>' +
       '<div class="field"><label>النوع</label><select id="ad-type">' + F.TYPES.map((t) => '<option>' + t + '</option>').join('') + '</select></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="ad-phone" class="ltr" inputmode="tel" maxlength="16"><div class="err" id="ad-err"></div></div>' +
-      '<div class="field"><label>الموقع</label><button type="button" class="btn secondary" id="ad-loc">📍 حدد على الخريطة (الحالي: مركز الناصرية)</button></div>' +
+      '<div class="field"><label>الموقع</label><button type="button" class="btn secondary" id="ad-loc">' + F.icon('pin') + ' حدد على الخريطة (الحالي: مركز الناصرية)</button></div>' +
       '<div class="row"><button class="btn grow" type="submit">إضافة</button><button class="btn secondary" type="button" id="ad-cancel">إلغاء</button></div></form>'
     );
     F.$('#ad-cancel', m.el).onclick = m.close;
     F.$('#ad-loc', m.el).onclick = async () => {
       const p = await F.pickLocation(loc);
-      if (p) { loc = p; F.$('#ad-loc', m.el).textContent = '📍 تم تحديد الموقع ✓'; }
+      if (p) { loc = p; F.$('#ad-loc', m.el).innerHTML = F.icon('check-circle') + ' تم تحديد الموقع'; }
     };
     F.$('#ad-form', m.el).onsubmit = (e) => {
       e.preventDefault();

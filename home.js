@@ -9,8 +9,8 @@
   const TEMPLATE =
     '<div class="locbar">' +
       '<div class="state" id="h-locstate"></div>' +
-      '<button class="btn sm secondary" id="h-gps">📍 موقعي</button>' +
-      '<button class="btn sm secondary" id="h-manual">✋ يدوي</button>' +
+      '<button class="btn sm secondary" id="h-gps">' + F.icon('gps') + ' موقعي</button>' +
+      '<button class="btn sm secondary" id="h-manual">' + F.icon('cursor') + ' يدوي</button>' +
     '</div>' +
     '<div id="h-hero"></div>' +
     '<div class="home-grid">' +
@@ -57,13 +57,13 @@
     return (
       '<article class="card crane ' + (c.status === 'available' ? '' : 'busy') + '" data-id="' + F.esc(c.id) + '">' +
         '<div class="row">' +
-          '<div class="avatar">🚛</div>' +
+          '<div class="avatar">' + F.icon('crane') + '</div>' +
           '<div class="grow">' +
             '<h3>' + F.esc(c.name) + badges + '</h3>' +
             '<div class="sub">' + F.esc(c.type) + ' · ' + F.fmtDist(c.d) + '</div>' +
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
-          '<button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">📞 اتصال</button>' +
+          '<button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
         '</div>' +
       '</article>'
     );
@@ -80,10 +80,10 @@
       return;
     }
     box.innerHTML =
-      '<div class="hero"><h2>🚨 سيارتي تعطلت — أقرب كرين متاح</h2>' +
+      '<div class="hero"><h2>' + F.icon('alert') + ' سيارتي تعطلت — أقرب كرين متاح</h2>' +
       '<div class="name">' + F.esc(best.name) + '</div>' +
       '<div class="sub">' + F.esc(best.type) + ' · ' + F.fmtDist(best.d) + ' عنك · ' + status(best).txt + '</div>' +
-      '<button class="btn big block green" data-call="' + F.esc(best.id) + '">📞 اتصل هسه</button></div>';
+      '<button class="btn big block green" data-call="' + F.esc(best.id) + '">' + F.icon('phone') + ' اتصل هسه</button></div>';
   }
 
   function renderMap(list) {
@@ -100,7 +100,7 @@
       if (markers[c.id]) {
         F.markerSet(markers[c.id], c.lat, c.lng, cls, pop);
       } else {
-        const m = F.marker(map, c.lat, c.lng, cls, '🚛', pop);
+        const m = F.marker(map, c.lat, c.lng, cls, F.icon('crane'), pop);
         m.getElement().addEventListener('click', () => focusCard(c.id));
         markers[c.id] = m;
       }
