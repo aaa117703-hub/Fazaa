@@ -1,4 +1,4 @@
-/* فزعة — الحساب: بياناتي، سجل اتصالاتي، الخصوصية، التصدير، الحذف */
+/* سند جايك — الحساب: بياناتي، سجل اتصالاتي، الخصوصية، التصدير، الحذف */
 (function () {
   'use strict';
   const F = window.F;
@@ -34,10 +34,11 @@
       '</div>' +
 
       '<div class="row wrap mt">' +
+        '<button class="btn ghost" id="p-settings">' + F.icon('sliders') + ' الإعدادات</button>' +
         '<button class="btn ghost" id="p-logout">تسجيل خروج</button>' +
         '<button class="btn ghost" id="p-admin">' + F.icon('lock') + ' لوحة الإدارة</button>' +
       '</div>' +
-      '<p class="muted small mt center">فزعة · النسخة التجريبية 1.0</p>';
+      '<p class="muted small mt center">سند جايك · النسخة التجريبية 1.1</p>';
 
     F.$('#p-edit', el).onclick = () => editModal(u);
     F.$('#p-priv', el).onclick = F.showPrivacy;
@@ -50,6 +51,7 @@
       location.reload();
     };
     F.$('#p-admin', el).onclick = () => { location.hash = '#admin'; };
+    F.$('#p-settings', el).onclick = () => { location.hash = '#settings'; };
   }
 
   function editModal(u) {
@@ -85,7 +87,7 @@
       driverListing: c,
       myCalls: F.events().filter((e) => (e.by && e.by.phone === u.phone) || (c && e.craneId === c.id))
     };
-    F.download('fazaa-my-data.json', JSON.stringify(data, null, 2));
+    F.download('sanad-jaik-my-data.json', JSON.stringify(data, null, 2));
     F.toast('تم تنزيل بياناتك', 'ok');
   }
 

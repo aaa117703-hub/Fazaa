@@ -1,9 +1,9 @@
-/* فزعة — التنقل وتشغيل التطبيق */
+/* سند جايك — التنقل وتشغيل التطبيق */
 (function () {
   'use strict';
   const F = window.F;
 
-  const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', admin: 'v-admin' };
+  const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', settings: 'v-settings', admin: 'v-admin' };
   const NAV = [
     ['home', 'home', 'الرئيسية'],
     ['driver', 'wheel', 'سائق'],
@@ -11,13 +11,16 @@
     ['profile', 'user', 'حسابي']
   ];
   let ready = false, current = '';
-  const ORDER = ['home', 'driver', 'packages', 'profile', 'admin'];
+  const ORDER = ['home', 'driver', 'packages', 'profile', 'settings', 'admin'];
 
   function buildNav() {
     const html = NAV.map((n) =>
       '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>').join('');
     F.$('#nav-top').innerHTML = html;
     F.$('#nav-bottom').innerHTML = html;
+    const gear = F.$('#tb-settings');
+    gear.innerHTML = F.icon('sliders');
+    gear.onclick = () => { location.hash = '#settings'; };
     F.$$('[data-nav]').forEach((b) => { b.onclick = () => { location.hash = '#' + b.dataset.nav; }; });
     ['#nav-top', '#nav-bottom'].forEach((sel) => {
       const ind = document.createElement('span');
@@ -62,7 +65,7 @@
 
     const prev = current;
     Object.keys(VIEWS).forEach((k) => { F.$('#' + VIEWS[k]).hidden = k !== v; });
-    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (v === 'admin' ? 'profile' : v)));
+    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (v === 'admin' || v === 'settings' ? 'profile' : v)));
     current = v;
 
     // انتقال سلس: الصفحة الجديدة تنزلق من جهة التنقل
@@ -80,6 +83,7 @@
     else if (v === 'driver') F.driver.show();
     else if (v === 'packages') F.packages.show();
     else if (v === 'profile') F.profile.show();
+    else if (v === 'settings') F.settings.show();
     window.scrollTo(0, 0);
   }
 
@@ -97,6 +101,7 @@
   };
 
   F.start = function () {
+    F.applySettings();
     F.seed();
 
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {

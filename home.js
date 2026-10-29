@@ -1,10 +1,10 @@
-/* فزعة — الشاشة الرئيسية: الموقع، الخريطة، قائمة الكرينات، الاتصال */
+/* سند جايك — الشاشة الرئيسية: الموقع، الخريطة، قائمة الكرينات، الاتصال */
 (function () {
   'use strict';
   const F = window.F;
 
   let el, map, markers = {}, meMarker = null, ready = false;
-  const state = { onlyAvail: false, type: '' };
+  const state = { onlyAvail: !!F.getSettings().onlyAvail, type: '' };
 
   const TEMPLATE =
     '<div class="locbar">' +
@@ -13,6 +13,10 @@
       '<button class="btn sm secondary" id="h-manual">' + F.icon('cursor') + ' يدوي</button>' +
     '</div>' +
     '<div id="h-hero"></div>' +
+    '<div class="row wrap quick">' +
+      '<button class="btn secondary grow" id="h-guide">' + F.icon('shield') + ' شنو أسوي؟</button>' +
+      '<button class="btn secondary grow" id="h-share">' + F.icon('share') + ' أرسل موقعي</button>' +
+    '</div>' +
     '<div class="home-grid">' +
       '<div id="map"></div>' +
       '<div>' +
@@ -38,7 +42,7 @@
 
   function sorted() {
     const me = F.loc();
-    let arr = F.cranes().map((c) => Object.assign({ d: F.dist(me, c) }, c));
+    let arr = F.cranes().filter((c) => !(F.getSettings().hideDemo && c.demo)).map((c) => Object.assign({ d: F.dist(me, c) }, c));
     if (state.onlyAvail) arr = arr.filter((c) => c.status === 'available');
     if (state.type) arr = arr.filter((c) => c.type === state.type);
     arr.sort((a, b) => {
@@ -189,6 +193,9 @@
       if (b) call(b.dataset.call);
     });
     F.$('#h-gps', el).onclick = () => locateGPS(false);
+    F.$('#h-guide', el).onclick = () => F.guide.show();
+    F.$('#h-share', el).onclick = () => F.guide.shareLocation();
+    F.$('#h-avail', el).classList.toggle('on', state.onlyAvail);
     F.$('#h-manual', el).onclick = locateManual;
     F.$('#h-avail', el).onclick = (e) => {
       state.onlyAvail = !state.onlyAvail;
