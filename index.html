@@ -3,9 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>فزعة | فزعتك بضغطة</title>
-<meta name="description" content="فزعة — أقرب كرين وسطحة لسيارتك المتعطلة بضغطة واحدة. الناصرية، ذي قار.">
+<title>سند جايك | سندك بضغطة</title>
+<meta name="description" content="سند جايك — أقرب كرين وسطحة لسيارتك المتعطلة بضغطة واحدة. الناصرية، ذي قار.">
 <meta name="theme-color" content="#101214">
+<script>
+/* تطبيق المظهر المحفوظ قبل الرسم حتى ما يومض */
+(function () {
+  try {
+    var s = JSON.parse(localStorage.getItem('sanad_settings') || '{}');
+    var t = s.theme || 'auto';
+    if (t === 'auto') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    if (s.reduceMotion) document.documentElement.classList.add('reduce-motion');
+  } catch (e) {}
+})();
+</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="./icon-192.png">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
@@ -53,8 +65,8 @@
     </g>
   </svg>
   <div class="sp-text">
-    <div class="sp-name">فزعة</div>
-    <div class="sp-tag">فزعتك بضغطة</div>
+    <div class="sp-name">سند جايك</div>
+    <div class="sp-tag">سندك بضغطة</div>
   </div>
 </div>
 <script>
@@ -63,7 +75,7 @@
   if (!s) return;
   var seen = false;
   try { seen = sessionStorage.getItem('fz_splash') === '1'; sessionStorage.setItem('fz_splash', '1'); } catch (e) {}
-  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('reduce-motion');
   if (seen || reduce) { s.remove(); return; }
   var done = function () {
     if (!s.parentNode) return;
@@ -82,12 +94,15 @@
 <!-- التطبيق -->
 <div id="app" hidden>
   <header class="topbar">
-    <a class="brand" href="#home" aria-label="فزعة">
+    <a class="brand" href="#home" aria-label="سند جايك">
       <img src="logo.svg" alt="" width="34" height="34">
-      <span class="brand-name">فزعة</span>
-      <span class="brand-tag">فزعتك بضغطة</span>
+      <span class="brand-name">سند جايك</span>
+      <span class="brand-tag">سندك بضغطة</span>
     </a>
-    <nav class="nav nav-top" id="nav-top" aria-label="التنقل"></nav>
+    <div class="tb-actions">
+      <nav class="nav nav-top" id="nav-top" aria-label="التنقل"></nav>
+      <button class="icon-btn" id="tb-settings" type="button" aria-label="الإعدادات"></button>
+    </div>
   </header>
 
   <main id="main">
@@ -95,6 +110,7 @@
     <section id="v-driver" class="view" hidden></section>
     <section id="v-packages" class="view" hidden></section>
     <section id="v-profile" class="view" hidden></section>
+    <section id="v-settings" class="view" hidden></section>
     <section id="v-admin" class="view" hidden></section>
   </main>
 
@@ -112,6 +128,8 @@
 <script src="driver.js"></script>
 <script src="packages.js"></script>
 <script src="profile.js"></script>
+<script src="settings.js"></script>
+<script src="guide.js"></script>
 <script src="admin.js"></script>
 <script src="app.js"></script>
 </body>

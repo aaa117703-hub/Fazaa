@@ -1,4 +1,4 @@
-/* فزعة — لوحة الإدارة
+/* سند جايك — لوحة الإدارة
  * تنبيه: الـ PIN هنا مجرد قفل خفيف على نفس الجهاز، وليس أماناً حقيقياً،
  * لأن كل البيانات بالمتصفح. الأمان الحقيقي يجي مع Supabase (المرحلة 3).
  */
@@ -209,13 +209,13 @@
       });
     }
     if (a === 'export') {
-      return F.download('fazaa-backup-' + new Date().toISOString().slice(0, 10) + '.json',
+      return F.download('sanad-jaik-backup-' + new Date().toISOString().slice(0, 10) + '.json',
         JSON.stringify({ cranes: F.cranes(), events: F.events(), exportedAt: new Date().toISOString() }, null, 2));
     }
     if (a === 'export-csv') {
       const rows = [['الوقت', 'النوع', 'الكرين', 'اسم الزبون', 'هاتف الزبون', 'تجريبي']].concat(
         F.events().map((x) => [new Date(x.at).toISOString(), x.type, x.craneName, x.by && x.by.name, x.by && x.by.phone, x.demo ? 'نعم' : 'لا']));
-      return F.download('fazaa-events.csv', '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\n'), 'text/csv;charset=utf-8');
+      return F.download('sanad-jaik-events.csv', '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\n'), 'text/csv;charset=utf-8');
     }
     if (a === 'rm-demo') return confirmBox('حذف التجريبي؟', 'راح تنحذف الكرينات التجريبية وسجل اتصالاتها.', 'احذف', () => { F.removeDemo(); F.toast('تم', 'ok'); render(); });
     if (a === 'pin') return changePin();

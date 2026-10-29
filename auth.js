@@ -1,4 +1,4 @@
-/* فزعة — تسجيل الدخول: الاسم الثلاثي + رقم الهاتف + نوع السيارة */
+/* سند جايك — تسجيل الدخول: الاسم الثلاثي + رقم الهاتف + نوع السيارة */
 (function () {
   'use strict';
   const F = window.F;
@@ -28,8 +28,8 @@
         '<div class="auth-box">' +
           '<div class="auth-hero">' +
             '<img src="logo.svg" width="84" height="84" alt="">' +
-            '<h1>فزعة</h1>' +
-            '<p>فزعتك بضغطة — أقرب كرين لسيارتك</p>' +
+            '<h1>سند جايك</h1>' +
+            '<p>سندك بضغطة — أقرب كرين لسيارتك</p>' +
           '</div>' +
           '<form class="card" id="auth-form" novalidate>' +
             '<div class="field"><label for="a-name">الاسم الثلاثي</label>' +
@@ -79,7 +79,7 @@
       F.set(F.K.session, true);
       F.$('#auth').hidden = true;
       F.showApp();
-      F.toast('هلا ' + F.firstName(name) + '، أهلاً بيك بفزعة', 'ok');
+      F.toast('هلا ' + F.firstName(name) + '، أهلاً بيك بسند جايك', 'ok');
     }
   };
 })();

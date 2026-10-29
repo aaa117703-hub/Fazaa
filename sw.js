@@ -1,9 +1,9 @@
-/* فزعة — Service Worker
+/* سند جايك — Service Worker
  * - ملفات التطبيق: تُخزَّن عند أول فتح ويشتغل الموقع بدون إنترنت.
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'fazaa-v3';
+const VERSION = 'sanad-v4';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -21,6 +21,8 @@ const SHELL_FILES = [
   './driver.js',
   './packages.js',
   './profile.js',
+  './settings.js',
+  './guide.js',
   './admin.js',
   './app.js',
   './logo.svg',

@@ -1,4 +1,4 @@
-/* فزعة — البيانات والدوال المشتركة
+/* سند جايك — البيانات والدوال المشتركة
  * المرحلة 1: كل شي يتخزن بجهاز المستخدم (localStorage).
  * لا توجد مزامنة بين الأجهزة — هذا يتغير مع Supabase بالمرحلة 3.
  */
@@ -14,7 +14,8 @@
     pin: 'fazaa_admin_pin',
     consent: 'fazaa_consent',
     loc: 'fazaa_loc',
-    seeded: 'fazaa_seeded_v1'
+    seeded: 'fazaa_seeded_v1',
+    settings: 'sanad_settings'
   };
 
   F.CENTER = { lat: 31.0439, lng: 46.2573 }; // الناصرية
@@ -73,6 +74,35 @@
     catch (e) { F.toast('تعذّر الحفظ على الجهاز (المساحة ممتلئة أو التخزين معطّل)', 'err'); return false; }
   };
   F.del = function (k) { try { localStorage.removeItem(k); } catch (e) {} };
+
+  /* ---------- الإعدادات ---------- */
+  const DEFAULT_SETTINGS = { theme: 'auto', reduceMotion: false, onlyAvail: false, hideDemo: false };
+  F.getSettings = () => Object.assign({}, DEFAULT_SETTINGS, F.get(F.K.settings, {}));
+  F.resolveTheme = function (pref) {
+    pref = pref || F.getSettings().theme;
+    if (pref === 'auto') {
+      return window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    return pref === 'light' ? 'light' : 'dark';
+  };
+  F.applySettings = function () {
+    const s = F.getSettings();
+    const root = document.documentElement;
+    const theme = F.resolveTheme(s.theme);
+    root.setAttribute('data-theme', theme);
+    root.classList.toggle('reduce-motion', !!s.reduceMotion);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4F5F7' : '#101214');
+  };
+  F.saveSettings = function (patch) {
+    F.set(F.K.settings, Object.assign(F.getSettings(), patch));
+    F.applySettings();
+  };
+  try {
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+      if (F.getSettings().theme === 'auto') F.applySettings();
+    });
+  } catch (e) {}
 
   F.esc = function (s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
@@ -234,10 +264,11 @@
 
   /* ---------- الخريطة: MapLibre GL + OpenFreeMap (مجانية، بدون مفتاح) ---------- */
   // نجرّب النمط الداكن، وإذا ما انفتح نرجع للنمط الافتراضي.
-  F.MAP_STYLES = [
-    'https://tiles.openfreemap.org/styles/dark',
-    'https://tiles.openfreemap.org/styles/liberty'
-  ];
+  F.MAP_STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
+  F.MAP_STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/liberty';
+  F.mapStyles = () => (F.resolveTheme() === 'light'
+    ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK]
+    : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT]);
   F.hasMap = () => !!window.maplibregl;
 
   let rtlTried = false;
@@ -260,10 +291,11 @@
       rtlTried = true;
       try { ml.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js', true); } catch (e) {}
     }
+    const styles = F.mapStyles();
     let idx = 0, loaded = false;
     const map = new ml.Map({
       container: container,
-      style: F.MAP_STYLES[0],
+      style: styles[0],
       center: [center.lng, center.lat],
       zoom: zoom || 13,
       attributionControl: { compact: true },
@@ -274,7 +306,7 @@
     map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-left');
     map.on('style.load', () => { loaded = true; F.localizeMap(map); });
     map.on('error', () => {
-      if (!loaded && idx < F.MAP_STYLES.length - 1) { idx++; map.setStyle(F.MAP_STYLES[idx]); }
+      if (!loaded && idx < styles.length - 1) { idx++; map.setStyle(styles[idx]); }
     });
     return map;
   };
