@@ -3,7 +3,7 @@
   'use strict';
   const F = window.F;
 
-  let el, map, markers = {}, meMarker = null, ready = false;
+  let el, map, markers = {}, meMarker = null, ready = false, items = [], loading = false, loadErr = false;
   const state = { onlyAvail: !!F.getSettings().onlyAvail, type: '' };
 
   const TEMPLATE =
@@ -12,6 +12,7 @@
       '<button class="btn sm secondary" id="h-gps">' + F.icon('gps') + ' موقعي</button>' +
       '<button class="btn sm secondary" id="h-manual">' + F.icon('cursor') + ' يدوي</button>' +
     '</div>' +
+    '<div id="h-active"></div>' +
     '<div id="h-hero"></div>' +
     '<div class="row wrap quick">' +
       '<button class="btn secondary grow" id="h-guide">' + F.icon('shield') + ' شنو أسوي؟</button>' +
@@ -42,7 +43,7 @@
 
   function sorted() {
     const me = F.loc();
-    let arr = F.cranes().filter((c) => !(F.getSettings().hideDemo && c.demo)).map((c) => Object.assign({ d: F.dist(me, c) }, c));
+    let arr = items.filter((c) => !(F.getSettings().hideDemo && c.demo)).map((c) => Object.assign({ d: F.dist(me, c) }, c));
     if (state.onlyAvail) arr = arr.filter((c) => c.status === 'available');
     if (state.type) arr = arr.filter((c) => c.type === state.type);
     arr.sort((a, b) => {
@@ -64,7 +65,7 @@
           '<div class="avatar">' + F.icon('crane') + '</div>' +
           '<div class="grow">' +
             '<h3>' + F.esc(c.name) + badges + '</h3>' +
-            '<div class="sub">' + F.esc(c.type) + ' · ' + F.fmtDist(c.d) + '</div>' +
+            '<div class="sub">' + F.esc(c.type) + ' · ' + F.fmtDist(c.d) + (c.ratingCount ? ' · ★ ' + c.rating.toFixed(1) + ' (' + c.ratingCount + ')' : '') + '</div>' +
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
           '<button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
@@ -79,15 +80,17 @@
     if (!best) {
       box.innerHTML =
         '<div class="hero"><h2>سيارتي تعطلت</h2>' +
-        '<div class="sub" style="margin:0">ما لكينا كرين متاح هسه' +
-        (state.onlyAvail || state.type ? ' بهذا الفلتر' : '') + '. شوف القائمة وجرّب تتصل.</div></div>';
+        '<div class="sub" style="margin:0 0 10px">' + (loading ? 'جاري البحث عن الكرينات…' : loadErr ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : 'ما لكينا كرين متاح هسه' +
+        (state.onlyAvail || state.type ? ' بهذا الفلتر' : '') + '. شوف القائمة وجرّب تتصل.') + '</div>' +
+        '<button class="btn big block" data-req="1">' + F.icon('alert') + ' أرسل طلب لأقرب كرينات</button></div>';
       return;
     }
     box.innerHTML =
       '<div class="hero"><h2>' + F.icon('alert') + ' سيارتي تعطلت — أقرب كرين متاح</h2>' +
       '<div class="name">' + F.esc(best.name) + '</div>' +
       '<div class="sub">' + F.esc(best.type) + ' · ' + F.fmtDist(best.d) + ' عنك · ' + status(best).txt + '</div>' +
-      '<button class="btn big block green" data-call="' + F.esc(best.id) + '">' + F.icon('phone') + ' اتصل هسه</button></div>';
+      '<button class="btn big block" data-req="1">' + F.icon('alert') + ' أرسل طلب لأقرب 3 كرينات</button>' +
+      '<button class="btn block green" style="margin-top:8px" data-call="' + F.esc(best.id) + '">' + F.icon('phone') + ' أو اتصل مباشرة بأقرب كرين</button></div>';
   }
 
   function renderMap(list) {
@@ -135,28 +138,44 @@
     F.$('#h-locstate', el).textContent = F.locLabel(F.loc());
     const list = sorted();
     renderHero(list);
+    if (F.request) F.request.banner(F.$('#h-active', el));
     F.$('#h-list', el).innerHTML = list.length
       ? list.map(cardHtml).join('')
-      : '<div class="empty">ما كو كرينات تطابق الفلتر.</div>';
+      : '<div class="empty">' + (loading ? 'جاري التحميل…' : 'ما كو كرينات تطابق الفلتر.') + '</div>';
     renderMap(list);
   }
 
-  function call(id) {
-    const c = F.cranes().find((x) => x.id === id);
+  async function load() {
+    loading = items.length === 0; loadErr = false;
+    if (loading) refresh();
+    try {
+      const l = F.loc();
+      items = await F.fetchCranes(l.lat, l.lng);
+    } catch (e) { loadErr = true; if (!items.length) F.toast(F.errMsg(e), 'err'); }
+    loading = false;
+    refresh();
+    return items;
+  }
+
+  async function call(id) {
+    const c = items.find((x) => x.id === id);
     if (!c) return;
-    F.logCall(c);
-    if (c.demo || !c.phone) {
-      F.toast('هذا كرين تجريبي، ما عنده رقم حقيقي. سجّلنا الاتصال بالسجل.');
-      return;
-    }
-    window.location.href = 'tel:' + c.phone;
+    if (F.isGuest()) return F.requireLogin('أرقام الكرينات تظهر للمسجّلين فقط، حتى نحمي السائقين من الإزعاج.');
+    if (c.demo) return F.toast('هذا كرين تجريبي، ما عنده رقم حقيقي.');
+    try {
+      const r = await F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + encodeURIComponent(id));
+      const phone = r && r[0] && r[0].phone;
+      if (!phone) return F.toast('ما لكينا رقم هذا الكرين.', 'err');
+      F.sb.q('calls', '', { method: 'POST', body: { crane_id: id, user_id: F.sb.uid() } }).catch(() => {});
+      window.location.href = 'tel:' + phone;
+    } catch (e) { F.toast(F.errMsg(e), 'err'); }
   }
 
   async function locateGPS(silent) {
     try {
       const p = await F.getGPS();
       F.setLoc(p.lat, p.lng, 'gps');
-      refresh();
+      await load();
       fitMap();
       if (!silent) F.toast('تم تحديد موقعك', 'ok');
     } catch (e) {
@@ -168,7 +187,7 @@
     const p = await F.pickLocation(F.loc());
     if (!p) return;
     F.setLoc(p.lat, p.lng, 'manual');
-    refresh();
+    await load();
     fitMap();
   }
 
@@ -190,7 +209,8 @@
 
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-call]');
-      if (b) call(b.dataset.call);
+      if (b) return call(b.dataset.call);
+      if (e.target.closest('[data-req]')) F.request.start();
     });
     F.$('#h-gps', el).onclick = () => locateGPS(false);
     F.$('#h-guide', el).onclick = () => F.guide.show();
@@ -205,7 +225,7 @@
     F.$('#h-type', el).onchange = (e) => { state.type = e.target.value; refresh(); };
 
     refresh();
-    fitMap();
+    load().then(fitMap);
     // أول مرة: نحاول GPS إذا المستخدم وافق (المتصفح راح يسأله بنفسه)
     if (F.get(F.K.consent, false) && F.loc().source === 'default') locateGPS(true);
   }
@@ -214,9 +234,10 @@
     init: init,
     show: function () {
       if (!ready) init();
-      else refresh();
+      else { refresh(); load(); }
       if (map) setTimeout(() => { try { map.resize(); } catch (e) {} }, 60);
     },
-    refresh: refresh
+    refresh: refresh,
+    reload: load
   };
 })();

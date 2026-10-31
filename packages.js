@@ -4,11 +4,12 @@
 (function () {
   'use strict';
   const F = window.F;
-  const PROMO_MS = 90 * 24 * 3600 * 1000;
+  let mine = null;
 
-  function render() {
+  async function render() {
     const el = F.$('#v-packages');
-    const c = F.myCrane();
+    if (!F.isGuest()) { try { const r = await F.sb.q('cranes', 'select=id,package&owner_id=eq.' + F.sb.uid() + '&limit=1'); mine = r && r[0] || null; } catch (e) { mine = null; } } else mine = null;
+    const c = mine;
 
     el.innerHTML =
       '<h1>' + F.icon('gem') + ' الباقات</h1>' +
@@ -33,17 +34,7 @@
       '<p class="muted small mt">لا يوجد دفع إلكتروني حالياً. الدفع (ZainCash وغيره) يُضاف لاحقاً بعد استشارة قانونية.</p>';
 
     F.$$('[data-pkg]', el).forEach((b) => {
-      b.onclick = () => {
-        const mine = F.myCrane();
-        if (!mine) return;
-        const id = b.dataset.pkg;
-        F.updateCrane(mine.id, {
-          package: id,
-          promoUntil: id === 'free' ? null : Date.now() + PROMO_MS
-        });
-        F.toast(id === 'free' ? 'رجعت للباقة المجانية' : 'تم! 3 أشهر مجانية على هذي الباقة', 'ok');
-        render();
-      };
+      b.onclick = () => F.toast(b.dataset.pkg === 'free' ? 'أنت على المجاني حالياً.' : 'ترقية الباقة حالياً عن طريق الإدارة. راح نتواصل وياك بعد المراجعة.');
     });
   }
 

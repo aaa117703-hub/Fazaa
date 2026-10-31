@@ -1,6 +1,5 @@
 /* سند جايك — البيانات والدوال المشتركة
- * المرحلة 1: كل شي يتخزن بجهاز المستخدم (localStorage).
- * لا توجد مزامنة بين الأجهزة — هذا يتغير مع Supabase بالمرحلة 3.
+ * الإعدادات والموقع محليّة. بيانات الكرينات والطلبات من Supabase (sb.js).
  */
 (function () {
   'use strict';
@@ -191,45 +190,6 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   };
 
-  /* ---------- المستخدم ---------- */
-  F.user = () => F.get(F.K.user, null);
-  F.setUser = (u) => F.set(F.K.user, u);
-  F.loggedIn = () => !!F.user() && F.get(F.K.session, false) === true;
-
-  /* ---------- الكرينات ---------- */
-  F.cranes = () => F.get(F.K.cranes, []);
-  F.saveCranes = (arr) => F.set(F.K.cranes, arr);
-  F.myCrane = function () {
-    const u = F.user();
-    return u ? F.cranes().find((c) => c.ownerPhone === u.phone) || null : null;
-  };
-  F.updateCrane = function (id, patch) {
-    const arr = F.cranes();
-    const i = arr.findIndex((c) => c.id === id);
-    if (i < 0) return null;
-    arr[i] = Object.assign({}, arr[i], patch);
-    F.saveCranes(arr);
-    return arr[i];
-  };
-
-  /* ---------- السجل (الأحداث) ---------- */
-  F.events = () => F.get(F.K.events, []);
-  F.logEvent = function (type, data) {
-    const arr = F.events();
-    arr.push(Object.assign({ id: F.uid(), type: type, at: Date.now() }, data));
-    if (arr.length > 2000) arr.splice(0, arr.length - 2000);
-    F.set(F.K.events, arr);
-  };
-  F.logCall = function (crane) {
-    const u = F.user() || {};
-    F.logEvent('call', {
-      craneId: crane.id,
-      craneName: crane.name,
-      by: { name: u.name || '', phone: u.phone || '' },
-      demo: !!crane.demo
-    });
-  };
-
   /* ---------- الموقع ---------- */
   F.loc = function () {
     return F.get(F.K.loc, null) || { lat: F.CENTER.lat, lng: F.CENTER.lng, source: 'default', at: 0 };
@@ -354,40 +314,4 @@
     });
   };
 
-  /* ---------- بيانات تجريبية ---------- */
-  // كرينات وهمية حتى ترى الواجهة شغالة. تظهر بشارة «تجريبي» ولا تتصل بأرقام حقيقية.
-  F.seed = function () {
-    const now = Date.now();
-    if (!F.get(F.K.seeded, false)) {
-      const c = F.CENTER;
-      const demo = [
-        ['كرين تجريبي ١ — وسط الناصرية', 'سحب', 0.006, -0.004, 'available'],
-        ['كرين تجريبي ٢ — حي الحبوبي', 'سطحة', -0.012, 0.010, 'available'],
-        ['كرين تجريبي ٣ — طريق بغداد', 'هيدروليك', 0.022, -0.016, 'busy'],
-        ['كرين تجريبي ٤ — الجزائر', 'ونش', -0.020, -0.022, 'available'],
-        ['كرين تجريبي ٥ — طريق الشطرة', 'ثقيل', 0.003, 0.034, 'busy'],
-        ['كرين تجريبي ٦ — الحي الصناعي', 'سحب', -0.030, 0.004, 'available']
-      ].map((d, i) => ({
-        id: 'demo' + (i + 1),
-        name: d[0], type: d[1],
-        lat: c.lat + d[2], lng: c.lng + d[3],
-        status: d[4],
-        phone: '', ownerPhone: '',
-        package: 'free', verified: false, rating: null,
-        demo: true, createdAt: now, updatedAt: now
-      }));
-      F.saveCranes(F.cranes().concat(demo));
-      F.set(F.K.seeded, true);
-    }
-    // نخلي وقت التحديث للتجريبي قريب حتى ما يظهر «قديم»
-    const arr = F.cranes();
-    let changed = false;
-    arr.forEach((c) => { if (c.demo) { c.updatedAt = now - Math.floor(F.rand(1, 20)) * 60000; changed = true; } });
-    if (changed) F.saveCranes(arr);
-  };
-
-  F.removeDemo = function () {
-    F.saveCranes(F.cranes().filter((c) => !c.demo));
-    F.set(F.K.events, F.events().filter((e) => !e.demo));
-  };
 })();

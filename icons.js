@@ -16,6 +16,7 @@
     cursor: '<path d="M5 4.5 19 10l-6.2 2.2L10.6 19z"/>',
     home: '<path d="m3.5 11 8.5-7 8.5 7"/><path d="M6 9.4V20h12V9.4"/><path d="M10 20v-5h4v5"/>',
     user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/>',
+    eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
     gem: '<path d="M6.5 4h11l3.5 5-9 11L3 9z"/><path d="M3 9h18"/><path d="m9.5 4-2 5L12 20l4.5-11-2-5"/>',
     wheel:
       '<circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="2"/><path d="M3.6 10.6h6.6M13.8 10.6h6.6M12 14v6.6"/>',

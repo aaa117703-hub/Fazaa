@@ -54,9 +54,10 @@
   }
 
   async function route() {
-    if (!F.loggedIn()) return;
+    if (!F.canEnter()) return;
     let v = (location.hash || '#home').slice(1);
     if (!VIEWS[v]) v = 'home';
+    if (v === 'admin' && !F.isAdmin()) { v = 'profile'; history.replaceState(null, '', '#profile'); }
 
     if (v === 'admin') {
       const ok = await F.admin.show();
@@ -87,6 +88,21 @@
     window.scrollTo(0, 0);
   }
 
+  // مبدّل العرض للمدير: مدير / زبون / زائر
+  function viewChip() {
+    const b = F.$('#tb-view');
+    if (!b) return;
+    b.hidden = !F.isRealAdmin();
+    const names = { admin: 'مدير', customer: 'زبون', visitor: 'زائر' };
+    b.innerHTML = F.icon('eye') + ' ' + names[F.viewAs()];
+    b.onclick = () => {
+      const m = F.modal('<h2>عرض التطبيق كـ</h2><div class="stack">' +
+        [['admin', 'مدير (كل الصلاحيات)'], ['customer', 'زبون مسجّل'], ['visitor', 'زائر (بدون حساب)']].map((v) =>
+          '<button class="btn ' + (F.viewAs() === v[0] ? '' : 'secondary') + ' block" data-v="' + v[0] + '">' + v[1] + '</button>').join('') + '</div>');
+      F.$$('[data-v]', m.el).forEach((x) => { x.onclick = () => { F.setViewAs(x.dataset.v); m.close(); if (F.driver) F.driver.stop(); if (F.request) F.request.reset(); viewChip(); current = ''; route(); }; });
+    };
+  }
+
   F.showApp = function () {
     F.$('#auth').hidden = true;
     F.$('#app').hidden = false;
@@ -97,12 +113,12 @@
       ready = true;
       F.driver.resume();
     }
+    viewChip();
     route();
   };
 
-  F.start = function () {
+  F.start = async function () {
     F.applySettings();
-    F.seed();
 
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -115,7 +131,7 @@
     setInterval(() => { if (current === 'home' && !document.hidden) F.home.refresh(); }, 60000);
     window.addEventListener('storage', () => { if (current === 'home') F.home.refresh(); });
 
-    if (F.loggedIn()) F.showApp();
+    if (F.canEnter()) { await F.sb.init(); F.showApp(); }
     else F.auth.render();
   };
 
