@@ -3,7 +3,7 @@
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'sanad-v9';
+const VERSION = 'sanad-v10';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -21,6 +21,8 @@ const SHELL_FILES = [
   './auth.js',
   './request.js',
   './nav.js',
+  './push.js',
+  './lang.js',
   './home.js',
   './driver.js',
   './packages.js',
@@ -34,6 +36,24 @@ const SHELL_FILES = [
   './icon-512.png',
   './apple-touch-icon.png'
 ];
+
+// إشعارات الدفع
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'سند جايك', {
+    body: d.body || '', icon: './icon-192.png', badge: './icon-192.png', tag: d.tag, dir: 'rtl', lang: 'ar',
+    vibrate: [200, 100, 200], data: { url: d.url || '/' }
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if ('focus' in c) { c.navigate && c.navigate(url); return c.focus(); } }
+    return self.clients.openWindow(url);
+  }));
+});
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

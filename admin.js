@@ -5,7 +5,7 @@
   let tab = 'overview', govFilter = '';
   let cache = { cranes: [], phones: {} };
 
-  const TABS = [['overview', 'نظرة عامة'], ['cranes', 'الكرينات'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']];
+  const TABS = [['overview', 'نظرة عامة'], ['cranes', 'الكرينات'], ['requests', 'الطلبات'], ['docs', 'التوثيق'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']];
   const stat = (n, l) => '<div class="stat"><b>' + n + '</b><span>' + l + '</span></div>';
   const ISSUE = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح', accident: 'حادث', other: 'أخرى' };
   const REASON = { no_answer: 'ما رد', wrong_price: 'سعر مختلف', behavior: 'سوء تعامل', fake: 'معلومات مزيفة', other: 'أخرى' };
@@ -67,6 +67,17 @@
       '</tbody></table></div></div>';
   }
 
+  async function docsTab() {
+    const rows = await F.sb.q('driver_documents', 'select=id,kind,path,status,created_at,crane_id,cranes(name,verified,governorate)&status=eq.pending&order=created_at.asc&limit=100');
+    const K = { id: 'الهوية', license: 'إجازة السوق', vehicle: 'سنوية الكرين' };
+    return '<div class="card"><h2>مستندات بانتظار المراجعة (' + (rows || []).length + ')</h2><div class="table-wrap"><table><thead><tr><th>الكرين</th><th>المحافظة</th><th>المستند</th><th>الوقت</th><th></th></tr></thead><tbody>' +
+      ((rows || []).map((r) => '<tr><td>' + F.esc(r.cranes ? r.cranes.name : '—') + '</td><td>' + F.esc(r.cranes && r.cranes.governorate || '—') + '</td><td>' + (K[r.kind] || r.kind) + '</td><td>' + F.fmtDate(Date.parse(r.created_at)) + '</td>' +
+        '<td><div class="row"><button class="btn sm secondary" data-a="doc-view" data-id="' + r.id + '" data-p="' + F.esc(r.path) + '">عرض</button>' +
+        '<button class="btn sm green" data-a="doc-ok" data-id="' + r.id + '">قبول</button><button class="btn sm danger" data-a="doc-no" data-id="' + r.id + '">رفض</button>' +
+        '<button class="btn sm" data-a="verify-crane" data-id="' + r.crane_id + '">وثّق الكرين</button></div></td></tr>').join('') || '<tr><td colspan="5" class="muted">ما كو مستندات جديدة.</td></tr>') +
+      '</tbody></table></div><p class="muted small mt-s">اقبل المستندات الثلاثة، ثم اضغط «وثّق الكرين» لتظهر شارة «موثق».</p></div>';
+  }
+
   async function health() {
     const checks = [];
     const t = async (name, fn) => { try { checks.push([name, true, await fn()]); } catch (e) { checks.push([name, false, F.errMsg(e)]); } };
@@ -86,7 +97,7 @@
       TABS.map((t) => '<button class="chip ' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
     el.innerHTML = hdr + '<p class="muted center mt">جاري التحميل…</p>';
     let body;
-    try { body = await ({ overview: overview, cranes: cranes, requests: requests, reports: reports, health: health }[tab])(); }
+    try { body = await ({ overview: overview, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
     catch (e) { body = '<div class="warn">' + F.esc(F.errMsg(e)) + '</div>'; }
     el.innerHTML = hdr + body;
     const gs = F.$('#ad-gov', el); if (gs) gs.onchange = () => { govFilter = gs.value; render(); };
@@ -141,6 +152,10 @@
       try { await F.sb.q('cranes', 'id=eq.' + id, { method: 'DELETE' }); F.toast('تم الحذف', 'ok'); } catch (err) { F.toast(F.errMsg(err), 'err'); }
       render();
     });
+    if (a === 'doc-view') return F.sb.signedUrl('driver-docs', t.dataset.p).then((u) => { const m = F.modal('<img src="' + F.esc(u) + '" alt="" style="width:100%;border-radius:12px"><button class="btn block mt" id="dv-x">إغلاق</button>'); F.$('#dv-x', m.el).onclick = m.close; }).catch((err) => F.toast(F.errMsg(err), 'err'));
+    if (a === 'doc-ok') return F.sb.q('driver_documents', 'id=eq.' + id, { method: 'PATCH', body: { status: 'approved' } }).then(() => { F.toast('تم القبول', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
+    if (a === 'doc-no') { const why = prompt('سبب الرفض (يظهر للسائق):') || 'الصورة غير واضحة'; return F.sb.q('driver_documents', 'id=eq.' + id, { method: 'PATCH', body: { status: 'rejected', note: why } }).then(() => { F.toast('تم الرفض'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err')); }
+    if (a === 'verify-crane') return patch(id, { verified: true });
     if (a === 'rp') return F.sb.q('reports', 'id=eq.' + id, { method: 'PATCH', body: { status: t.dataset.s } }).then(render).catch((err) => F.toast(F.errMsg(err), 'err'));
   }
 
