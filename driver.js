@@ -118,6 +118,8 @@
       '<div class="field"><label>اسم الكرين الظاهر للزبائن</label>' +
         '<input id="d-name" value="' + F.esc(c ? c.name : 'كرين ' + F.firstName(u.name)) + '" maxlength="40"><div class="err" id="de-name"></div></div>' +
       '<div class="field"><label>نوع الكرين</label><select id="d-type">' + typeOptions(c ? c.type : '') + '</select></div>' +
+      '<div class="field"><label>المحافظة اللي تشتغل بيها</label><select id="d-gov"><option value="">اختر المحافظة</option>' +
+        F.GOVS.map((g) => '<option' + (g.name === (c ? c.governorate : u.gov) ? ' selected' : '') + '>' + g.name + '</option>').join('') + '</select><div class="err" id="de-gov"></div></div>' +
       '<div class="field"><label>رقم الاتصال للزبائن</label>' +
         '<input id="d-phone" class="ltr" inputmode="tel" value="' + F.esc(c ? phone : u.phone) + '" maxlength="16">' +
         '<div class="hint">يظهر فقط للزبائن المسجّلين.</div><div class="err" id="de-phone"></div></div>'
@@ -127,10 +129,12 @@
     const name = F.$('#d-name', root).value.trim();
     const type = F.$('#d-type', root).value;
     const ph = F.cleanPhone(F.$('#d-phone', root).value);
+    const gov = F.$('#d-gov', root).value;
     let ok = true;
+    F.$('#de-gov', root).textContent = gov ? '' : (ok = false, 'اختر المحافظة.');
     F.$('#de-name', root).textContent = name.length >= 3 ? '' : (ok = false, 'اكتب اسم للكرين.');
     F.$('#de-phone', root).textContent = F.validPhone(ph) ? '' : (ok = false, 'الرقم لازم 11 رقم ويبدأ بـ 07.');
-    return ok ? { name: name, type: type, phone: ph } : null;
+    return ok ? { name: name, type: type, phone: ph, governorate: gov } : null;
   }
 
   function loginCard() {
@@ -163,7 +167,7 @@
       }
       try {
         const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation',
-          body: { owner_id: uid(), name: v.name, type: v.type, lat: l.lat, lng: l.lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false } });
+          body: { owner_id: uid(), name: v.name, type: v.type, governorate: v.governorate, lat: l.lat, lng: l.lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false } });
         await F.sb.q('crane_contacts', '', { method: 'POST', body: { crane_id: r[0].id, phone: v.phone } });
         F.toast('تم التسجيل. بانتظار موافقة الإدارة.', 'ok');
         await refresh();
@@ -201,7 +205,7 @@
     const pkg = F.PACKAGES.find((p) => p.id === c.package) || F.PACKAGES[0];
     el.innerHTML =
       '<h1>' + F.icon('crane') + ' وضع السائق</h1>' +
-      '<p class="lead">' + F.esc(c.name) + ' · ' + F.esc(c.type) + (c.verified ? ' <span class="badge green">موثق</span>' : '') + '</p>' +
+      '<p class="lead">' + F.esc(c.name) + ' · ' + F.esc(c.type) + (c.governorate ? ' · ' + F.esc(c.governorate) : '') + (c.verified ? ' <span class="badge green">موثق</span>' : '') + '</p>' +
       (!c.listed ? '<div class="warn">تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</div>' : '') +
       '<div class="card"><h2>حالتك الحين</h2><div class="status-switch">' +
         '<button id="d-on" class="' + (avail ? 'on-green' : '') + '">' + F.icon('check-circle') + 'متاح</button>' +
@@ -244,7 +248,7 @@
       const v = readForm(m.el);
       if (!v) return;
       try {
-        await F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'PATCH', body: { name: v.name, type: v.type } });
+        await F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'PATCH', body: { name: v.name, type: v.type, governorate: v.governorate } });
         await F.sb.q('crane_contacts', 'crane_id=eq.' + crane.id, { method: 'PATCH', body: { phone: v.phone } });
         m.close(); F.toast('تم الحفظ', 'ok'); refresh();
       } catch (ex) { F.toast(F.errMsg(ex), 'err'); }
