@@ -192,7 +192,7 @@
 
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {
-    const rows = await rpc('nearby_cranes', { p_lat: lat, p_lng: lng, p_radius_km: 150, p_limit: 50 });
+    const rows = await rpc('nearby_cranes', { p_lat: lat, p_lng: lng, p_radius_km: 2000, p_limit: 100 });
     return (rows || []).map((c) => ({
       id: c.id, name: c.name, type: c.type, lat: +c.lat, lng: +c.lng, status: c.status,
       verified: !!c.verified, package: c.package, demo: !!c.is_demo,

@@ -17,7 +17,21 @@
     settings: 'sanad_settings'
   };
 
-  F.CENTER = { lat: 31.0439, lng: 46.2573 }; // الناصرية
+  F.CENTER = { lat: 33.2, lng: 43.7 }; // مركز العراق (عرض البلد كامل)
+  // محافظات العراق (مركز كل محافظة) — للفلترة وتحديد الموقع يدوياً
+  F.GOVS = [
+    ['بغداد', 33.3152, 44.3661], ['البصرة', 30.5085, 47.7835], ['ذي قار', 31.0439, 46.2573], ['ميسان', 31.8356, 47.1458],
+    ['واسط', 32.5126, 45.8183], ['القادسية', 31.9889, 44.9264], ['المثنى', 31.3189, 45.2864], ['النجف', 31.9929, 44.3365],
+    ['كربلاء', 32.616, 44.0249], ['بابل', 32.4833, 44.4333], ['الأنبار', 33.4258, 43.2989], ['ديالى', 33.75, 44.6333],
+    ['صلاح الدين', 34.6071, 43.6782], ['كركوك', 35.4681, 44.3922], ['نينوى', 36.335, 43.1189], ['أربيل', 36.1912, 44.0092],
+    ['السليمانية', 35.5613, 45.4309], ['دهوك', 36.8679, 42.9885]
+  ].map((g) => ({ name: g[0], lat: g[1], lng: g[2] }));
+  // أقرب محافظة لنقطة (تقريبي، حسب مركز المحافظة)
+  F.govOf = function (lat, lng) {
+    let best = null, bd = 1e9;
+    F.GOVS.forEach((g) => { const d = Math.hypot(g.lat - lat, (g.lng - lng) * 0.85); if (d < bd) { bd = d; best = g; } });
+    return best ? best.name : '';
+  };
   F.TYPES = ['سحب', 'سطحة', 'هيدروليك', 'ثقيل', 'ونش'];
   F.STALE_MS = 3 * 3600 * 1000; // بعد 3 ساعات بدون تحديث نحذّر الزبون
 
@@ -202,7 +216,7 @@
   F.locLabel = function (l) {
     if (l.source === 'gps') return 'موقعك الحالي (GPS) · ' + F.ago(l.at);
     if (l.source === 'manual') return 'موقع حدّدته يدوياً';
-    return 'موقعك غير محدد — المسافات تقديرية من مركز الناصرية';
+    return 'موقعك غير محدد — فعّل GPS أو اختر محافظتك';
   };
 
   // GPS بشكل Promise
@@ -303,7 +317,7 @@
         { onClose: () => { try { if (map) map.remove(); } catch (e) {} if (!done) { done = true; resolve(null); } } }
       );
       const start = initial || F.CENTER;
-      map = F.createMap(F.$('#pick-map', m.el), start, 14);
+      map = F.createMap(F.$('#pick-map', m.el), start, initial && initial.source !== 'default' ? 14 : 6);
       let pin = null;
       map.on('click', (e) => {
         chosen = { lat: e.lngLat.lat, lng: e.lngLat.lng };

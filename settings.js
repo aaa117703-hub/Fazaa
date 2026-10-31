@@ -70,7 +70,7 @@
       '<div class="card"><h2>حول سند جايك</h2>' +
         '<ul class="list">' +
           '<li><span>الإصدار</span><span class="muted">' + VERSION + ' (تجريبي)</span></li>' +
-          '<li><span>التغطية الحالية</span><span class="muted">الناصرية، ذي قار</span></li>' +
+          '<li><span>التغطية الحالية</span><span class="muted">كل محافظات العراق</span></li>' +
         '</ul>' +
         '<div class="row wrap mt">' +
           '<button class="btn secondary" id="s-priv">' + F.icon('doc') + ' سياسة الخصوصية</button>' +

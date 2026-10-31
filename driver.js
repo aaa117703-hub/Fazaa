@@ -153,7 +153,14 @@
       const v = readForm(el), agree = F.$('#d-agree', el).checked;
       F.$('#de-agree', el).textContent = agree ? '' : 'لازم توافق حتى نكمّل.';
       if (!v || !agree) return;
-      const l = F.loc();
+      let l;
+      try { const g = await F.getGPS(); l = F.setLoc(g.lat, g.lng, 'gps'); }
+      catch (ge) {
+        F.toast(F.gpsError(ge), 'err');
+        const pk = await F.pickLocation(F.loc().source === 'default' ? null : F.loc());
+        if (!pk) return;
+        l = F.setLoc(pk.lat, pk.lng, 'manual');
+      }
       try {
         const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation',
           body: { owner_id: uid(), name: v.name, type: v.type, lat: l.lat, lng: l.lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false } });

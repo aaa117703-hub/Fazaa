@@ -4,7 +4,7 @@
   const F = window.F;
 
   let el, map, markers = {}, meMarker = null, ready = false, items = [], loading = false, loadErr = false;
-  const state = { onlyAvail: !!F.getSettings().onlyAvail, type: '' };
+  const state = { onlyAvail: !!F.getSettings().onlyAvail, type: '', gov: '' };
 
   const TEMPLATE =
     '<div class="locbar">' +
@@ -23,6 +23,9 @@
       '<div>' +
         '<div class="filters">' +
           '<button class="chip" id="h-avail">متاح فقط</button>' +
+          '<select id="h-gov" aria-label="المحافظة"><option value="">كل المحافظات</option>' +
+            F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') +
+          '</select>' +
           '<select id="h-type" aria-label="نوع الكرين"><option value="">كل الأنواع</option>' +
             F.TYPES.map((t) => '<option>' + t + '</option>').join('') +
           '</select>' +
@@ -46,6 +49,7 @@
     let arr = items.filter((c) => !(F.getSettings().hideDemo && c.demo)).map((c) => Object.assign({ d: F.dist(me, c) }, c));
     if (state.onlyAvail) arr = arr.filter((c) => c.status === 'available');
     if (state.type) arr = arr.filter((c) => c.type === state.type);
+    if (state.gov) arr = arr.filter((c) => F.govOf(c.lat, c.lng) === state.gov);
     arr.sort((a, b) => {
       const av = (a.status === 'available' ? 0 : 1) - (b.status === 'available' ? 0 : 1);
       return av || a.d - b.d;
@@ -128,9 +132,10 @@
     if (!map) return;
     const l = F.loc();
     const b = new maplibregl.LngLatBounds();
-    b.extend([l.lng, l.lat]);
+    if (l.source !== 'default') b.extend([l.lng, l.lat]);
     Object.values(markers).forEach((m) => b.extend(m.getLngLat()));
-    map.fitBounds(b, { padding: 50, maxZoom: 15, duration: 700 });
+    if (b.isEmpty()) return map.flyTo({ center: [F.CENTER.lng, F.CENTER.lat], zoom: 6, duration: 700 });
+    map.fitBounds(b, { padding: 50, maxZoom: l.source === 'default' ? 9 : 15, duration: 700 });
   }
 
   function refresh() {
@@ -198,7 +203,7 @@
 
     if (F.hasMap()) {
       try {
-        map = F.createMap(F.$('#map', el), F.loc(), 13);
+        map = F.createMap(F.$('#map', el), F.loc(), F.loc().source === 'default' ? 6 : 13);
       } catch (e) {
         map = null;
         F.$('#map', el).innerHTML = '<div class="empty">تعذّر تشغيل الخريطة على هذا الجهاز. القائمة تشتغل عادي.</div>';
@@ -220,6 +225,15 @@
     F.$('#h-avail', el).onclick = (e) => {
       state.onlyAvail = !state.onlyAvail;
       e.currentTarget.classList.toggle('on', state.onlyAvail);
+      refresh();
+    };
+    F.$('#h-gov', el).onchange = (e) => {
+      state.gov = e.target.value;
+      const g = F.GOVS.find((x) => x.name === state.gov);
+      if (g) {
+        if (F.loc().source === 'default') F.setLoc(g.lat, g.lng, 'manual');
+        if (map) map.flyTo({ center: [g.lng, g.lat], zoom: 10, duration: 700 });
+      }
       refresh();
     };
     F.$('#h-type', el).onchange = (e) => { state.type = e.target.value; refresh(); };
