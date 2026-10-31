@@ -23,7 +23,9 @@
     [/password.*(short|least|weak)|weak password/i, 'كلمة المرور ضعيفة. استخدم 8 خانات أو أكثر.'],
     [/valid email|invalid.*email|email address.*invalid/i, 'الإيميل غير صحيح.'],
     [/rate limit|too many|after \d+ seconds/i, 'محاولات كثيرة. انتظر دقيقة وجرّب.'],
-    [/jwt|token/i, 'انتهت الجلسة. سجّل دخول من جديد.']
+    [/otp.*(expired|invalid)|token has expired|invalid.*(token|otp|code)/i, 'الرمز غلط أو انتهت صلاحيته.'],
+    [/unsupported phone provider|phone provider|sms.*(disabled|not)/i, 'خدمة الرسائل غير مفعّلة بعد. راجع الإدارة.'],
+    [/jwt/i, 'انتهت الجلسة. سجّل دخول من جديد.']
   ];
   function friendly(msg) {
     msg = String(msg || '');
@@ -117,6 +119,22 @@
     return { ok: true };
   }
 
+  // 07701234567 -> +9647701234567
+  const e164 = (p) => '+964' + String(p).replace(/^0/, '');
+
+  // channel: 'whatsapp' | 'sms'
+  async function sendOtp(phone, channel) {
+    await raw('/auth/v1/otp', { method: 'POST', body: { phone: e164(phone), channel: channel, create_user: true } });
+    return true;
+  }
+
+  async function verifyOtp(phone, code) {
+    const r = await raw('/auth/v1/verify', { method: 'POST', body: { type: 'sms', phone: e164(phone), token: code } });
+    setSession(r.data); store(GK, null);
+    await afterLogin();
+    return { ok: true, needsProfile: !(profile && profile.full_name) };
+  }
+
   async function signIn(email, password) {
     const r = await raw('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: email, password: password } });
     setSession(r.data); store(GK, null);
@@ -160,8 +178,8 @@
   F.isGuest = () => !sess || F.viewAs() === 'visitor';
   F.isAdmin = () => realAdmin() && F.viewAs() === 'admin';
   F.isRealAdmin = realAdmin;
-  F.canEnter = () => { try { return !!sess || localStorage.getItem(GK) === '1'; } catch (e) { return !!sess; } };
-  F.enterAsGuest = () => store(GK, '1');
+  F.canEnter = () => !!sess; // الدخول برقم الموبايل إجباري
+  F.authPhone = () => { const p = sess && sess.user && sess.user.phone; return p ? '0' + String(p).replace(/^\+?964/, '') : ''; };
 
   F.user = function () {
     if (!sess || F.viewAs() === 'visitor') return null;
@@ -170,11 +188,11 @@
     return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', car: p.car || '' };
   };
 
-  F.sb = { q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
+  F.sb = { q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
 
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {
-    const rows = await rpc('nearby_cranes', { p_lat: lat, p_lng: lng, p_radius_km: 150, p_limit: 50 });
+    const rows = await rpc('nearby_cranes', { p_lat: lat, p_lng: lng, p_radius_km: 2000, p_limit: 100 });
     return (rows || []).map((c) => ({
       id: c.id, name: c.name, type: c.type, lat: +c.lat, lng: +c.lng, status: c.status,
       verified: !!c.verified, package: c.package, demo: !!c.is_demo,

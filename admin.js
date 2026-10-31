@@ -108,7 +108,7 @@
       '<div class="field"><label>الاسم</label><input id="ad-name" maxlength="40"></div>' +
       '<div class="field"><label>النوع</label><select id="ad-type">' + F.TYPES.map((t) => '<option>' + t + '</option>').join('') + '</select></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="ad-phone" class="ltr" inputmode="tel" maxlength="16"><div class="err" id="ad-err"></div></div>' +
-      '<div class="field"><label>الموقع</label><button type="button" class="btn secondary" id="ad-loc">' + F.icon('pin') + ' حدد على الخريطة (الحالي: مركز الناصرية)</button></div>' +
+      '<div class="field"><label>الموقع</label><button type="button" class="btn secondary" id="ad-loc">' + F.icon('pin') + ' حدد على الخريطة (الحالي: مركز العراق)</button></div>' +
       '<div class="row"><button class="btn grow" type="submit">إضافة</button><button class="btn secondary" type="button" id="ad-cancel">إلغاء</button></div></form>');
     F.$('#ad-cancel', m.el).onclick = m.close;
     F.$('#ad-loc', m.el).onclick = async () => { const p = await F.pickLocation(loc); if (p) { loc = p; F.$('#ad-loc', m.el).innerHTML = F.icon('check-circle') + ' تم تحديد الموقع'; } };

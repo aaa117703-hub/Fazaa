@@ -250,6 +250,9 @@ h1 .ic { color: var(--accent); width: 1.15em; height: 1.15em; margin-left: 8px; 
   border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
 }
 .pin .ic { width: 19px; height: 19px; stroke-width: 2; }
+.pin.green, .pin.red { width: 40px; height: 40px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); margin-bottom: 10px; border-width: 3px; box-shadow: 0 5px 12px rgba(0, 0, 0, .45); transition: transform .15s; }
+.pin.green .ic, .pin.red .ic { transform: rotate(45deg); }
+.pin.green:hover, .pin.red:hover { transform: rotate(-45deg) scale(1.1); }
 .pin.green { background: var(--green); }
 .pin.red { background: var(--red); }
 .pin.me { background: var(--blue); width: 20px; height: 20px; font-size: 0; position: relative; box-shadow: 0 0 0 6px rgba(59, 130, 246, .25); }
