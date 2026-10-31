@@ -226,9 +226,12 @@
   // نجرّب النمط الداكن، وإذا ما انفتح نرجع للنمط الافتراضي.
   F.MAP_STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
   F.MAP_STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/liberty';
-  F.mapStyles = () => (F.resolveTheme() === 'light'
-    ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK]
-    : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT]);
+  // الأول: نمط سند جايك (على طريقة ويز). إذا فشل نرجع لأنماط OpenFreeMap الجاهزة.
+  F.mapStyles = () => {
+    const t = F.resolveTheme() === 'light' ? 'light' : 'dark';
+    const own = F.wazeStyle ? [F.wazeStyle(t)] : [];
+    return own.concat(t === 'light' ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK] : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT]);
+  };
   F.hasMap = () => !!window.maplibregl;
 
   let rtlTried = false;
@@ -275,8 +278,8 @@
   F.marker = function (map, lat, lng, cls, emoji, popupHtml) {
     const el = document.createElement('div');
     el.innerHTML = '<div class="pin ' + cls + '">' + (emoji || '') + '</div>';
-    const m = new maplibregl.Marker({ element: el }).setLngLat([lng, lat]);
-    if (popupHtml) m.setPopup(new maplibregl.Popup({ offset: 22, closeButton: false }).setHTML(popupHtml));
+    const m = new maplibregl.Marker({ element: el, anchor: cls === 'me' ? 'center' : 'bottom' }).setLngLat([lng, lat]);
+    if (popupHtml) m.setPopup(new maplibregl.Popup({ offset: cls === 'me' ? 14 : 44, closeButton: false }).setHTML(popupHtml));
     return m.addTo(map);
   };
   F.markerSet = function (m, lat, lng, cls, popupHtml) {

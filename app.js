@@ -131,7 +131,12 @@
     setInterval(() => { if (current === 'home' && !document.hidden) F.home.refresh(); }, 60000);
     window.addEventListener('storage', () => { if (current === 'home') F.home.refresh(); });
 
-    if (F.canEnter()) { await F.sb.init(); F.showApp(); }
+    if (F.canEnter()) {
+      await F.sb.init();
+      if (F.canEnter() && !F.isRealAdmin() && !(F.user() && F.user().name)) F.auth.completeProfile();
+      else if (F.canEnter()) F.showApp();
+      else F.auth.render();
+    }
     else F.auth.render();
   };
 
