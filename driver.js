@@ -5,7 +5,7 @@
   const ISSUE = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
 
   let el, watchId = null, beat = null, poller = null, lastPush = 0;
-  let crane = null, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
+  let crane = null, docs = [], pushOn = false, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
 
   const uid = () => F.sb.uid();
 
@@ -14,13 +14,16 @@
     crane = rows && rows[0] || null;
     if (!crane) { incoming = []; jobs = []; return; }
     const id = crane.id;
-    const [ct, callsRaw, rs, tg, jb] = await Promise.all([
+    const [ct, callsRaw, rs, tg, jb, dc] = await Promise.all([
       F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + id),
       F.sb.q('calls', 'select=created_at&crane_id=eq.' + id + '&order=created_at.desc&limit=500'),
       F.sb.q('crane_rating_summary', 'select=rating_avg,rating_count&crane_id=eq.' + id),
       F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,lat,lng,issue,destination,note,status,created_at)&crane_id=eq.' + id + '&status=eq.sent&order=sent_at.desc&limit=20'),
-      F.sb.q('requests', 'select=*&accepted_crane_id=eq.' + id + '&status=eq.accepted&order=accepted_at.desc')
+      F.sb.q('requests', 'select=*&accepted_crane_id=eq.' + id + '&status=eq.accepted&order=accepted_at.desc'),
+      F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&order=created_at.desc')
     ]);
+    docs = dc || [];
+    pushOn = F.push ? await F.push.enabled() : false;
     phone = ct && ct[0] ? ct[0].phone : '';
     const calls = callsRaw || [];
     stats = {
@@ -200,6 +203,66 @@
     }).join('') + '</ul></div>';
   }
 
+  const KINDS = [['id', 'الهوية أو البطاقة الموحدة'], ['license', 'إجازة السوق'], ['vehicle', 'سنوية الكرين']];
+  const ST = { pending: ['amber', 'قيد المراجعة'], approved: ['green', 'مقبول'], rejected: ['red', 'مرفوض'] };
+
+  function docsHtml() {
+    return '<div class="card"><h2>' + F.icon('shield') + ' توثيق حسابك</h2>' +
+      '<p class="muted small">ارفع صور واضحة. نراجعها وبعدها تظهر لك شارة «موثق» وتزيد ثقة الزبائن. الصور خاصة، ما يشوفها غير الإدارة.</p>' +
+      '<ul class="list">' + KINDS.map((k) => {
+        const mine = docs.filter((x) => x.kind === k[0])[0];
+        const st = mine ? ST[mine.status] : null;
+        return '<li style="display:block"><div class="row between"><span>' + k[1] + '</span>' +
+          (st ? '<span class="badge ' + st[0] + '">' + st[1] + '</span>' : '<span class="muted small">ما انرفع</span>') + '</div>' +
+          (mine && mine.status === 'rejected' && mine.note ? '<div class="muted small">السبب: ' + F.esc(mine.note) + '</div>' : '') +
+          (!mine || mine.status === 'rejected' ? '<button class="btn sm secondary mt-s" data-up="' + k[0] + '">' + F.icon('download') + ' رفع صورة</button>' : '') + '</li>';
+      }).join('') + '</ul></div>';
+  }
+
+  function pushHtml() {
+    if (!F.push || !F.push.supported()) return '';
+    return '<div class="card"><div class="row between"><div><b>الإشعارات</b><div class="muted small">' + (pushOn ? 'شغّالة: توصلك الطلبات حتى والتطبيق مسكّر.' : 'فعّلها حتى توصلك الطلبات القريبة فوراً.') + '</div></div>' +
+      '<button class="btn sm ' + (pushOn ? 'secondary' : '') + '" data-push="' + (pushOn ? 'off' : 'on') + '">' + (pushOn ? 'إيقاف' : 'تفعيل') + '</button></div></div>';
+  }
+
+  // تصغير الصورة قبل الرفع (أسرع وأوفر)
+  function shrink(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const s = Math.min(1, 1600 / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob((b) => (b ? resolve(b) : reject(new Error('الصورة غير صالحة.'))), 'image/jpeg', 0.82);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('الصورة غير صالحة.')); };
+      img.src = url;
+    });
+  }
+
+  function pickDoc(kind) {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      try {
+        F.toast('جاري الرفع…');
+        const blob = await shrink(f);
+        const path = uid() + '/' + kind + '-' + Date.now() + '.jpg';
+        await F.sb.upload('driver-docs', path, blob);
+        const old = docs.filter((x) => x.kind === kind && x.status === 'rejected');
+        for (const o of old) await F.sb.q('driver_documents', 'id=eq.' + o.id, { method: 'DELETE' }).catch(() => {});
+        await F.sb.q('driver_documents', '', { method: 'POST', body: { crane_id: crane.id, owner_id: uid(), kind: kind, path: path } });
+        F.toast('تم الرفع. بانتظار المراجعة.', 'ok');
+        refresh();
+      } catch (e) { F.toast(F.errMsg(e), 'err'); }
+    };
+    inp.click();
+  }
+
   function renderDash(u) {
     const c = crane, avail = c.status === 'available';
     const pkg = F.PACKAGES.find((p) => p.id === c.package) || F.PACKAGES[0];
@@ -217,6 +280,7 @@
         '<div class="stat"><b>' + stats.today + '</b><span>اتصالات اليوم</span></div>' +
         '<div class="stat"><b>' + stats.total + '</b><span>كل الاتصالات</span></div>' +
         '<div class="stat"><b>' + (stats.rating != null ? '★ ' + stats.rating.toFixed(1) : '—') + '</b><span>التقييم' + (stats.count ? ' (' + stats.count + ')' : '') + '</span></div></div></div>' +
+      docsHtml() + pushHtml() +
       '<div class="card"><h2>باقتك</h2><div class="row between"><b>' + F.esc(pkg.name) + '</b><a class="btn sm ghost" href="#packages">الباقات</a></div></div>' +
       '<div class="row wrap mt"><button class="btn secondary" id="d-edit">' + F.icon('pencil') + ' تعديل بياناتي</button>' +
         '<button class="btn danger" id="d-remove">حذف تسجيلي كسائق</button></div>';
@@ -235,7 +299,11 @@
   }
 
   async function act(fn, id, okMsg) {
-    try { await F.sb.rpc(fn, { p_request_id: id }); if (okMsg) F.toast(okMsg, 'ok'); await refresh(); }
+    try {
+      await F.sb.rpc(fn, { p_request_id: id });
+      if (fn === 'accept_request') F.sb.fn('notify', { kind: 'accepted', request_id: id }).catch(() => {});
+      if (okMsg) F.toast(okMsg, 'ok'); await refresh();
+    }
     catch (e) { F.toast(F.errMsg(e), 'err'); await refresh(); }
   }
 
@@ -272,6 +340,12 @@
         if ((b = g('data-acc'))) act('accept_request', b.dataset.acc, 'قبلت الطلب. تواصل مع الزبون.');
         else if ((b = g('data-dec'))) act('decline_request', b.dataset.dec);
         else if ((b = g('data-done'))) act('complete_request', b.dataset.done, 'تم إنجاز الطلب');
+        else if ((b = g('data-up'))) pickDoc(b.dataset.up);
+        else if ((b = g('data-push'))) {
+          (b.dataset.push === 'on' ? F.push.enable() : F.push.disable())
+            .then(() => { F.toast(b.dataset.push === 'on' ? 'تم تفعيل الإشعارات' : 'تم إيقاف الإشعارات', 'ok'); refresh(); })
+            .catch((err) => F.toast(F.errMsg(err), 'err'));
+        }
       });
     },
     show: async function () {

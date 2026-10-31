@@ -188,7 +188,28 @@
     return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', car: p.car || '', gov: p.governorate || '', createdAt: p.created_at || '' };
   };
 
-  F.sb = { q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
+  // استدعاء Edge Function (بدون انتظار فشلها)
+  async function fn(name, body) {
+    const t = await token();
+    const h = { 'Content-Type': 'application/json', apikey: KEY };
+    if (t) h.Authorization = 'Bearer ' + t;
+    const r = await fetch(API + '/functions/v1/' + name, { method: 'POST', headers: h, body: JSON.stringify(body || {}) });
+    return r.json().catch(() => ({}));
+  }
+
+  // رفع ملف للتخزين الخاص
+  async function upload(bucket, path, blob) {
+    const t = await token();
+    const r = await fetch(API + '/storage/v1/object/' + bucket + '/' + path, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + t, 'Content-Type': blob.type || 'image/jpeg', 'x-upsert': 'false' }, body: blob });
+    if (!r.ok) throw mkErr(r.status, 'تعذّر رفع الملف (الحد 5 ميغا، صورة فقط).');
+    return path;
+  }
+  async function signedUrl(bucket, path) {
+    const r = await call('/storage/v1/object/sign/' + bucket + '/' + path, { method: 'POST', body: { expiresIn: 300 } });
+    return API + '/storage/v1' + r.data.signedURL;
+  }
+
+  F.sb = { fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
 
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {
