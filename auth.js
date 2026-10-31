@@ -48,21 +48,19 @@
         '<button class="btn ghost block mt-s" type="button" id="a-back">رجوع للدخول برقم الموبايل</button>';
     }
     if (step === 'phone') {
-      return '<h2 style="margin-top:0">أدخل رقم موبايلك</h2><p class="muted small">راح نرسل لك رمز تحقق من 6 أرقام.</p>' +
+      return '<h2 style="margin-top:0">أدخل رقم موبايلك</h2><p class="muted small">راح نرسل لك رمز تحقق من 6 أرقام عبر واتساب، وإذا ما وصل نرسله SMS.</p>' +
         '<div class="field"><label for="a-phone">رقم الهاتف</label><input id="a-phone" class="ltr" inputmode="tel" autocomplete="tel" placeholder="07701234567" maxlength="16" value="' + F.esc(phone) + '"><div class="err" id="e-phone"></div></div>' +
-        '<div class="field"><label>أرسل الرمز عبر</label><div class="seg" id="a-ch">' +
-          ['whatsapp', 'sms'].map((c) => '<button type="button" data-c="' + c + '" class="' + (channel === c ? 'on' : '') + '">' + chName(c) + '</button>').join('') + '</div></div>' +
         '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a>.</span></label>' +
         '<div class="err" id="e-consent" style="margin:-8px 0 10px"></div><div class="err" id="e-form" style="margin-bottom:8px"></div>' +
         '<button class="btn big block" type="submit" id="a-go">أرسل الرمز</button>' +
         '<button class="btn ghost block mt-s" type="button" id="a-admin">دخول المدير</button>';
     }
     if (step === 'code') {
-      return '<h2 style="margin-top:0">أدخل الرمز</h2><p class="muted small">أرسلناه عبر ' + chName(channel) + ' إلى <b style="direction:ltr;display:inline-block">' + F.esc(phone) + '</b></p>' +
+      return '<h2 style="margin-top:0">أدخل الرمز</h2><p class="muted small">أرسلنا الرمز إلى <b style="direction:ltr;display:inline-block">' + F.esc(phone) + '</b></p>' +
         '<div class="field"><input id="a-code" class="ltr" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" style="text-align:center;letter-spacing:8px;font-size:22px"><div class="err" id="e-code"></div></div>' +
         '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">تحقق</button>' +
         '<div class="row wrap mt-s"><button class="btn secondary grow" type="button" id="a-resend"' + (cooldown ? ' disabled' : '') + '>' + (cooldown ? 'إعادة الإرسال بعد ' + cooldown + ' ث' : 'إعادة إرسال الرمز') + '</button>' +
-        '<button class="btn secondary grow" type="button" id="a-switch">أرسله عبر ' + chName(channel === 'whatsapp' ? 'sms' : 'whatsapp') + '</button></div>' +
+        '</div>' +
         '<button class="btn ghost block mt-s" type="button" id="a-change">تغيير الرقم</button>';
     }
     return '<h2 style="margin-top:0">كمّل بياناتك</h2><p class="muted small">مرة وحدة بس.</p>' +
@@ -84,8 +82,7 @@
   }
 
   async function send(ch) {
-    channel = ch;
-    await F.sb.sendOtp(phone, channel);
+    await F.sb.sendOtp(phone, 'sms');
     step = 'code'; cooldown = 60; tick();
     F.auth.render();
     const c = F.$('#a-code'); if (c) c.focus();
@@ -112,12 +109,10 @@
       F.$('#auth-form').onsubmit = (e) => { e.preventDefault(); F.auth.submit(); };
       const on = (id, fn) => { const n = F.$('#' + id); if (n) n.onclick = fn; };
       const pv = F.$('#a-priv'); if (pv) pv.onclick = (e) => { e.preventDefault(); F.showPrivacy(); };
-      F.$$('#a-ch [data-c]').forEach((b) => { b.onclick = () => { channel = b.dataset.c; F.$$('#a-ch [data-c]').forEach((x) => x.classList.toggle('on', x === b)); }; });
       on('a-admin', () => { mode = 'email'; F.auth.render(); });
       on('a-back', () => { mode = 'phone'; F.auth.render(); });
       on('a-change', () => { step = 'phone'; F.auth.render(); });
       on('a-resend', () => guarded(() => send(channel)));
-      on('a-switch', () => guarded(() => send(channel === 'whatsapp' ? 'sms' : 'whatsapp')));
     },
 
     submit: function () {

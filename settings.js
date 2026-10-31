@@ -54,6 +54,13 @@
         toggle('s-motion', s.reduceMotion, 'تقليل الحركة', 'يوقّف الحركات والانتقالات المتحركة.') +
       '</div>' +
 
+      '<div class="card"><h2>اللغة</h2>' +
+        seg('lang', s.lang || 'ar', [['ar', 'العربية'], ['ckb', 'کوردی']]) +
+        '<p class="muted small mt-s">الترجمة الكردية (سۆرانی) تجريبية وتحتاج مراجعة قبل الإطلاق.</p>' +
+      '</div>' +
+
+      '<div class="card"><h2>الإشعارات</h2><div id="s-push"></div></div>' +
+
       '<div class="card"><h2>الرئيسية</h2>' +
         toggle('s-avail', s.onlyAvail, 'إظهار المتاح فقط', 'يفعّل فلتر «متاح فقط» تلقائياً عند فتح التطبيق.') +
         toggle('s-demo', s.hideDemo, 'إخفاء الكرينات التجريبية', 'الكرينات اللي بشارة «تجريبي» ما عندها أرقام حقيقية.') +
@@ -81,6 +88,10 @@
     F.$$('[data-seg="theme"] button', el).forEach((b) => {
       b.onclick = () => { F.saveSettings({ theme: b.dataset.v }); render(); };
     });
+    F.$$('[data-seg="lang"] button', el).forEach((b) => {
+      b.onclick = () => { F.saveSettings({ lang: b.dataset.v }); location.reload(); };
+    });
+    pushBlock(F.$('#s-push', el));
     F.$('#s-motion', el).onchange = (e) => F.saveSettings({ reduceMotion: e.target.checked });
     F.$('#s-avail', el).onchange = (e) => F.saveSettings({ onlyAvail: e.target.checked });
     F.$('#s-demo', el).onchange = (e) => F.saveSettings({ hideDemo: e.target.checked });
@@ -95,6 +106,18 @@
       render();
     };
     F.$('#s-update', el).onclick = updateApp;
+  }
+
+  async function pushBlock(box) {
+    if (!box) return;
+    if (!F.push || !F.push.supported()) { box.innerHTML = '<div class="muted small">هذا المتصفح ما يدعم الإشعارات. على الآيفون: أضف التطبيق للشاشة الرئيسية أول.</div>'; return; }
+    if (F.isGuest()) { box.innerHTML = '<div class="muted small">سجّل دخول حتى تفعّل الإشعارات.</div>'; return; }
+    const on = await F.push.enabled();
+    box.innerHTML = '<div class="row between"><div class="muted small">' + (on ? 'شغّالة على هذا الجهاز.' : 'تصلك تنبيهات الطلبات وقبولها حتى والتطبيق مسكّر.') + '</div>' +
+      '<button class="btn sm ' + (on ? 'secondary' : '') + '" id="s-push-btn">' + (on ? 'إيقاف' : 'تفعيل') + '</button></div>';
+    F.$('#s-push-btn', box).onclick = () => (on ? F.push.disable() : F.push.enable())
+      .then(() => { F.toast(on ? 'تم إيقاف الإشعارات' : 'تم تفعيل الإشعارات', 'ok'); pushBlock(box); })
+      .catch((e) => F.toast(F.errMsg(e), 'err'));
   }
 
   async function updateApp() {

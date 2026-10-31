@@ -30,7 +30,7 @@
     if (a && a.id) return track(a.id, a.targets);
     const m = F.modal(
       '<h2>' + F.icon('alert') + ' سيارتي تعطلت</h2>' +
-      '<p class="muted small">راح نرسل طلبك لأقرب 3 كرينات متاحة. أول واحد يقبل يتواصل وياك.</p>' +
+      '<p class="muted small">راح نرسل طلبك لأقرب 3 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.</p>' +
       '<form id="rq-form" novalidate>' +
         '<div class="field"><label>شنو المشكلة؟</label><select id="rq-issue">' +
           ISSUES.map((i) => '<option value="' + i[0] + '">' + i[1] + '</option>').join('') + '</select></div>' +
@@ -57,6 +57,7 @@
         });
         m.close();
         setActive({ id: r.request_id, targets: r.targets });
+        F.sb.fn('notify', { kind: 'new_request', request_id: r.request_id }).catch(() => {});
         if (!r.targets) F.toast('ما لكينا كرين متاح قريب هسه. طلبك مسجّل، وتكدر تتصل بالكرينات من القائمة.');
         track(r.request_id, r.targets);
       } catch (ex) {
