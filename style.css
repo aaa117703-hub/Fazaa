@@ -455,3 +455,19 @@ th { color: var(--muted); font-weight: 600; }
 
 /* ---------- تقليل الحركة (من الإعدادات) ---------- */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation: none !important; transition: none !important; }
+
+/* توجيه (ويز) */
+.pin.me .me-arrow { display: none; width: 100%; height: 100%; transition: transform .25s linear; }
+.maplibregl-marker[data-hd] .pin.me { width: 30px; height: 30px; background: var(--blue); box-shadow: 0 0 0 7px rgba(59, 130, 246, .28), 0 4px 10px rgba(0, 0, 0, .5); padding: 5px; }
+.maplibregl-marker[data-hd] .pin.me .me-arrow { display: block; }
+.map-follow { position: absolute; bottom: 28px; inset-inline-start: 10px; z-index: 5; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); display: grid; place-items: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); cursor: pointer; }
+.map-follow svg { width: 22px; height: 22px; }
+.map-follow.on { background: var(--blue); color: #fff; border-color: transparent; }
+.nav-card { margin-bottom: 12px; }
+.nav-banner { display: flex; align-items: center; gap: 12px; background: #1D4ED8; color: #fff; border-radius: 14px; padding: 12px 14px; margin: -2px 0 12px; }
+.nav-turn { width: 52px; height: 52px; flex: none; display: grid; place-items: center; background: rgba(255, 255, 255, .16); border-radius: 12px; }
+.nav-turn svg { width: 34px; height: 34px; transition: transform .2s; }
+.nav-dist { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.nav-text { font-size: 14px; opacity: .95; }
+.nav-compass { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; flex: none; }
+.nav-compass svg { width: 26px; height: 26px; transition: transform .3s; }

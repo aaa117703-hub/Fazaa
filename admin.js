@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const F = window.F;
-  let tab = 'overview';
+  let tab = 'overview', govFilter = '';
   let cache = { cranes: [], phones: {} };
 
   const TABS = [['overview', 'نظرة عامة'], ['cranes', 'الكرينات'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']];
@@ -33,9 +33,10 @@
     cache.cranes = rows || [];
     cache.phones = {};
     (cs || []).forEach((x) => { cache.phones[x.crane_id] = x.phone; });
-    const trs = cache.cranes.map((c) =>
+    const list = govFilter ? cache.cranes.filter((c) => c.governorate === govFilter) : cache.cranes;
+    const trs = list.map((c) =>
       '<tr><td>' + F.esc(c.name) + (c.is_demo ? ' <span class="badge">تجريبي</span>' : '') + '</td>' +
-      '<td>' + F.esc(c.type) + '</td>' +
+      '<td>' + F.esc(c.type) + '</td><td>' + F.esc(c.governorate || '—') + '</td>' +
       '<td><span class="dot ' + (c.status === 'available' ? 'green' : 'red') + '"></span>' + (c.status === 'available' ? 'متاح' : 'مشغول') + '</td>' +
       '<td style="direction:ltr">' + F.esc(cache.phones[c.id] || '—') + '</td>' +
       '<td><select data-pkg="' + c.id + '">' + F.PACKAGES.map((p) => '<option value="' + p.id + '"' + (p.id === c.package ? ' selected' : '') + '>' + p.name + '</option>').join('') + '</select></td>' +
@@ -44,9 +45,10 @@
         '<button class="btn sm ' + (c.verified ? 'green' : 'secondary') + '" data-a="verify" data-id="' + c.id + '">' + (c.verified ? 'موثق' : 'وثّق') + '</button>' +
         '<button class="btn sm danger" data-a="del" data-id="' + c.id + '">حذف</button></div></td></tr>').join('');
     return '<div class="card"><div class="row between"><h2 style="margin:0">الكرينات (' + cache.cranes.length + ')</h2><button class="btn sm" data-a="add">+ إضافة كرين</button></div>' +
+      '<div class="field mt-s"><select id="ad-gov"><option value="">كل المحافظات</option>' + F.GOVS.map((g) => '<option' + (g.name === govFilter ? ' selected' : '') + '>' + g.name + '</option>').join('') + '</select></div>' +
       '<p class="muted small mt-s">«وافق» = يظهر للزبائن. «وثّق» فقط بعد ما تشوف السائق وكرينه بنفسك.</p>' +
-      '<div class="table-wrap mt-s"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الحالة</th><th>الهاتف</th><th>الباقة</th><th></th></tr></thead><tbody>' +
-      (trs || '<tr><td colspan="6" class="muted">لا يوجد كرينات.</td></tr>') + '</tbody></table></div></div>';
+      '<div class="table-wrap mt-s"><table><thead><tr><th>الاسم</th><th>النوع</th><th>المحافظة</th><th>الحالة</th><th>الهاتف</th><th>الباقة</th><th></th></tr></thead><tbody>' +
+      (trs || '<tr><td colspan="7" class="muted">لا يوجد كرينات.</td></tr>') + '</tbody></table></div></div>';
   }
 
   async function requests() {
@@ -87,6 +89,7 @@
     try { body = await ({ overview: overview, cranes: cranes, requests: requests, reports: reports, health: health }[tab])(); }
     catch (e) { body = '<div class="warn">' + F.esc(F.errMsg(e)) + '</div>'; }
     el.innerHTML = hdr + body;
+    const gs = F.$('#ad-gov', el); if (gs) gs.onchange = () => { govFilter = gs.value; render(); };
     F.$$('[data-pkg]', el).forEach((s) => { s.onchange = () => patch(s.dataset.pkg, { package: s.value }, true); });
   }
 
@@ -118,7 +121,7 @@
       if (name.length < 3) { F.$('#ad-err', m.el).textContent = 'اكتب اسم الكرين.'; return; }
       if (!F.validPhone(phone)) { F.$('#ad-err', m.el).textContent = 'الرقم لازم 11 رقم ويبدأ بـ 07.'; return; }
       try {
-        const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation', body: { name: name, type: F.$('#ad-type', m.el).value, lat: loc.lat, lng: loc.lng, status: 'busy', listed: true, verified: false, package: 'free', is_demo: false } });
+        const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation', body: { name: name, type: F.$('#ad-type', m.el).value, governorate: F.govOf(loc.lat, loc.lng), lat: loc.lat, lng: loc.lng, status: 'busy', listed: true, verified: false, package: 'free', is_demo: false } });
         await F.sb.q('crane_contacts', '', { method: 'POST', body: { crane_id: r[0].id, phone: phone } });
         m.close(); F.toast('تمت الإضافة', 'ok'); render();
       } catch (ex) { F.$('#ad-err', m.el).textContent = F.errMsg(ex); }

@@ -185,7 +185,7 @@
     if (!sess || F.viewAs() === 'visitor') return null;
     const u = sess.user || {};
     const p = profile || {};
-    return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', car: p.car || '' };
+    return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', car: p.car || '', gov: p.governorate || '', createdAt: p.created_at || '' };
   };
 
   F.sb = { q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
@@ -198,7 +198,8 @@
       verified: !!c.verified, package: c.package, demo: !!c.is_demo,
       updatedAt: Date.parse(c.updated_at) || 0,
       rating: c.rating_avg != null ? +c.rating_avg : null, ratingCount: c.rating_count || 0,
-      d: c.distance_km != null ? +c.distance_km : null
+      d: c.distance_km != null ? +c.distance_km : null,
+      gov: c.governorate || ''
     }));
   };
 

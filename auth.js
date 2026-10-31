@@ -67,6 +67,7 @@
     }
     return '<h2 style="margin-top:0">كمّل بياناتك</h2><p class="muted small">مرة وحدة بس.</p>' +
       '<div class="field"><label for="a-name">الاسم الثلاثي</label><input id="a-name" autocomplete="name" placeholder="مثال: علي حسين كاظم"><div class="err" id="e-name"></div></div>' +
+      '<div class="field"><label for="a-gov">المحافظة اللي تسكنها</label><select id="a-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') + '</select><div class="err" id="e-gov"></div></div>' +
       '<div class="field"><label for="a-car">نوع السيارة</label><input id="a-car" placeholder="مثال: كيا سيراتو 2018"><div class="err" id="e-car"></div></div>' +
       '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">ابدأ</button>';
   }
@@ -143,10 +144,10 @@
           return done();
         }
         // step === 'profile'
-        const name = F.$('#a-name').value.trim().replace(/\s+/g, ' '), car = F.$('#a-car').value.trim();
-        const ok = errAt('e-name', name.split(' ').length >= 3 ? '' : 'اكتب الاسم الثلاثي (ثلاث كلمات).') & errAt('e-car', car.length >= 2 ? '' : 'اكتب نوع السيارة.');
+        const name = F.$('#a-name').value.trim().replace(/\s+/g, ' '), car = F.$('#a-car').value.trim(), gov = F.$('#a-gov').value;
+        const ok = errAt('e-name', name.split(' ').length >= 3 ? '' : 'اكتب الاسم الثلاثي (ثلاث كلمات).') & errAt('e-gov', gov ? '' : 'اختر محافظتك.') & errAt('e-car', car.length >= 2 ? '' : 'اكتب نوع السيارة.');
         if (!ok) return;
-        await F.sb.saveProfile({ full_name: name, phone: phone, car: car });
+        await F.sb.saveProfile({ full_name: name, phone: phone, car: car, governorate: gov });
         done();
       });
     }

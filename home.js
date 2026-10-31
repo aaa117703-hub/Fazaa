@@ -18,6 +18,7 @@
       '<button class="btn secondary grow" id="h-guide">' + F.icon('shield') + ' شنو أسوي؟</button>' +
       '<button class="btn secondary grow" id="h-share">' + F.icon('share') + ' أرسل موقعي</button>' +
     '</div>' +
+    '<div id="h-route"></div>' +
     '<div class="home-grid">' +
       '<div id="map"></div>' +
       '<div>' +
@@ -49,7 +50,7 @@
     let arr = items.filter((c) => !(F.getSettings().hideDemo && c.demo)).map((c) => Object.assign({ d: F.dist(me, c) }, c));
     if (state.onlyAvail) arr = arr.filter((c) => c.status === 'available');
     if (state.type) arr = arr.filter((c) => c.type === state.type);
-    if (state.gov) arr = arr.filter((c) => F.govOf(c.lat, c.lng) === state.gov);
+    if (state.gov) arr = arr.filter((c) => (c.gov || F.govOf(c.lat, c.lng)) === state.gov);
     arr.sort((a, b) => {
       const av = (a.status === 'available' ? 0 : 1) - (b.status === 'available' ? 0 : 1);
       return av || a.d - b.d;
@@ -69,10 +70,11 @@
           '<div class="avatar">' + F.icon('crane') + '</div>' +
           '<div class="grow">' +
             '<h3>' + F.esc(c.name) + badges + '</h3>' +
-            '<div class="sub">' + F.esc(c.type) + ' · ' + F.fmtDist(c.d) + (c.ratingCount ? ' · ★ ' + c.rating.toFixed(1) + ' (' + c.ratingCount + ')' : '') + '</div>' +
+            '<div class="sub">' + F.esc(c.type) + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + F.fmtDist(c.d) + (c.ratingCount ? ' · ★ ' + c.rating.toFixed(1) + ' (' + c.ratingCount + ')' : '') + '</div>' +
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
-          '<button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
+          '<div class="stack" style="gap:6px"><button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
+          '<button class="btn sm secondary" data-route="' + F.esc(c.id) + '">' + F.icon('cursor') + ' طريق</button></div>' +
         '</div>' +
       '</article>'
     );
@@ -100,7 +102,7 @@
   function renderMap(list) {
     if (!map) return;
     const me = F.loc();
-    if (!meMarker) meMarker = F.marker(map, me.lat, me.lng, 'me', '', 'موقعك');
+    if (!meMarker) meMarker = F.marker(map, me.lat, me.lng, 'me', F.navArrowSvg || '', 'موقعك');
     else F.markerSet(meMarker, me.lat, me.lng, 'me');
 
     const keep = {};
@@ -212,9 +214,19 @@
       F.$('#map', el).innerHTML = '<div class="empty">الخريطة غير متوفرة بدون إنترنت أول مرة. القائمة تشتغل عادي.</div>';
     }
 
+    let lastList = 0;
+    F.nav.init(map, F.$('#h-route', el), {
+      getMe: () => meMarker,
+      onLoc: (l) => {
+        if (meMarker) F.markerSet(meMarker, l.lat, l.lng, 'me');
+        if (Date.now() - lastList > 10000) { lastList = Date.now(); refresh(); }
+      }
+    });
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-call]');
       if (b) return call(b.dataset.call);
+      const r = e.target.closest('[data-route]');
+      if (r) { const c = items.find((x) => x.id === r.dataset.route); if (c) F.nav.routeTo(c); return; }
       if (e.target.closest('[data-req]')) F.request.start();
     });
     F.$('#h-gps', el).onclick = () => locateGPS(false);
