@@ -102,7 +102,7 @@
   function renderMap(list) {
     if (!map) return;
     const me = F.loc();
-    if (!meMarker) meMarker = F.marker(map, me.lat, me.lng, 'me', F.navArrowSvg || '', 'موقعك');
+    if (!meMarker) { meMarker = F.marker(map, me.lat, me.lng, 'me', F.navArrowSvg || '', 'موقعك'); F.nav.paint(); }
     else F.markerSet(meMarker, me.lat, me.lng, 'me');
 
     const keep = {};
@@ -184,10 +184,37 @@
       F.setLoc(p.lat, p.lng, 'gps');
       await load();
       fitMap();
+      F.nav.startLive(); // السهم يتحرك ويدور مع موقعك
       if (!silent) F.toast('تم تحديد موقعك', 'ok');
+      return true;
     } catch (e) {
       if (!silent) F.toast(F.gpsError(e), 'err');
+      return e;
     }
+  }
+
+  // أول ما يفتح التطبيق: نطلب إذن الموقع تلقائياً (المتصفح يعرض نافذة السماح)
+  let askedOnce = false;
+  async function autoLocate() {
+    if (!navigator.geolocation) return;
+    let state = 'prompt';
+    try { if (navigator.permissions) state = (await navigator.permissions.query({ name: 'geolocation' })).state; } catch (e) {}
+    if (state === 'denied') return needLocation();
+    const r = await locateGPS(true);
+    if (r !== true && r && r.code === 1) needLocation();
+  }
+  function needLocation() {
+    if (askedOnce) return;
+    askedOnce = true;
+    const m = F.modal(
+      '<h2>' + F.icon('pin') + ' فعّل الموقع</h2>' +
+      '<p class="muted">نحتاج موقعك حتى نعرض أقرب كرين ونوصّله لك. اضغط «السماح» لما يطلب المتصفح، ' +
+      'وإذا انرفض: من إعدادات المتصفح ← إعدادات الموقع ← اسمح لهذا الموقع.</p>' +
+      '<div class="stack mt"><button class="btn block" id="nl-retry">حاول مرة ثانية</button>' +
+      '<button class="btn secondary block" id="nl-manual">أحدّد موقعي يدوياً</button></div>'
+    );
+    F.$('#nl-retry', m.el).onclick = async () => { m.close(); const r = await locateGPS(false); if (r === true) F.nav.startLive(); };
+    F.$('#nl-manual', m.el).onclick = () => { m.close(); locateManual(); };
   }
 
   async function locateManual() {
@@ -252,8 +279,8 @@
 
     refresh();
     load().then(fitMap);
-    // أول مرة: نحاول GPS إذا المستخدم وافق (المتصفح راح يسأله بنفسه)
-    if (F.get(F.K.consent, false) && F.loc().source === 'default') locateGPS(true);
+    // نطلب الموقع تلقائياً. إذا موقعه محفوظ من قبل نحدّثه بهدوء ونشغّل السهم الحي.
+    autoLocate();
   }
 
   F.home = {

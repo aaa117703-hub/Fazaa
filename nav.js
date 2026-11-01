@@ -53,7 +53,7 @@
   /* ---------- الحالة ---------- */
   let map = null, panel = null, opts = {}, ctl = null;
   let target = null, route = null, stepIdx = 1, following = false, voice = false;
-  let watchId = null, last = null, heading = null, lastReroute = 0, spoken = {};
+  let watchId = null, last = null, heading = null, compass = null, live = false, compassOn = false, paintQ = 0, lastReroute = 0, spoken = {};
 
   const ARROW = '<svg class="me-arrow" viewBox="0 0 24 24"><path d="M12 2.5 19 21l-7-4-7 4z" fill="#fff"/></svg>';
   F.navArrowSvg = ARROW;
@@ -86,18 +86,40 @@
   }
 
   function meEl() { const m = opts.getMe && opts.getMe(); return m ? m.getElement() : null; }
+  // الاتجاه: من حركة GPS إذا تتحرك، وإلا البوصلة، وإلا آخر اتجاه معروف
+  const curHeading = () => (heading != null ? heading : compass);
   function paintHeading() {
     const el = meEl();
     if (!el) return;
-    if (heading == null || !(following || route)) { delete el.dataset.hd; return; }
-    el.dataset.hd = '1';
+    el.dataset.hd = '1'; // السهم دائماً ظاهر
     const a = el.querySelector('.me-arrow');
-    if (a) a.style.transform = 'rotate(' + Math.round(heading - (map ? map.getBearing() : 0)) + 'deg)';
+    const h = curHeading();
+    if (a) a.style.transform = 'rotate(' + Math.round((h == null ? 0 : h) - (map ? map.getBearing() : 0)) + 'deg)';
+  }
+  function paintSoon() { if (paintQ) return; paintQ = requestAnimationFrame(() => { paintQ = 0; paintHeading(); }); }
+
+  // بوصلة الجهاز (للسهم لما تكون واقف)
+  function startCompass() {
+    if (compassOn) return;
+    compassOn = true;
+    const on = (e) => {
+      let h = null;
+      if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
+      else if (e.absolute && e.alpha != null) h = (360 - e.alpha) % 360;
+      if (h == null || isNaN(h)) return;
+      compass = h; paintSoon();
+    };
+    window.addEventListener('deviceorientationabsolute', on, true);
+    window.addEventListener('deviceorientation', on, true);
+    // آيفون يحتاج إذن بلمسة من المستخدم
+    document.addEventListener('click', () => {
+      try { if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) DeviceOrientationEvent.requestPermission().catch(() => {}); } catch (e) {}
+    }, { once: true });
   }
 
   function camera(l) {
     if (!map || !following) return;
-    map.easeTo({ center: [l.lng, l.lat], bearing: heading != null ? heading : map.getBearing(), pitch: 55, zoom: Math.max(map.getZoom(), 16), duration: 900, essential: true });
+    map.easeTo({ center: [l.lng, l.lat], bearing: curHeading() != null ? curHeading() : map.getBearing(), pitch: 55, zoom: Math.max(map.getZoom(), 16), duration: 900, essential: true });
   }
 
   /* ---------- الموقع المباشر ---------- */
@@ -113,11 +135,25 @@
     if (route) track(l);
     draw();
   }
-  function startWatch() {
+  function startWatch(silent) {
     if (watchId !== null || !navigator.geolocation) return;
-    watchId = navigator.geolocation.watchPosition(onPos, (e) => { F.toast(F.gpsError(e), 'err'); setFollow(false); }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
+    watchId = navigator.geolocation.watchPosition(onPos, (e) => {
+      if (silent) { stopWatch(true); return; }
+      F.toast(F.gpsError(e), 'err'); setFollow(false);
+    }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
   }
-  function stopWatch() { if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId); watchId = null; }
+  function stopWatch(force) {
+    if (live && !force) return; // التتبّع الحي للسهم يبقى شغال
+    if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  // تتبّع حي هادئ: السهم يتحرك ويدور مع المستخدم حتى بدون مسار
+  function startLive() {
+    live = true;
+    startCompass();
+    startWatch(true);
+    paintHeading();
+  }
 
   function track(l) {
     const pr = progress(route.coords, l);
@@ -254,6 +290,6 @@
     map.on('rotate', paintHeading);
   }
 
-  F.nav = { init: init, routeTo: routeTo, clear: clear, follow: setFollow,
+  F.nav = { init: init, startLive: startLive, paint: paintHeading, routeTo: routeTo, clear: clear, follow: setFollow,
     _t: { km: km, bearing: bearing, stepInfo: stepInfo, progress: progress, fmtKm: fmtKm, fmtMin: fmtMin } };
 })();
