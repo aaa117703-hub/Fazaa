@@ -3,7 +3,7 @@
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'sanad-v12';
+const VERSION = 'sanad-v11';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -14,6 +14,7 @@ const SHELL_FILES = [
   './index.html',
   './manifest.json',
   './style.css',
+  './mapstyle.js',
   './data.js',
   './icons.js',
   './sb.js',
@@ -82,7 +83,7 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
 
   // خريطة OpenFreeMap: النمط وملف TileJSON شبكة أولاً (لأنهم يتغيّرون)، والبلاطات والخطوط كاش أولاً
-  if (url.hostname.endsWith('openfreemap.org') || url.hostname.endsWith('basemaps.cartocdn.com')) {
+  if (url.hostname.endsWith('openfreemap.org')) {
     const fresh = url.pathname.startsWith('/styles/') || url.pathname === '/planet';
     e.respondWith(
       caches.open(TILES).then(async (cache) => {
