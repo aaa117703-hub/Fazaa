@@ -216,6 +216,7 @@
   F.locLabel = function (l) {
     if (l.source === 'gps') return 'موقعك الحالي (GPS) · ' + F.ago(l.at);
     if (l.source === 'manual') return 'موقع حدّدته يدوياً';
+    if (l.source === 'ip') return 'موقع تقريبي — اضغط «موقعي» للدقة';
     return 'موقعك غير محدد — فعّل GPS أو اختر محافظتك';
   };
 
@@ -240,11 +241,10 @@
   // نجرّب النمط الداكن، وإذا ما انفتح نرجع للنمط الافتراضي.
   F.MAP_STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
   F.MAP_STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/liberty';
-  // الأول: نمط سند جايك (على طريقة ويز). إذا فشل نرجع لأنماط OpenFreeMap الجاهزة.
+  // أنماط OpenFreeMap الجاهزة (متجهة وحادة، بكل التفاصيل: مباني وأماكن وشوارع)
   F.mapStyles = () => {
     const t = F.resolveTheme() === 'light' ? 'light' : 'dark';
-    const own = F.wazeStyle ? [F.wazeStyle(t)] : [];
-    return own.concat(t === 'light' ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK] : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT]);
+    return t === 'light' ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK] : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT];
   };
   F.hasMap = () => !!window.maplibregl;
 
@@ -256,6 +256,9 @@
         const tf = l.layout && l.layout['text-field'];
         if (tf && JSON.stringify(tf).indexOf('name') > -1) {
           map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', 'name:ar'], ['get', 'name']]);
+          // هالة أوضح حول النص حتى يقرأ بسهولة فوق الخريطة
+          const hw = map.getPaintProperty(l.id, 'text-halo-width');
+          if (typeof hw !== 'object' && (hw == null || hw < 1.6)) map.setPaintProperty(l.id, 'text-halo-width', 1.8);
         }
       });
     } catch (e) {}

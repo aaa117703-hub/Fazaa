@@ -17,7 +17,7 @@
       return F.setLoc(p.lat, p.lng, 'gps');
     } catch (e) {
       const l = F.loc();
-      if (l.source !== 'default') return l;
+      if (l.source === 'gps' || l.source === 'manual') return l;
       F.toast(F.gpsError(e), 'err');
       const p = await F.pickLocation(l);
       return p ? F.setLoc(p.lat, p.lng, 'manual') : null;
