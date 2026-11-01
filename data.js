@@ -240,11 +240,21 @@
   // نجرّب النمط الداكن، وإذا ما انفتح نرجع للنمط الافتراضي.
   F.MAP_STYLE_DARK = 'https://tiles.openfreemap.org/styles/dark';
   F.MAP_STYLE_LIGHT = 'https://tiles.openfreemap.org/styles/liberty';
-  // الأول: نمط سند جايك (على طريقة ويز). إذا فشل نرجع لأنماط OpenFreeMap الجاهزة.
+  // الأول: بلاطات جاهزة (صور) أسماؤها العربية مرسومة من الخادم، فتطلع واضحة ومتصلة الحروف.
+  // إذا ما تحمّلت نرجع لأنماط OpenFreeMap (متجهة).
+  const rasterStyle = (kind) => {
+    const hi = (window.devicePixelRatio || 1) > 1.4 ? '@2x' : '';
+    return {
+      version: 8,
+      sources: { base: { type: 'raster', tileSize: 256, maxzoom: 19, attribution: '© OpenStreetMap © CARTO',
+        tiles: ['a', 'b', 'c', 'd'].map((x) => 'https://' + x + '.basemaps.cartocdn.com/' + kind + '/{z}/{x}/{y}' + hi + '.png') } },
+      layers: [{ id: 'base', type: 'raster', source: 'base' }]
+    };
+  };
   F.mapStyles = () => {
     const t = F.resolveTheme() === 'light' ? 'light' : 'dark';
-    const own = F.wazeStyle ? [F.wazeStyle(t)] : [];
-    return own.concat(t === 'light' ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK] : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT]);
+    const own = rasterStyle(t === 'light' ? 'rastertiles/voyager' : 'dark_all');
+    return [own].concat(t === 'light' ? [F.MAP_STYLE_LIGHT, F.MAP_STYLE_DARK] : [F.MAP_STYLE_DARK, F.MAP_STYLE_LIGHT]);
   };
   F.hasMap = () => !!window.maplibregl;
 
@@ -269,7 +279,7 @@
       try { ml.setRTLTextPlugin('https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js', true); } catch (e) {}
     }
     const styles = F.mapStyles();
-    let idx = 0, loaded = false;
+    let idx = 0, loaded = false, sawTile = false;
     const map = new ml.Map({
       container: container,
       style: styles[0],
@@ -281,10 +291,12 @@
     });
     try { map.touchZoomRotate.disableRotation(); } catch (e) {}
     map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-left');
+    const next = () => { if (idx < styles.length - 1) { idx++; loaded = false; map.setStyle(styles[idx]); } };
     map.on('style.load', () => { loaded = true; F.localizeMap(map); });
-    map.on('error', () => {
-      if (!loaded && idx < styles.length - 1) { idx++; map.setStyle(styles[idx]); }
-    });
+    map.on('data', (e) => { if (e.sourceId === 'base' && e.tile) sawTile = true; });
+    map.on('error', () => { if (!loaded) next(); });
+    // البلاطات الجاهزة ما تفشل عند تحميل النمط، فنراقبها: إذا ما وصل ولا بلاطة خلال 8 ثواني ننتقل للنمط التالي
+    setTimeout(() => { if (idx === 0 && !sawTile) next(); }, 8000);
     return map;
   };
 
