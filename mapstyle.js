@@ -62,19 +62,19 @@
       { id: 'boundary', type: 'line', source: 'omt', 'source-layer': 'boundary', filter: ['<=', ['get', 'admin_level'], 4], paint: { 'line-color': c.boundary, 'line-width': 1, 'line-dasharray': [4, 3] } },
       {
         id: 'road-label', type: 'symbol', source: 'omt', 'source-layer': 'transportation_name', minzoom: 13,
-        layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:ar'], ['get', 'name']], 'text-font': ['Noto Sans Regular'], 'text-size': z([[13, 10], [18, 14]]), 'text-letter-spacing': 0 },
-        paint: { 'text-color': c.text, 'text-halo-color': c.halo, 'text-halo-width': 1.6 }
+        layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:ar'], ['get', 'name']], 'text-font': ['Noto Sans Bold'], 'text-size': z([[13, 11], [18, 15]]), 'text-letter-spacing': 0 },
+        paint: { 'text-color': c.text, 'text-halo-color': c.halo, 'text-halo-width': 2.2 }
       },
       {
         id: 'water-label', type: 'symbol', source: 'omt', 'source-layer': 'water_name',
-        layout: { 'text-field': ['coalesce', ['get', 'name:ar'], ['get', 'name']], 'text-font': ['Noto Sans Italic'], 'text-size': 12 },
+        layout: { 'text-field': ['coalesce', ['get', 'name:ar'], ['get', 'name']], 'text-font': ['Noto Sans Regular'], 'text-size': 12.5 },
         paint: { 'text-color': c.waterText, 'text-halo-color': c.halo, 'text-halo-width': 1.2 }
       },
       {
         id: 'place-label', type: 'symbol', source: 'omt', 'source-layer': 'place', filter: cls(['city', 'town', 'village', 'suburb', 'neighbourhood', 'quarter']),
         layout: {
           'text-field': ['coalesce', ['get', 'name:ar'], ['get', 'name']], 'text-font': ['Noto Sans Bold'],
-          'text-size': ['match', ['get', 'class'], 'city', 18, 'town', 15, 'village', 13, 11.5], 'text-max-width': 8
+          'text-size': ['match', ['get', 'class'], 'city', 19, 'town', 16, 'village', 14, 12.5], 'text-max-width': 8
         },
         paint: { 'text-color': c.placeText, 'text-halo-color': c.halo, 'text-halo-width': 1.8 }
       }

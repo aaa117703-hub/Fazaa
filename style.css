@@ -458,7 +458,7 @@ th { color: var(--muted); font-weight: 600; }
 
 /* توجيه (ويز) */
 .pin.me .me-arrow { display: none; width: 100%; height: 100%; transition: transform .25s linear; }
-.maplibregl-marker[data-hd] .pin.me { width: 30px; height: 30px; background: var(--blue); box-shadow: 0 0 0 7px rgba(59, 130, 246, .28), 0 4px 10px rgba(0, 0, 0, .5); padding: 5px; }
+.maplibregl-marker[data-hd] .pin.me { width: 36px; height: 36px; background: var(--blue); border: 3px solid #fff; box-shadow: 0 0 0 8px rgba(59, 130, 246, .28), 0 4px 12px rgba(0, 0, 0, .55); padding: 4px; }
 .maplibregl-marker[data-hd] .pin.me .me-arrow { display: block; }
 .map-follow { position: absolute; bottom: 28px; inset-inline-start: 10px; z-index: 5; width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); display: grid; place-items: center; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); cursor: pointer; }
 .map-follow svg { width: 22px; height: 22px; }
