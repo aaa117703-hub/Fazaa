@@ -124,6 +124,20 @@
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
+    // شريط «ماكو إنترنت» حتى يعرف الزبون ليش شي ما يشتغل
+    const net = document.createElement('div');
+    net.id = 'net-bar'; net.hidden = navigator.onLine !== false; net.setAttribute('role', 'status');
+    net.textContent = 'ماكو إنترنت — الاتصال بالسائقين يشتغل، والباقي يرجع لما يرجع النت';
+    document.body.appendChild(net);
+    const upd = () => {
+      const off = navigator.onLine === false;
+      net.hidden = !off;
+      if (!off && F.home && F.home.refresh) F.home.refresh();
+    };
+    window.addEventListener('online', upd);
+    window.addEventListener('offline', upd);
+    upd();
+
     window.addEventListener('hashchange', route);
     window.addEventListener('resize', moveInd);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveInd);

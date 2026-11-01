@@ -122,7 +122,10 @@
       return head + '<div class="hero" style="margin-top:10px"><h2>' + F.icon('check-circle') + ' انقبل طلبك</h2>' +
         '<div class="name">' + F.esc(c ? c.name : 'كرين') + (c && c.verified ? ' <span class="badge green">موثق</span>' : '') + '</div>' +
         '<div class="sub">' + F.esc(c ? c.type : '') + ' — اتصل وتفاهم على السعر ووقت الوصول.</div>' +
-        (c && c.phone ? '<a class="btn big block green" href="tel:' + F.esc(c.phone) + '">' + F.icon('phone') + ' اتصل بالسائق</a>' : '') + '</div>' +
+        (c && c.phone ? '<a class="btn big block green" id="rq-tel" href="tel:' + F.esc(c.phone) + '">' + F.icon('phone') + ' اتصل بالسائق</a>' +
+          '<div class="row" style="margin-top:8px"><a class="btn secondary grow" id="rq-wa" href="' + F.esc(F.contact.waLink(c.phone)) + '" target="_blank" rel="noopener">' + F.icon('share') + ' واتساب + موقعي</a>' +
+          '<button class="btn secondary grow" id="rq-copy">نسخ الرقم</button></div>' +
+          '<div class="muted small center" style="margin-top:8px;direction:ltr">' + F.esc(c.phone) + '</div>' : '') + '</div>' +
         '<div class="stack mt"><button class="btn secondary block" id="rq-report">' + F.icon('alert') + ' إبلاغ عن مشكلة</button><button class="btn secondary block" id="rq-hide">إخفاء</button></div>';
     }
     if (r.status === 'completed') {
@@ -152,6 +155,9 @@
     on('rq-again', () => { setActive(null); cur = null; mod.m.close(); start(); });
     on('rq-skip', () => { setActive(null); cur = null; mod.m.close(); if (F.home) F.home.refresh(); });
     on('rq-report', () => report(cur.accepted_crane_id));
+    on('rq-tel', () => F.contact.remember(cur.accepted_crane_id, cur.crane && cur.crane.name));
+    on('rq-wa', () => F.contact.remember(cur.accepted_crane_id, cur.crane && cur.crane.name));
+    on('rq-copy', () => F.contact.copy(cur.crane.phone));
     const st = F.$('#rq-stars', el);
     if (st) {
       let val = 0;

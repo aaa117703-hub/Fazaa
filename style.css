@@ -471,3 +471,13 @@ th { color: var(--muted); font-weight: 600; }
 .nav-text { font-size: 14px; opacity: .95; }
 .nav-compass { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; flex: none; }
 .nav-compass svg { width: 26px; height: 26px; transition: transform .3s; }
+
+/* هياكل التحميل + شريط الإنترنت */
+.skel { height: 84px; border-radius: 16px; background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%); background-size: 200% 100%; animation: skel 1.2s linear infinite; }
+.skel + .skel { margin-top: 10px; }
+@keyframes skel { to { background-position: -200% 0; } }
+#net-bar { position: fixed; z-index: 400; top: 0; inset-inline: 0; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; background: var(--red); color: #fff; font-size: 13px; font-weight: 700; text-align: center; }
+#net-bar[hidden] { display: none; }
+.btn { min-height: 44px; }
+.btn.sm { min-height: 40px; }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }

@@ -74,7 +74,8 @@
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
           '<div class="stack" style="gap:6px"><button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
-          '<button class="btn sm secondary" data-route="' + F.esc(c.id) + '">' + F.icon('cursor') + ' طريق</button></div>' +
+          '<div class="row" style="gap:6px">' + (c.demo ? '' : '<button class="btn sm secondary grow" data-wa="' + F.esc(c.id) + '" aria-label="واتساب">' + F.icon('share') + ' واتساب</button>') +
+          '<button class="btn sm secondary grow" data-route="' + F.esc(c.id) + '">' + F.icon('cursor') + ' طريق</button></div></div>' +
         '</div>' +
       '</article>'
     );
@@ -97,6 +98,21 @@
       '<div class="sub">' + F.esc(best.type) + ' · ' + F.fmtDist(best.d) + ' عنك · ' + status(best).txt + '</div>' +
       '<button class="btn big block" data-req="1">' + F.icon('alert') + ' أرسل طلب لأقرب 3 كرينات</button>' +
       '<button class="btn block green" style="margin-top:8px" data-call="' + F.esc(best.id) + '">' + F.icon('phone') + ' أو اتصل مباشرة بأقرب كرين</button></div>';
+  }
+
+  const skeleton = () => '<div class="skel"></div>'.repeat(3);
+  function emptyHtml() {
+    const filtered = state.onlyAvail || state.type || state.gov;
+    if (loadErr) return '<div class="empty">تعذّر تحميل الكرينات. تأكد من الإنترنت.<br><button class="btn secondary mt" data-retry="1">إعادة المحاولة</button></div>';
+    return '<div class="empty">' + (filtered ? 'ما كو كرينات تطابق الفلتر.' : 'ما كو كرينات مسجّلة قريبة منك هسه.') +
+      '<br>' + (filtered ? '<button class="btn secondary mt" data-clear="1">إلغاء الفلاتر</button> ' : '') +
+      '<button class="btn mt" data-req="1">أرسل طلب لأقرب كرينات</button></div>';
+  }
+  function clearFilters() {
+    state.onlyAvail = false; state.type = ''; state.gov = '';
+    F.$('#h-avail', el).classList.remove('on');
+    F.$('#h-gov', el).value = ''; F.$('#h-type', el).value = '';
+    refresh();
   }
 
   function renderMap(list) {
@@ -148,7 +164,7 @@
     if (F.request) F.request.banner(F.$('#h-active', el));
     F.$('#h-list', el).innerHTML = list.length
       ? list.map(cardHtml).join('')
-      : '<div class="empty">' + (loading ? 'جاري التحميل…' : 'ما كو كرينات تطابق الفلتر.') + '</div>';
+      : loading ? skeleton() : emptyHtml();
     renderMap(list);
   }
 
@@ -161,21 +177,13 @@
     } catch (e) { loadErr = true; if (!items.length) F.toast(F.errMsg(e), 'err'); }
     loading = false;
     refresh();
+    F.contact.warm(sorted());
     return items;
   }
 
-  async function call(id) {
+  function callOf(id, how) {
     const c = items.find((x) => x.id === id);
-    if (!c) return;
-    if (F.isGuest()) return F.requireLogin('أرقام الكرينات تظهر للمسجّلين فقط، حتى نحمي السائقين من الإزعاج.');
-    if (c.demo) return F.toast('هذا كرين تجريبي، ما عنده رقم حقيقي.');
-    try {
-      const r = await F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + encodeURIComponent(id));
-      const phone = r && r[0] && r[0].phone;
-      if (!phone) return F.toast('ما لكينا رقم هذا الكرين.', 'err');
-      F.sb.q('calls', '', { method: 'POST', body: { crane_id: id, user_id: F.sb.uid() } }).catch(() => {});
-      window.location.href = 'tel:' + phone;
-    } catch (e) { F.toast(F.errMsg(e), 'err'); }
+    if (c) F.contact[how](c);
   }
 
   async function locateGPS(silent) {
@@ -247,9 +255,13 @@
     });
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-call]');
-      if (b) return call(b.dataset.call);
+      if (b) return callOf(b.dataset.call, 'call');
+      const w = e.target.closest('[data-wa]');
+      if (w) return callOf(w.dataset.wa, 'whatsapp');
+      if (e.target.closest('[data-clear]')) return clearFilters();
       const r = e.target.closest('[data-route]');
       if (r) { const c = items.find((x) => x.id === r.dataset.route); if (c) F.nav.routeTo(c); return; }
+      if (e.target.closest('[data-retry]')) { load(); return; }
       if (e.target.closest('[data-req]')) F.request.start();
     });
     F.$('#h-gps', el).onclick = () => locateGPS(false);
@@ -277,6 +289,7 @@
     load().then(fitMap);
     // نطلب الموقع تلقائياً. إذا موقعه محفوظ من قبل نحدّثه بهدوء ونشغّل السهم الحي.
     autoLocate();
+    setTimeout(F.contact.followUp, 600);
   }
 
   F.home = {
