@@ -137,7 +137,7 @@
     if (l.source !== 'default') b.extend([l.lng, l.lat]);
     Object.values(markers).forEach((m) => b.extend(m.getLngLat()));
     if (b.isEmpty()) return map.flyTo({ center: [F.CENTER.lng, F.CENTER.lat], zoom: 6, duration: 700 });
-    map.fitBounds(b, { padding: 50, maxZoom: l.source === 'default' ? 9 : 15, duration: 700 });
+    map.fitBounds(b, { padding: 50, maxZoom: l.source === 'default' ? 9 : l.source === 'ip' ? 11 : 15, duration: 700 });
   }
 
   function refresh() {
@@ -193,28 +193,24 @@
     }
   }
 
-  // أول ما يفتح التطبيق: نطلب إذن الموقع تلقائياً (المتصفح يعرض نافذة السماح)
-  let askedOnce = false;
+  // بدون أي نافذة سماح: إذا الإذن ممنوح مسبقاً نحدّد بدقة بهدوء، وإلا نستخدم موقعاً تقريبياً من الإنترنت.
+  // طلب GPS (ونافذة المتصفح) يصير فقط لما المستخدم يضغط «موقعي» أو يرسل طلب.
+  async function ipLocate() {
+    try {
+      const r = await fetch('https://ipwho.is/?fields=success,latitude,longitude,country_code');
+      const j = await r.json();
+      if (j && j.success && j.country_code === 'IQ' && F.loc().source !== 'gps' && F.loc().source !== 'manual') {
+        F.setLoc(j.latitude, j.longitude, 'ip');
+        await load();
+        fitMap();
+      }
+    } catch (e) {}
+  }
   async function autoLocate() {
-    if (!navigator.geolocation) return;
     let state = 'prompt';
     try { if (navigator.permissions) state = (await navigator.permissions.query({ name: 'geolocation' })).state; } catch (e) {}
-    if (state === 'denied') return needLocation();
-    const r = await locateGPS(true);
-    if (r !== true && r && r.code === 1) needLocation();
-  }
-  function needLocation() {
-    if (askedOnce) return;
-    askedOnce = true;
-    const m = F.modal(
-      '<h2>' + F.icon('pin') + ' فعّل الموقع</h2>' +
-      '<p class="muted">نحتاج موقعك حتى نعرض أقرب كرين ونوصّله لك. اضغط «السماح» لما يطلب المتصفح، ' +
-      'وإذا انرفض: من إعدادات المتصفح ← إعدادات الموقع ← اسمح لهذا الموقع.</p>' +
-      '<div class="stack mt"><button class="btn block" id="nl-retry">حاول مرة ثانية</button>' +
-      '<button class="btn secondary block" id="nl-manual">أحدّد موقعي يدوياً</button></div>'
-    );
-    F.$('#nl-retry', m.el).onclick = async () => { m.close(); const r = await locateGPS(false); if (r === true) F.nav.startLive(); };
-    F.$('#nl-manual', m.el).onclick = () => { m.close(); locateManual(); };
+    if (state === 'granted' && navigator.geolocation) return locateGPS(true);
+    if (F.loc().source === 'default' || F.loc().source === 'ip') ipLocate();
   }
 
   async function locateManual() {
