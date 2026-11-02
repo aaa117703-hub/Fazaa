@@ -3,11 +3,12 @@
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'sanad-v14';
+const VERSION = 'sanad-v15';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
 const MAX_TILES = 600;
+const OFFLINE = 'offline-maps'; // خرائط نزّلها المستخدم: ما تنحذف ولا تتقلّص
 
 const SHELL_FILES = [
   './',
@@ -23,6 +24,9 @@ const SHELL_FILES = [
   './nav.js',
   './push.js',
   './lang.js',
+  './iraqmap.js',
+  './shops.js',
+  './offline.js',
   './home.js',
   './driver.js',
   './packages.js',
@@ -64,7 +68,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION)).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => !k.startsWith(VERSION) && k !== OFFLINE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -85,19 +89,21 @@ self.addEventListener('fetch', (e) => {
   // خريطة OpenFreeMap: النمط وملف TileJSON شبكة أولاً (لأنهم يتغيّرون)، والبلاطات والخطوط كاش أولاً
   if (url.hostname.endsWith('openfreemap.org')) {
     const fresh = url.pathname.startsWith('/styles/') || url.pathname === '/planet';
-    e.respondWith(
-      caches.open(TILES).then(async (cache) => {
-        const hit = await cache.match(req);
-        if (hit && !fresh) return hit;
-        try {
-          const res = await fetch(req);
-          if (res && res.ok) { cache.put(req, res.clone()); trim(TILES, MAX_TILES); }
-          return res;
-        } catch (err) {
-          return hit || Response.error();
-        }
-      })
-    );
+    e.respondWith((async () => {
+      const off = await caches.open(OFFLINE);
+      const saved = await off.match(req);
+      if (saved && !fresh) return saved; // الخرائط المنزّلة أولاً
+      const cache = await caches.open(TILES);
+      const hit = saved || await cache.match(req);
+      if (hit && !fresh) return hit;
+      try {
+        const res = await fetch(req);
+        if (res && res.ok) { cache.put(req, res.clone()); trim(TILES, MAX_TILES); }
+        return res;
+      } catch (err) {
+        return hit || saved || Response.error();
+      }
+    })());
     return;
   }
 

@@ -69,6 +69,7 @@
       '<div class="card"><h2>التطبيق</h2>' +
         '<div class="stack">' +
           installBlock +
+          '<button class="btn secondary" id="s-offline">' + F.icon('map') + ' خرائط دون اتصال</button>' +
           '<button class="btn secondary" id="s-update">' + F.icon('radar') + ' تحديث التطبيق (مسح الذاكرة المؤقتة)</button>' +
         '</div>' +
         '<p class="muted small mt-s">استخدم «تحديث التطبيق» إذا ما ظهرت لك آخر التعديلات.</p>' +
@@ -95,6 +96,7 @@
     F.$('#s-motion', el).onchange = (e) => F.saveSettings({ reduceMotion: e.target.checked });
     F.$('#s-avail', el).onchange = (e) => F.saveSettings({ onlyAvail: e.target.checked });
     F.$('#s-demo', el).onchange = (e) => F.saveSettings({ hideDemo: e.target.checked });
+    F.$('#s-offline', el).onclick = () => { location.hash = '#offline'; };
     F.$('#s-priv', el).onclick = F.showPrivacy;
     F.$('#s-guide', el).onclick = () => F.guide.show();
     const inst = F.$('#s-install', el);
