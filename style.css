@@ -471,3 +471,58 @@ th { color: var(--muted); font-weight: 600; }
 .nav-text { font-size: 14px; opacity: .95; }
 .nav-compass { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; flex: none; }
 .nav-compass svg { width: 26px; height: 26px; transition: transform .3s; }
+
+/* هياكل التحميل + شريط الإنترنت */
+.skel { height: 84px; border-radius: 16px; background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%); background-size: 200% 100%; animation: skel 1.2s linear infinite; }
+.skel + .skel { margin-top: 10px; }
+@keyframes skel { to { background-position: -200% 0; } }
+#net-bar { position: fixed; z-index: 400; top: 0; inset-inline: 0; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; background: var(--red); color: #fff; font-size: 13px; font-weight: 700; text-align: center; }
+#net-bar[hidden] { display: none; }
+.btn { min-height: 44px; }
+.btn.sm { min-height: 40px; }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+/* ---------- خرائط دون اتصال + محلات التصليح ---------- */
+body.off-page { background: #0b100f; }
+:root[data-theme="light"] body.off-page { background: #eef3f1; }
+.off { --o-card: #141918; --o-line: #242c2a; --o-mint: #34e2a2; --o-mut: #8f9996; --o-gov: #171d1c; --o-gov-line: #2c3533; --o-txt: #f2f5f4; color: var(--o-txt); }
+:root[data-theme="light"] .off { --o-card: #fff; --o-line: #d8e2de; --o-mint: #0a9a6a; --o-mut: #5c6965; --o-gov: #e8efec; --o-gov-line: #c4d2cc; --o-txt: #14201c; }
+.off .off-title { font-size: 34px; font-weight: 800; letter-spacing: -.3px; margin: 6px 0 18px; display: block; }
+.off-card { background: var(--o-card); border: 1px solid var(--o-line); border-radius: 22px; }
+.off-info { display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; margin-bottom: 16px; }
+.off-info .ic { width: 26px; height: 26px; flex: none; color: var(--o-mut); margin-top: 3px; }
+.off-info b { display: block; font-size: 17px; margin-bottom: 4px; }
+.off-info span { color: var(--o-mut); font-size: 14px; line-height: 1.6; }
+.off-seg { display: flex; padding: 5px; background: var(--o-card); border: 1px solid var(--o-line); border-radius: 16px; margin-bottom: 16px; }
+.off-seg button { flex: 1; min-height: 46px; border: 0; border-radius: 12px; background: none; color: var(--o-mut); font: inherit; font-weight: 700; font-size: 16px; cursor: pointer; }
+.off-seg button.on { background: var(--o-gov-line); color: var(--o-txt); }
+.off-mapbox { padding: 14px 8px; margin-bottom: 18px; }
+.off-svg { display: block; width: 100%; height: auto; max-height: 62vh; }
+.off-svg .gov { fill: var(--o-gov); stroke: var(--o-gov-line); stroke-width: 1; cursor: pointer; }
+.off-svg .gov.got { fill: rgba(52, 226, 162, .13); }
+.off-svg .gov.on { fill: none; stroke: var(--o-mint); stroke-width: 3; pointer-events: none; stroke-linejoin: round; }
+.off-svg .out { fill: none; stroke: var(--o-gov-line); stroke-width: 1.4; pointer-events: none; }
+.off-svg .gl { fill: var(--o-txt); font-size: 15px; font-weight: 600; text-anchor: middle; pointer-events: none; font-family: inherit; }
+.off-svg .me-r { fill: rgba(52, 226, 162, .22); }
+.off-svg .me-d { fill: var(--o-mint); stroke: var(--o-card); stroke-width: 1.5; }
+.off-h { font-size: 20px; font-weight: 800; margin: 22px 4px 10px; }
+.off-h.g { color: var(--o-mint); font-size: 16px; }
+.off-row { position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; padding: 12px 14px; margin-bottom: 10px; background: var(--o-card); border: 1px solid var(--o-line); border-radius: 22px; min-height: 76px; }
+.off-row.ready { border-color: rgba(52, 226, 162, .28); background: rgba(52, 226, 162, .06); }
+.off-ic { width: 46px; height: 46px; flex: none; border-radius: 14px; background: var(--o-gov-line); display: grid; place-items: center; color: var(--o-txt); }
+.off-ic .ic { width: 24px; height: 24px; }
+.off-row.ready .off-ic { background: rgba(52, 226, 162, .2); color: var(--o-mint); }
+.off-t { flex: 1; min-width: 0; }
+.off-t b { display: block; font-size: 18px; }
+.off-t span { display: block; color: var(--o-mut); font-size: 14px; }
+.off-t span .ok { display: block; color: var(--o-mint); font-weight: 700; }
+.off-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 16px; border: 0; border-radius: 14px; background: var(--o-gov-line); color: var(--o-txt); font: inherit; font-weight: 700; font-size: 15px; cursor: pointer; }
+.off-btn .ic { width: 20px; height: 20px; }
+.off-btn.del { padding: 0; width: 46px; justify-content: center; border-radius: 50%; }
+.off-btn.busy { color: var(--o-mint); }
+.off-bar { position: absolute; bottom: 0; right: 0; height: 3px; background: var(--o-mint); transition: width .3s; }
+.off-note { color: var(--o-mut); font-size: 12.5px; line-height: 1.7; margin: 22px 4px 8px; }
+.pin.shop { width: 30px; height: 30px; border-radius: 50%; background: #6D5BD0; border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .45); }
+.pin.shop .ic { width: 16px; height: 16px; stroke: #fff; }
+.shop-hint { margin-top: 6px; }
+@media (min-width: 720px) { .off { max-width: 640px; margin-inline: auto; } }

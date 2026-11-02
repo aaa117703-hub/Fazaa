@@ -3,7 +3,7 @@
   'use strict';
   const F = window.F;
 
-  const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', settings: 'v-settings', admin: 'v-admin' };
+  const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', settings: 'v-settings', offline: 'v-offline', admin: 'v-admin' };
   const NAV = [
     ['home', 'home', 'الرئيسية'],
     ['driver', 'wheel', 'سائق'],
@@ -11,7 +11,7 @@
     ['profile', 'user', 'حسابي']
   ];
   let ready = false, current = '';
-  const ORDER = ['home', 'driver', 'packages', 'profile', 'settings', 'admin'];
+  const ORDER = ['home', 'driver', 'packages', 'profile', 'settings', 'offline', 'admin'];
 
   function buildNav() {
     const html = NAV.map((n) =>
@@ -66,8 +66,9 @@
 
     const prev = current;
     Object.keys(VIEWS).forEach((k) => { F.$('#' + VIEWS[k]).hidden = k !== v; });
-    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (v === 'admin' || v === 'settings' ? 'profile' : v)));
+    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (v === 'admin' || v === 'settings' ? 'profile' : v === 'offline' ? 'home' : v)));
     current = v;
+    document.body.classList.toggle('off-page', v === 'offline');
 
     // انتقال سلس: الصفحة الجديدة تنزلق من جهة التنقل
     if (prev !== v) {
@@ -85,6 +86,7 @@
     else if (v === 'packages') F.packages.show();
     else if (v === 'profile') F.profile.show();
     else if (v === 'settings') F.settings.show();
+    else if (v === 'offline') F.offline.show();
     window.scrollTo(0, 0);
   }
 
@@ -123,6 +125,20 @@
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+
+    // شريط «ماكو إنترنت» حتى يعرف الزبون ليش شي ما يشتغل
+    const net = document.createElement('div');
+    net.id = 'net-bar'; net.hidden = navigator.onLine !== false; net.setAttribute('role', 'status');
+    net.textContent = 'ماكو إنترنت — الاتصال بالسائقين يشتغل، والباقي يرجع لما يرجع النت';
+    document.body.appendChild(net);
+    const upd = () => {
+      const off = navigator.onLine === false;
+      net.hidden = !off;
+      if (!off && F.home && F.home.refresh) F.home.refresh();
+    };
+    window.addEventListener('online', upd);
+    window.addEventListener('offline', upd);
+    upd();
 
     window.addEventListener('hashchange', route);
     window.addEventListener('resize', moveInd);
