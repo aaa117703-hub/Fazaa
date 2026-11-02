@@ -36,6 +36,8 @@
     sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
     share: '<circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="m8.1 10.9 7.8-3.7M8.1 13.1l7.8 3.7"/>',
     shield: '<path d="M12 3.5 19.5 6v5.5c0 4.4-3 7.7-7.5 9-4.5-1.3-7.5-4.6-7.5-9V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+    map: '<path d="M3.5 6.5 9 4l6 2.5L20.5 4v13.5L15 20l-6-2.5-5.5 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
+    wrench: '<path d="M14.5 6.2a4 4 0 0 0 5 5L9.7 21a2.1 2.1 0 0 1-3-3l9.8-9.8"/><path d="M14.5 6.2 17 3.8l2.9 2.9-2.4 2.5"/>',
     radar: '<circle cx="12" cy="12" r="8.8"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'
   };
 

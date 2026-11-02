@@ -3,7 +3,7 @@
   'use strict';
   const F = window.F;
 
-  let el, map, markers = {}, meMarker = null, ready = false, items = [], loading = false, loadErr = false;
+  let el, map, markers = {}, shopMk = {}, shopsOn = false, shopTimer = 0, meMarker = null, ready = false, items = [], loading = false, loadErr = false;
   const state = { onlyAvail: !!F.getSettings().onlyAvail, type: '', gov: '' };
 
   const TEMPLATE =
@@ -17,13 +17,15 @@
     '<div class="row wrap quick">' +
       '<button class="btn secondary grow" id="h-guide">' + F.icon('shield') + ' شنو أسوي؟</button>' +
       '<button class="btn secondary grow" id="h-share">' + F.icon('share') + ' أرسل موقعي</button>' +
+      '<button class="btn secondary grow" id="h-offline">' + F.icon('map') + ' خرائط دون اتصال</button>' +
     '</div>' +
     '<div id="h-route"></div>' +
     '<div class="home-grid">' +
-      '<div id="map"></div>' +
+      '<div><div id="map"></div><div class="muted small shop-hint" id="h-shophint" hidden></div></div>' +
       '<div>' +
         '<div class="filters">' +
           '<button class="chip" id="h-avail">متاح فقط</button>' +
+          '<button class="chip" id="h-shops">' + F.icon('wrench') + ' محلات تصليح</button>' +
           '<select id="h-gov" aria-label="المحافظة"><option value="">كل المحافظات</option>' +
             F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') +
           '</select>' +
@@ -135,6 +137,43 @@
       }
     });
     Object.keys(markers).forEach((id) => { if (!keep[id]) { markers[id].remove(); delete markers[id]; } });
+  }
+
+
+  /* ---------- محلات تصليح السيارات (OpenStreetMap) ---------- */
+  const SHOP_ZOOM = 9;
+  function shopPop(s) {
+    const tel = (s[4] || '').split(/[;,\/]/)[0].trim();
+    return '<b>' + F.esc(s[3] || F.shops.KINDS[s[5]] || 'محل تصليح') + '</b><br>' + F.esc(F.shops.KINDS[s[5]] || '') +
+      (tel ? '<br><a href="tel:' + F.esc(tel.replace(/[^+\d]/g, '')) + '">' + F.icon('phone') + ' ' + F.esc(tel) + '</a>' : '<br><span class="muted small">بدون رقم مسجّل</span>') +
+      '<br><a href="https://maps.google.com/?q=' + s[1] + ',' + s[2] + '" target="_blank" rel="noopener">فتح بالخرائط</a>';
+  }
+  async function loadShops() {
+    if (!map || !shopsOn || !F.shops) return;
+    if (map.getZoom() < SHOP_ZOOM) { clearShops(); setShopHint('قرّب الخريطة أكثر حتى تظهر المحلات'); return; }
+    const b = map.getBounds();
+    let list = [];
+    try { list = await F.shops.inBox([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], true); } catch (e) {}
+    if (!shopsOn) return;
+    setShopHint(list.length ? '' : 'ما لكينا محلات مسجّلة بهذي المنطقة بخرائط OpenStreetMap');
+    const keep = {};
+    list.slice(0, 200).forEach((s) => {
+      keep[s[0]] = 1;
+      if (!shopMk[s[0]]) shopMk[s[0]] = F.marker(map, s[1], s[2], 'shop', F.icon('wrench'), shopPop(s));
+    });
+    Object.keys(shopMk).forEach((id) => { if (!keep[id]) { shopMk[id].remove(); delete shopMk[id]; } });
+  }
+  function clearShops() { Object.keys(shopMk).forEach((id) => { shopMk[id].remove(); delete shopMk[id]; }); }
+  function setShopHint(t) { const n = F.$('#h-shophint', el); if (n) { n.textContent = t; n.hidden = !t; } }
+  function toggleShops(on) {
+    shopsOn = on;
+    try { localStorage.setItem('sanad_shops_on', on ? '1' : '0'); } catch (e) {}
+    F.$('#h-shops', el).classList.toggle('on', on);
+    if (!on) { clearShops(); setShopHint(''); return; }
+    if (map && map.getZoom() < SHOP_ZOOM) {
+      const l = F.loc(); map.flyTo({ center: [l.lng, l.lat], zoom: l.source === 'default' ? 10 : 12, duration: 700 });
+    }
+    loadShops();
   }
 
   function focusCard(id) {
@@ -267,6 +306,10 @@
     F.$('#h-gps', el).onclick = () => locateGPS(false);
     F.$('#h-guide', el).onclick = () => F.guide.show();
     F.$('#h-share', el).onclick = () => F.guide.shareLocation();
+    F.$('#h-offline', el).onclick = () => { location.hash = '#offline'; };
+    F.$('#h-shops', el).onclick = () => toggleShops(!shopsOn);
+    if (map) map.on('moveend', () => { clearTimeout(shopTimer); shopTimer = setTimeout(loadShops, 600); });
+    try { if (localStorage.getItem('sanad_shops_on') === '1') setTimeout(() => toggleShops(true), 800); } catch (e) {}
     F.$('#h-avail', el).classList.toggle('on', state.onlyAvail);
     F.$('#h-manual', el).onclick = locateManual;
     F.$('#h-avail', el).onclick = (e) => {
