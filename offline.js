@@ -53,9 +53,14 @@
   const allDone = () => F.GOVS.every((g) => have(g.name));
 
   /* ---------- التنزيل ---------- */
+  // fetch بمهلة حتى ما يعلّق التنزيل على طلب بطيء
+  function tfetch(url, ms) {
+    const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms || 20000);
+    return fetch(url, { signal: ac.signal }).finally(() => clearTimeout(t));
+  }
   async function putUrl(cache, url) {
     try {
-      const r = await fetch(url);
+      const r = await tfetch(url);
       if (r && r.ok) { await cache.put(url, r.clone()); return r; }
     } catch (e) {}
     return null;
@@ -120,7 +125,7 @@
         if (await cache.match(url)) return;
         for (let a = 0; a < 2; a++) {
           try {
-            const r = await fetch(url);
+            const r = await tfetch(url);
             if (r.ok) { const b = await r.clone().arrayBuffer(); bytes += b.byteLength; await cache.put(url, r); }
             else if (r.status !== 404 && r.status !== 204) { if (a) bad++; else continue; }
             return;
@@ -129,10 +134,11 @@
       }, () => { done++; if (done % 5 === 0 || done === tiles.length) setJob(name, { pct: Math.round(done / tiles.length * 100) }); });
       if (job.cancel) { delete jobs[name]; draw(); return; }
       if (bad > tiles.length * 0.15) throw new Error('net');
-      if (F.shops && F.shops.prefetch) { try { { const c = F.GOVS.find((x) => x.name === name); await F.shops.prefetch([c.lng - 0.5, c.lat - 0.5, c.lng + 0.5, c.lat + 0.5]); } } catch (e) {} }
       store[name] = { tpl: tpl, tiles: tiles.length, bytes: bytes, t: Date.now() };
       save(); delete jobs[name]; draw();
       F.toast('تم تنزيل خريطة ' + name, 'ok');
+      // محلات التصليح تنحمّل بالخلفية (ما توقف التنزيل ولا تنتظرها)
+      if (F.shops && F.shops.prefetch) { const c = F.GOVS.find((x) => x.name === name); F.shops.prefetch([c.lng - 0.5, c.lat - 0.5, c.lng + 0.5, c.lat + 0.5]).catch(() => {}); }
     } catch (e) {
       jobs[name] = { err: 1 }; draw();
       F.toast('فشل التنزيل. تأكد من الإنترنت وجرّب مرة ثانية.', 'err');

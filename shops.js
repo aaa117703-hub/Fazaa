@@ -50,7 +50,8 @@
     if (allowNet !== false && navigator.onLine !== false) {
       for (const u of EP) {
         try {
-          const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(allQuery()) });
+          const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 90000);
+          const r = await fetch(u, { method: 'POST', signal: ac.signal, headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(allQuery()) }).finally(() => clearTimeout(tm));
           if (!r.ok) continue;
           const l = parse(await r.json());
           if (l.length) { allMem = { t: Date.now(), l: l }; try { localStorage.setItem(ALL, JSON.stringify(allMem)); } catch (e) {} return l; }
