@@ -23,13 +23,15 @@ jobs:
       - name: Permissions, icons, version
         working-directory: .github/apk
         run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+          IM=$(command -v magick || command -v convert)
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#</manifest>#    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-feature android:name="android.hardware.location.gps" android:required="false" />\n</manifest>#' "$M"
           R=android/app/src/main/res
           rm -rf $R/mipmap-anydpi-v26
           for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
             n=${d%%:*}; s=${d##*:}; mkdir -p $R/mipmap-$n
-            convert ../../icon-512.png -resize ${s}x${s} $R/mipmap-$n/ic_launcher.png
+            $IM ../../icon-512.png -resize ${s}x${s} $R/mipmap-$n/ic_launcher.png
             cp $R/mipmap-$n/ic_launcher.png $R/mipmap-$n/ic_launcher_round.png
             cp $R/mipmap-$n/ic_launcher.png $R/mipmap-$n/ic_launcher_foreground.png
           done
