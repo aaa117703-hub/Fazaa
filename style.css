@@ -535,4 +535,8 @@ body.off-page { background: #0b100f; }
 .off-svg .gov.got { fill: rgba(52, 226, 162, .22); }
 .off-svg .gov.on { stroke-width: 3.2; filter: drop-shadow(0 0 6px rgba(52, 226, 162, .75)); }
 .off-svg .out { stroke: var(--o-mut); stroke-width: 2; stroke-linejoin: round; }
-.off-svg .gl { font-size: 16px; font-weight: 700; paint-order: stroke; stroke: var(--o-card); stroke-width: 3.5px; stroke-linejoin: round; }
+.off-svg .gl { font-size: 20px; font-weight: 700; paint-order: stroke; stroke: var(--o-card); stroke-width: 3.5px; stroke-linejoin: round; }
+
+.off-svg .under path { fill: none; stroke: var(--o-mut); stroke-width: 5; stroke-linejoin: round; }
+.off-svg .gov { stroke-width: 1; }
+.off-svg .out { display: none; }
