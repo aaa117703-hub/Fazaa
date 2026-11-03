@@ -294,6 +294,8 @@
   };
   F.scaleExpr = scaleExpr;
 
+  // الخريطة محصورة بالعراق فقط (غرب، جنوب، شرق، شمال) مع هامش بسيط
+  F.IRAQ_BOUNDS = [[38.2, 28.6], [49.6, 37.9]];
   F.createMap = function (container, center, zoom) {
     const ml = window.maplibregl;
     if (!ml) return null;
@@ -309,6 +311,8 @@
       center: [center.lng, center.lat],
       zoom: zoom || 13,
       attributionControl: { compact: true },
+      maxBounds: F.IRAQ_BOUNDS,
+      minZoom: 4.8,
       dragRotate: false,
       pitchWithRotate: false
     });

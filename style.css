@@ -1,3 +1,6 @@
+/* خطوط الموقع: سلطان للعناوين العربية، Premier League للأرقام والحروف اللاتينية */
+@font-face { font-family: 'SanadNum'; src: url('fonts/PremierLeague-Bold.otf') format('opentype'); font-display: swap; unicode-range: U+0030-0039, U+0041-005A, U+0061-007A; }
+@font-face { font-family: 'SanadHead'; src: url('fonts/Sultan.ttf') format('truetype'); font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF; }
 /* سند جايك — التنسيقات */
 :root {
   --bg: #101214;
@@ -47,7 +50,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
 body {
-  font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'SanadNum', 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
@@ -527,3 +530,21 @@ body.off-page { background: #0b100f; }
 .pin.shop .ic { width: 25px; height: 25px; transform: rotate(45deg); stroke: #1B1B1B; fill: #1B1B1B; fill-opacity: .12; stroke-width: 2.2; }
 .shop-hint { margin-top: 6px; }
 @media (min-width: 720px) { .off { max-width: 640px; margin-inline: auto; } }
+
+/* تحسين رسم خريطة العراق */
+.off-svg { filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .35)); }
+.off-svg .gov { stroke-width: 1.3; transition: fill .15s; }
+.off-svg .gov:hover { fill: var(--o-gov-line); }
+.off-svg .gov.got { fill: rgba(52, 226, 162, .22); }
+.off-svg .gov.on { stroke-width: 3.2; filter: drop-shadow(0 0 6px rgba(52, 226, 162, .75)); }
+.off-svg .out { stroke: var(--o-mut); stroke-width: 2; stroke-linejoin: round; }
+.off-svg .gl { font-size: 20px; font-weight: 700; paint-order: stroke; stroke: var(--o-card); stroke-width: 3.5px; stroke-linejoin: round; }
+
+.off-svg .under path { fill: none; stroke: var(--o-mut); stroke-width: 5; stroke-linejoin: round; }
+.off-svg .gov { stroke-width: 1; }
+.off-svg .out { display: none; }
+
+h1, h2, h3, .brand-name, .hero .name, .off-title, .off-h, .off-t b { font-family: 'SanadHead', 'SanadNum', 'Cairo', system-ui, sans-serif; font-weight: 400; letter-spacing: 0; }
+.brand-name { font-size: 24px; }
+.off .off-title { font-size: 38px; font-weight: 400; }
+.off-t b { font-size: 21px; }
