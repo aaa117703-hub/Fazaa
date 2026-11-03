@@ -283,6 +283,8 @@
     try {
       (map.getStyle().layers || []).forEach((l) => {
         if (l.type !== 'symbol' || !l.layout) return;
+        // تباعد الحروف يكسر اتصال الحروف العربية، نصفّره. ونوسّع عرض السطر.
+        if (l.layout['text-field']) { map.setLayoutProperty(l.id, 'text-letter-spacing', 0); map.setLayoutProperty(l.id, 'text-max-width', 10); }
         if (l.layout['text-field']) {
           const ts = l.layout['text-size'];
           map.setLayoutProperty(l.id, 'text-size', ts == null ? 16 : scaleExpr(ts, 1.3));
