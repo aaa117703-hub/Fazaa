@@ -224,17 +224,19 @@
   F.getGPS = function () {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) return reject({ code: 0 });
-      navigator.geolocation.getCurrentPosition(
-        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        (e) => reject(e),
-        { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-      );
+      const ok = (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude });
+      // أول محاولة بدقة عالية، وإذا فشلت (شائع بالآيفون) نعيد بدقة عادية من الشبكة/الواي فاي
+      navigator.geolocation.getCurrentPosition(ok, (e) => {
+        if (e && e.code === 1) return reject(e);
+        navigator.geolocation.getCurrentPosition(ok, (e2) => reject(e2 || e),
+          { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
+      }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 });
     });
   };
   F.gpsError = function (e) {
     if (e && e.code === 1) return 'ما أعطيت إذن الموقع. فعّله من إعدادات المتصفح أو حدّد موقعك يدوياً.';
     if (e && e.code === 3) return 'انتهت مهلة تحديد الموقع. جرّب مرة ثانية أو حدّده يدوياً.';
-    return 'تعذّر تحديد موقعك. حدّده يدوياً على الخريطة.';
+    return 'تعذّر تحديد موقعك (تأكد أن خدمات الموقع شغّالة بجهازك). حدّده يدوياً على الخريطة.';
   };
 
   /* ---------- الخريطة: MapLibre GL + OpenFreeMap (مجانية، بدون مفتاح) ---------- */

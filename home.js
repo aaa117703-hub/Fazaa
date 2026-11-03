@@ -237,7 +237,10 @@
       if (!silent) F.toast('تم تحديد موقعك', 'ok');
       return true;
     } catch (e) {
-      if (!silent) F.toast(F.gpsError(e), 'err');
+      if (!silent) {
+        F.toast(F.gpsError(e), 'err');
+        if (e && e.code !== 1) setTimeout(locateManual, 900); // نفتح اختيار الموقع اليدوي بدل ما يوقف
+      }
       return e;
     }
   }
