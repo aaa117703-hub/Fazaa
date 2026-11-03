@@ -155,7 +155,9 @@
     let list = [];
     try { list = await F.shops.inBox([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], true); } catch (e) {}
     if (!shopsOn) return;
-    setShopHint(list.length ? '' : 'ما لكينا محلات مسجّلة بهذي المنطقة بخرائط OpenStreetMap');
+    const chip = F.$('#h-shops', el);
+    if (chip) chip.innerHTML = F.icon('wrench') + ' محلات تصليح' + (list.length ? ' (' + list.length + ')' : '');
+    setShopHint(list.length ? '' : F.shops.failed() ? 'تعذّر جلب المحلات (تأكد من الإنترنت). اضغط الزر مرتين للمحاولة من جديد.' : 'ما لكينا محلات مسجّلة بهذي المنطقة بخرائط OpenStreetMap');
     const keep = {};
     const mc = map.getCenter();
     list.sort((a, b) => Math.hypot(a[1] - mc.lat, a[2] - mc.lng) - Math.hypot(b[1] - mc.lat, b[2] - mc.lng));

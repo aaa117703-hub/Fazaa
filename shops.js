@@ -47,6 +47,7 @@
     if (!allMem) { try { allMem = JSON.parse(localStorage.getItem(ALL) || 'null'); } catch (e) { allMem = null; } }
     return allMem && Date.now() - allMem.t < TTL ? allMem.l : null;
   }
+  let failed = false;
   let allBusy = null;
   // كل العراق بطلب واحد (يتخزّن 14 يوم)
   function all(allowNet) { return allBusy || (allBusy = allImpl(allowNet).finally(() => { allBusy = null; })); }
@@ -54,13 +55,14 @@
     if (!allMem) { try { allMem = JSON.parse(localStorage.getItem(ALL) || 'null'); } catch (e) { allMem = null; } }
     if (allMem && Date.now() - allMem.t < TTL) return allMem.l;
     if (allowNet !== false && navigator.onLine !== false) {
+      failed = true;
       for (const u of EP) {
         try {
           const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 60000);
           const r = await fetch(u, { method: 'POST', signal: ac.signal, headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(allQuery()) }).finally(() => clearTimeout(tm));
           if (!r.ok) continue;
           const l = parse(await r.json());
-          if (l.length) { allMem = { t: Date.now(), l: l }; try { localStorage.setItem(ALL, JSON.stringify(allMem)); } catch (e) {} return l; }
+          if (l.length) { failed = false; allMem = { t: Date.now(), l: l }; try { localStorage.setItem(ALL, JSON.stringify(allMem)); } catch (e) {} return l; }
         } catch (e) {}
       }
     }
@@ -86,9 +88,9 @@
     if (!allowNet || navigator.onLine === false) return c ? c.l : [];
     try {
       const l = await fetchBox(cellBox(i, j));
-      d[k] = { t: Date.now(), l: l }; flush();
+      d[k] = { t: Date.now(), l: l }; flush(); failed = false;
       return l;
-    } catch (e) { return c ? c.l : []; }
+    } catch (e) { failed = true; return c ? c.l : []; }
   }
 
   function cellsOf(b) {
@@ -121,5 +123,5 @@
     for (const c of cellsOf(b)) await ensureCell(c[0], c[1], true);
   }
 
-  F.shops = { all: all, inBox: inBox, prefetch: prefetch, parse: parse, query: query, KINDS: KINDS, cellsOf: cellsOf };
+  F.shops = { failed: () => failed, all: all, inBox: inBox, prefetch: prefetch, parse: parse, query: query, KINDS: KINDS, cellsOf: cellsOf };
 })();

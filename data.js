@@ -260,7 +260,7 @@
           map.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', 'name:ar'], ['get', 'name']]);
           // هالة أوضح حول النص حتى يقرأ بسهولة فوق الخريطة
           const hw = map.getPaintProperty(l.id, 'text-halo-width');
-          if (typeof hw !== 'object' && (hw == null || hw < 1.6)) map.setPaintProperty(l.id, 'text-halo-width', 1.8);
+          if (typeof hw !== 'object' && (hw == null || hw < 2.2)) map.setPaintProperty(l.id, 'text-halo-width', 2.4);
         }
       });
     } catch (e) {}
@@ -287,7 +287,7 @@
         if (l.layout['text-field']) { map.setLayoutProperty(l.id, 'text-letter-spacing', 0); map.setLayoutProperty(l.id, 'text-max-width', 10); }
         if (l.layout['text-field']) {
           const ts = l.layout['text-size'];
-          map.setLayoutProperty(l.id, 'text-size', ts == null ? 16 : scaleExpr(ts, 1.3));
+          map.setLayoutProperty(l.id, 'text-size', ts == null ? 16 : scaleExpr(ts, 1.45));
         }
         if (l.layout['icon-image'] && l.layout['icon-size'] != null) map.setLayoutProperty(l.id, 'icon-size', scaleExpr(l.layout['icon-size'], 1.3));
         else if (l.layout['icon-image']) map.setLayoutProperty(l.id, 'icon-size', 1.3);
