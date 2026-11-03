@@ -1,3 +1,6 @@
+/* خطوط الموقع: سلطان للعناوين العربية، Premier League للأرقام والحروف اللاتينية */
+@font-face { font-family: 'SanadNum'; src: url('fonts/PremierLeague-Bold.otf') format('opentype'); font-display: swap; unicode-range: U+0030-0039, U+0041-005A, U+0061-007A; }
+@font-face { font-family: 'SanadHead'; src: url('fonts/Sultan.ttf') format('truetype'); font-display: swap; unicode-range: U+0600-06FF, U+0750-077F, U+FB50-FDFF, U+FE70-FEFF; }
 /* سند جايك — التنسيقات */
 :root {
   --bg: #101214;
@@ -47,7 +50,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
 body {
-  font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'SanadNum', 'Cairo', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
@@ -540,3 +543,8 @@ body.off-page { background: #0b100f; }
 .off-svg .under path { fill: none; stroke: var(--o-mut); stroke-width: 5; stroke-linejoin: round; }
 .off-svg .gov { stroke-width: 1; }
 .off-svg .out { display: none; }
+
+h1, h2, h3, .brand-name, .hero .name, .off-title, .off-h, .off-t b { font-family: 'SanadHead', 'SanadNum', 'Cairo', system-ui, sans-serif; font-weight: 400; letter-spacing: 0; }
+.brand-name { font-size: 24px; }
+.off .off-title { font-size: 38px; font-weight: 400; }
+.off-t b { font-size: 21px; }
