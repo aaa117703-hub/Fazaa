@@ -264,6 +264,34 @@
     } catch (e) {}
   };
 
+  // يكبّر الأرقام داخل تعبير حجم (يدعم interpolate/step) بدون ما يكسر تعبيرات الزوم
+  function scaleExpr(e, f) {
+    if (typeof e === 'number') return +(e * f).toFixed(2);
+    if (!Array.isArray(e)) return e;
+    if (e[0] === 'interpolate' || e[0] === 'interpolate-hcl' || e[0] === 'interpolate-lab') {
+      const o = e.slice();
+      for (let k = 4; k < o.length; k += 2) o[k] = scaleExpr(o[k], f);
+      return o;
+    }
+    if (e[0] === 'step') { const o = e.slice(); o[2] = scaleExpr(o[2], f); for (let k = 4; k < o.length; k += 2) o[k] = scaleExpr(o[k], f); return o; }
+    return e;
+  }
+  // يكبّر أسماء الأماكن وأيقوناتها حتى تنقرأ بسهولة
+  F.enlargeMap = function (map) {
+    try {
+      (map.getStyle().layers || []).forEach((l) => {
+        if (l.type !== 'symbol' || !l.layout) return;
+        if (l.layout['text-field']) {
+          const ts = l.layout['text-size'];
+          map.setLayoutProperty(l.id, 'text-size', ts == null ? 16 : scaleExpr(ts, 1.3));
+        }
+        if (l.layout['icon-image'] && l.layout['icon-size'] != null) map.setLayoutProperty(l.id, 'icon-size', scaleExpr(l.layout['icon-size'], 1.3));
+        else if (l.layout['icon-image']) map.setLayoutProperty(l.id, 'icon-size', 1.3);
+      });
+    } catch (e) {}
+  };
+  F.scaleExpr = scaleExpr;
+
   F.createMap = function (container, center, zoom) {
     const ml = window.maplibregl;
     if (!ml) return null;
@@ -284,7 +312,7 @@
     });
     try { map.touchZoomRotate.disableRotation(); } catch (e) {}
     map.addControl(new ml.NavigationControl({ showCompass: false }), 'top-left');
-    map.on('style.load', () => { loaded = true; F.localizeMap(map); });
+    map.on('style.load', () => { loaded = true; F.localizeMap(map); F.enlargeMap(map); });
     map.on('error', () => {
       if (!loaded && idx < styles.length - 1) { idx++; map.setStyle(styles[idx]); }
     });

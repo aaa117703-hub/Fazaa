@@ -141,7 +141,7 @@
 
 
   /* ---------- محلات تصليح السيارات (OpenStreetMap) ---------- */
-  const SHOP_ZOOM = 9;
+  const SHOP_ZOOM = 7;
   function shopPop(s) {
     const tel = (s[4] || '').split(/[;,\/]/)[0].trim();
     return '<b>' + F.esc(s[3] || F.shops.KINDS[s[5]] || 'محل تصليح') + '</b><br>' + F.esc(F.shops.KINDS[s[5]] || '') +
@@ -150,14 +150,16 @@
   }
   async function loadShops() {
     if (!map || !shopsOn || !F.shops) return;
-    if (map.getZoom() < SHOP_ZOOM) { clearShops(); setShopHint('قرّب الخريطة أكثر حتى تظهر المحلات'); return; }
+    if (map.getZoom() < SHOP_ZOOM) { clearShops(); setShopHint('قرّب الخريطة شوية حتى تظهر محلات التصليح'); return; }
     const b = map.getBounds();
     let list = [];
     try { list = await F.shops.inBox([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], true); } catch (e) {}
     if (!shopsOn) return;
     setShopHint(list.length ? '' : 'ما لكينا محلات مسجّلة بهذي المنطقة بخرائط OpenStreetMap');
     const keep = {};
-    list.slice(0, 200).forEach((s) => {
+    const mc = map.getCenter();
+    list.sort((a, b) => Math.hypot(a[1] - mc.lat, a[2] - mc.lng) - Math.hypot(b[1] - mc.lat, b[2] - mc.lng));
+    list.slice(0, 150).forEach((s) => {
       keep[s[0]] = 1;
       if (!shopMk[s[0]]) shopMk[s[0]] = F.marker(map, s[1], s[2], 'shop', F.icon('wrench'), shopPop(s));
     });
