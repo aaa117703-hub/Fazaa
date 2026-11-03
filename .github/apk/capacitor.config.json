@@ -1,0 +1,11 @@
+{
+  "appId": "com.sanadjaik.app",
+  "appName": "سند جايك",
+  "webDir": "www",
+  "server": {
+    "url": "https://fazaa.aaa117703.workers.dev/index.html#home",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": { "allowMixedContent": false }
+}
