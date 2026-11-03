@@ -522,7 +522,8 @@ body.off-page { background: #0b100f; }
 .off-btn.busy { color: var(--o-mint); }
 .off-bar { position: absolute; bottom: 0; right: 0; height: 3px; background: var(--o-mint); transition: width .3s; }
 .off-note { color: var(--o-mut); font-size: 12.5px; line-height: 1.7; margin: 22px 4px 8px; }
-.pin.shop { width: 30px; height: 30px; border-radius: 50%; background: #6D5BD0; border: 2px solid #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .45); }
-.pin.shop .ic { width: 16px; height: 16px; stroke: #fff; }
+/* علامة محل التصليح: دبوس أصفر هندسي بمفتاح داكن */
+.pin.shop { width: 42px; height: 42px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); margin-bottom: 10px; background: #FFC21A; border: 3px solid #fff; box-shadow: 0 5px 12px rgba(0, 0, 0, .5); }
+.pin.shop .ic { width: 25px; height: 25px; transform: rotate(45deg); stroke: #1B1B1B; fill: #1B1B1B; fill-opacity: .12; stroke-width: 2.2; }
 .shop-hint { margin-top: 6px; }
 @media (min-width: 720px) { .off { max-width: 640px; margin-inline: auto; } }
