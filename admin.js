@@ -2,10 +2,21 @@
 (function () {
   'use strict';
   const F = window.F;
-  let tab = 'overview', govFilter = '';
+  let tab = 'subs', mode = 'drivers', govFilter = '';
   let cache = { cranes: [], phones: {} };
 
-  const TABS = [['overview', 'نظرة عامة'], ['cranes', 'الكرينات'], ['requests', 'الطلبات'], ['docs', 'التوثيق'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']];
+  const TABSETS = {
+    drivers: [['subs', 'المشتركين'], ['cranes', 'كل السواق'], ['docs', 'الوثائق']],
+    app: [['control', 'التحكم'], ['shops', 'المحلات'], ['overview', 'نظرة عامة'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']]
+  };
+  const DAY = 864e5;
+  const left = (c) => {
+    if (F.effTier(c) === 'bronze') return c.tier !== 'bronze' && c.sub_expires_at ? '<span class="badge red">منتهي</span>' : '<span class="muted small">مجاني</span>';
+    const d = Math.ceil((Date.parse(c.sub_expires_at) - Date.now()) / DAY);
+    return '<span class="badge ' + (d <= 5 ? 'red' : 'green') + '">' + (c.sub_period === 'yearly' ? 'سنوي' : 'شهري') + ' · باقي ' + d + ' يوم</span>';
+  };
+  const dshort = (s) => (s ? new Date(s).toLocaleDateString('en-GB') : '—');
+  const DK = { id_front: 'الهوية — أمام', id_back: 'الهوية — خلف', vehicle_front: 'سنوية — أمام', vehicle_back: 'سنوية — خلف', license_front: 'الإجازة — أمام', license_back: 'الإجازة — خلف' };
   const stat = (n, l) => '<div class="stat"><b>' + n + '</b><span>' + l + '</span></div>';
   const ISSUE = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح', accident: 'حادث', other: 'أخرى' };
   const REASON = { no_answer: 'ما رد', wrong_price: 'سعر مختلف', behavior: 'سوء تعامل', fake: 'معلومات مزيفة', other: 'أخرى' };
@@ -39,15 +50,17 @@
       '<td>' + F.esc(c.type) + '</td><td>' + F.esc(c.governorate || '—') + '</td>' +
       '<td><span class="dot ' + (c.status === 'available' ? 'green' : 'red') + '"></span>' + (c.status === 'available' ? 'متاح' : 'مشغول') + '</td>' +
       '<td style="direction:ltr">' + F.esc(cache.phones[c.id] || '—') + '</td>' +
-      '<td><select data-pkg="' + c.id + '">' + F.PACKAGES.map((p) => '<option value="' + p.id + '"' + (p.id === c.package ? ' selected' : '') + '>' + p.name + '</option>').join('') + '</select></td>' +
+      '<td>' + F.tierOf(F.effTier(c)).name + '<div>' + left(c) + '</div></td>' +
       '<td><div class="row">' +
         '<button class="btn sm ' + (c.listed ? 'green' : 'secondary') + '" data-a="list" data-id="' + c.id + '">' + (c.listed ? 'ظاهر' : 'وافق') + '</button>' +
         '<button class="btn sm ' + (c.verified ? 'green' : 'secondary') + '" data-a="verify" data-id="' + c.id + '">' + (c.verified ? 'موثق' : 'وثّق') + '</button>' +
+        '<button class="btn sm secondary" data-a="sub" data-id="' + c.id + '">اشتراك</button>' +
+        '<button class="btn sm secondary" data-a="info" data-id="' + c.id + '">معلومات</button>' +
         '<button class="btn sm danger" data-a="del" data-id="' + c.id + '">حذف</button></div></td></tr>').join('');
-    return '<div class="card"><div class="row between"><h2 style="margin:0">الكرينات (' + cache.cranes.length + ')</h2><button class="btn sm" data-a="add">+ إضافة كرين</button></div>' +
+    return '<div class="card"><div class="row between"><h2 style="margin:0">كل السواق (' + cache.cranes.length + ')</h2><button class="btn sm" data-a="add">+ إضافة كرين</button></div>' +
       '<div class="field mt-s"><select id="ad-gov"><option value="">كل المحافظات</option>' + F.GOVS.map((g) => '<option' + (g.name === govFilter ? ' selected' : '') + '>' + g.name + '</option>').join('') + '</select></div>' +
       '<p class="muted small mt-s">«وافق» = يظهر للزبائن. «وثّق» فقط بعد ما تشوف السائق وكرينه بنفسك.</p>' +
-      '<div class="table-wrap mt-s"><table><thead><tr><th>الاسم</th><th>النوع</th><th>المحافظة</th><th>الحالة</th><th>الهاتف</th><th>الباقة</th><th></th></tr></thead><tbody>' +
+      '<div class="table-wrap mt-s"><table><thead><tr><th>الاسم</th><th>النوع</th><th>المحافظة</th><th>الحالة</th><th>الهاتف</th><th>الاشتراك</th><th></th></tr></thead><tbody>' +
       (trs || '<tr><td colspan="7" class="muted">لا يوجد كرينات.</td></tr>') + '</tbody></table></div></div>';
   }
 
@@ -68,14 +81,60 @@
   }
 
   async function docsTab() {
-    const rows = await F.sb.q('driver_documents', 'select=id,kind,path,status,created_at,crane_id,cranes(name,verified,governorate)&status=eq.pending&order=created_at.asc&limit=100');
-    const K = { id: 'الهوية', license: 'إجازة السوق', vehicle: 'سنوية الكرين' };
-    return '<div class="card"><h2>مستندات بانتظار المراجعة (' + (rows || []).length + ')</h2><div class="table-wrap"><table><thead><tr><th>الكرين</th><th>المحافظة</th><th>المستند</th><th>الوقت</th><th></th></tr></thead><tbody>' +
-      ((rows || []).map((r) => '<tr><td>' + F.esc(r.cranes ? r.cranes.name : '—') + '</td><td>' + F.esc(r.cranes && r.cranes.governorate || '—') + '</td><td>' + (K[r.kind] || r.kind) + '</td><td>' + F.fmtDate(Date.parse(r.created_at)) + '</td>' +
-        '<td><div class="row"><button class="btn sm secondary" data-a="doc-view" data-id="' + r.id + '" data-p="' + F.esc(r.path) + '">عرض</button>' +
-        '<button class="btn sm green" data-a="doc-ok" data-id="' + r.id + '">قبول</button><button class="btn sm danger" data-a="doc-no" data-id="' + r.id + '">رفض</button>' +
-        '<button class="btn sm" data-a="verify-crane" data-id="' + r.crane_id + '">وثّق الكرين</button></div></td></tr>').join('') || '<tr><td colspan="5" class="muted">ما كو مستندات جديدة.</td></tr>') +
-      '</tbody></table></div><p class="muted small mt-s">اقبل المستندات الثلاثة، ثم اضغط «وثّق الكرين» لتظهر شارة «موثق».</p></div>';
+    const rows = await F.sb.q('driver_documents', 'select=id,kind,path,status,note,created_at,crane_id,cranes(name,verified,governorate)&order=created_at.asc&limit=300');
+    const by = {};
+    (rows || []).forEach((r) => { (by[r.crane_id] = by[r.crane_id] || { c: r.cranes, id: r.crane_id, d: [] }).d.push(r); });
+    const list = Object.values(by).sort((x, y) => y.d.filter((z) => z.status === 'pending').length - x.d.filter((z) => z.status === 'pending').length);
+    return '<div class="card"><h2>وثائق السواق (' + list.length + ')</h2><p class="muted small">اضغط «عرض» لرؤية الصورة، اقبلها أو ارفضها، ثم سجّل بيانات السائق من «معلومات» وفعّل «موثق».</p>' +
+      (list.map((g) => '<div class="doc-driver"><div class="row between"><b>' + F.esc(g.c ? g.c.name : '—') + '</b><span class="muted small">' + F.esc(g.c && g.c.governorate || '') + '</span></div>' +
+        '<div class="doc-grid">' + g.d.map((r) =>
+          '<div class="doc-slot"><b>' + (DK[r.kind] || r.kind) + '</b><span class="badge ' + ({ pending: 'amber', approved: 'green', rejected: 'red' }[r.status]) + '">' + ({ pending: 'بانتظار', approved: 'مقبول', rejected: 'مرفوض' }[r.status]) + '</span>' +
+          '<div class="row"><button class="btn sm secondary" data-a="doc-view" data-p="' + F.esc(r.path) + '">عرض</button>' +
+          (r.status !== 'approved' ? '<button class="btn sm green" data-a="doc-ok" data-id="' + r.id + '">قبول</button>' : '') +
+          (r.status !== 'rejected' ? '<button class="btn sm danger" data-a="doc-no" data-id="' + r.id + '">رفض</button>' : '') + '</div></div>').join('') + '</div>' +
+        '<div class="row mt-s"><button class="btn sm secondary" data-a="info" data-id="' + g.id + '">معلومات السائق</button><button class="btn sm ' + (g.c && g.c.verified ? 'green' : '') + '" data-a="verify-crane" data-id="' + g.id + '">' + (g.c && g.c.verified ? 'موثق ✓' : 'وثّق الكرين') + '</button></div></div>').join('') || '<p class="muted">ما كو وثائق مرفوعة بعد.</p>') + '</div>';
+  }
+
+  async function subs() {
+    const rows = await F.sb.q('cranes', 'select=*&order=created_at.desc&limit=500');
+    cache.cranes = rows || [];
+    const real = cache.cranes.filter((c) => !c.is_demo);
+    const t = (id) => real.filter((c) => F.effTier(c) === id);
+    const paid = real.filter((c) => F.effTier(c) !== 'bronze');
+    const head = '<div class="stats">' + stat(real.length, 'كل السواق المسجلين') + stat(paid.length, 'مشتركين') + stat(real.filter((c) => c.tier !== 'bronze' && F.effTier(c) === 'bronze').length, 'اشتراك منتهي') + '</div>';
+    const sec = F.TIERS.map((p) => {
+      const l = t(p.id);
+      return '<div class="card mt tier-sec tier-' + p.id + '"><div class="row between"><h2 style="margin:0;color:' + p.color + '">' + p.name + '</h2><span class="count-pill">' + l.length + '</span></div>' +
+        (l.map((c) => '<div class="sub-row"><div><b>' + F.esc(c.name) + '</b><div class="muted small">' + F.esc(c.governorate || '—') + (c.plate ? ' · ' + F.esc(c.plate) : '') + '</div></div>' +
+          '<div class="sub-side">' + left(c) + (p.id !== 'bronze' ? '<div class="muted small">ينتهي ' + dshort(c.sub_expires_at) + '</div>' : '') +
+          '<button class="btn sm secondary" data-a="sub" data-id="' + c.id + '">إدارة</button></div></div>').join('') || '<p class="muted small">ما كو أحد.</p>') + '</div>';
+    }).join('');
+    return head + sec;
+  }
+
+  async function control() {
+    const st = await F.sb.q('app_settings', 'select=key,value');
+    const g = (k) => ((st || []).find((x) => x.key === k) || { value: {} }).value || {};
+    const m = g('maintenance'), n = g('announcement');
+    return '<div class="card"><h2>قفل التطبيق (صيانة)</h2><p class="muted small">عند التفعيل يظهر للزبائن والسواق شاشة صيانة ولا يدخلون. أنت (المدير) تبقى تدخل.</p>' +
+      '<div class="field"><label>رسالة الصيانة</label><input id="mt-msg" maxlength="140" value="' + F.esc(m.msg || '') + '"></div>' +
+      '<button class="btn block ' + (m.on ? 'danger' : '') + '" data-a="mt-toggle" data-on="' + (m.on ? 1 : 0) + '">' + (m.on ? 'التطبيق مقفول — اضغط للفتح' : 'اقفل التطبيق الآن') + '</button></div>' +
+      '<div class="card mt"><h2>إعلان لكل المستخدمين</h2><p class="muted small">شريط يظهر أعلى التطبيق.</p>' +
+      '<div class="field"><label>نص الإعلان</label><input id="an-msg" maxlength="160" value="' + F.esc(n.msg || '') + '"></div>' +
+      '<div class="row"><button class="btn grow" data-a="an-save" data-on="1">نشر الإعلان</button><button class="btn secondary grow" data-a="an-save" data-on="0">إخفاء</button></div>' +
+      '<p class="muted small mt-s">الحالة: ' + (n.on ? 'ظاهر' : 'مخفي') + '</p></div>';
+  }
+
+  const SK = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات' };
+  async function shopsTab() {
+    const rows = await F.sb.q('shops', 'select=*&order=created_at.desc&limit=300');
+    const pend = (rows || []).filter((r) => r.status === 'pending'), ok = (rows || []).filter((r) => r.status === 'approved');
+    const line = (r, btns) => '<div class="sub-row"><div><b>' + F.esc(r.name) + '</b><div class="muted small">' + (SK[r.kind] || r.kind) + (r.governorate ? ' · ' + F.esc(r.governorate) : '') + (r.phone ? ' · ' + F.esc(r.phone) : '') + '</div>' +
+      (r.note ? '<div class="muted small">' + F.esc(r.note) + '</div>' : '') + '<a class="small" target="_blank" rel="noopener" href="https://maps.google.com/?q=' + r.lat + ',' + r.lng + '">عرض بالخريطة</a></div><div class="row">' + btns + '</div></div>';
+    return '<div class="card"><div class="row between"><h2 style="margin:0">بانتظار المراجعة (' + pend.length + ')</h2><button class="btn sm" data-a="shop-add">+ إضافة محل</button></div>' +
+      (pend.map((r) => line(r, '<button class="btn sm green" data-a="shop-ok" data-id="' + r.id + '">قبول</button><button class="btn sm danger" data-a="shop-del" data-id="' + r.id + '">رفض</button>')).join('') || '<p class="muted small">ما كو محلات جديدة.</p>') + '</div>' +
+      '<div class="card mt"><h2>المحلات المقبولة (' + ok.length + ')</h2>' +
+      (ok.map((r) => line(r, '<button class="btn sm danger" data-a="shop-del" data-id="' + r.id + '">حذف</button>')).join('') || '<p class="muted small">ما كو بعد.</p>') + '</div>';
   }
 
   async function health() {
@@ -93,15 +152,16 @@
 
   async function render() {
     const el = F.$('#v-admin');
-    const hdr = '<h1>' + F.icon('lock') + ' لوحة الإدارة</h1><div class="tabs">' +
+    const TABS = TABSETS[mode];
+    if (!TABS.some((t) => t[0] === tab)) tab = TABS[0][0];
+    const hdr = '<h1>' + F.icon('lock') + ' ' + (mode === 'app' ? 'إدارة التطبيق' : 'إدارة السواق') + '</h1><div class="tabs">' +
       TABS.map((t) => '<button class="chip ' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
     el.innerHTML = hdr + '<p class="muted center mt">جاري التحميل…</p>';
     let body;
-    try { body = await ({ overview: overview, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
+    try { body = await ({ overview: overview, shops: shopsTab, subs: subs, control: control, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
     catch (e) { body = '<div class="warn">' + F.esc(F.errMsg(e)) + '</div>'; }
     el.innerHTML = hdr + body;
     const gs = F.$('#ad-gov', el); if (gs) gs.onchange = () => { govFilter = gs.value; render(); };
-    F.$$('[data-pkg]', el).forEach((s) => { s.onchange = () => patch(s.dataset.pkg, { package: s.value }, true); });
   }
 
   async function patch(id, body, noRender) {
@@ -113,6 +173,41 @@
     const m = F.modal('<h2>' + title + '</h2><p class="muted">' + text + '</p><div class="row mt"><button class="btn danger grow" id="cf-yes">' + yesLabel + '</button><button class="btn secondary grow" id="cf-no">رجوع</button></div>');
     F.$('#cf-no', m.el).onclick = m.close;
     F.$('#cf-yes', m.el).onclick = () => { m.close(); onYes(); };
+  }
+
+  function subModal(c) {
+    const m = F.modal('<h2>اشتراك ' + F.esc(c.name) + '</h2><p class="muted small">الحالي: ' + F.tierOf(F.effTier(c)).name + '</p>' +
+      '<div class="field"><label>الباقة</label><select id="sb-t">' + F.TIERS.map((p) => '<option value="' + p.id + '"' + (p.id === F.effTier(c) ? ' selected' : '') + '>' + p.name + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>المدة</label><select id="sb-p"><option value="monthly">شهري (30 يوم)</option><option value="yearly">سنوي (365 يوم)</option></select></div>' +
+      (F.effTier(c) !== 'bronze' ? '<label class="check"><input type="checkbox" id="sb-ext"> تمديد من تاريخ الانتهاء الحالي</label>' : '') +
+      '<div class="row mt"><button class="btn grow" id="sb-ok">حفظ</button><button class="btn secondary" id="sb-x">رجوع</button></div>');
+    F.$('#sb-x', m.el).onclick = m.close;
+    F.$('#sb-ok', m.el).onclick = () => {
+      const tier = F.$('#sb-t', m.el).value, per = F.$('#sb-p', m.el).value, ext = F.$('#sb-ext', m.el);
+      let body;
+      if (tier === 'bronze') body = { tier: 'bronze', sub_period: null, sub_started_at: null, sub_expires_at: null };
+      else {
+        const base = ext && ext.checked && F.effTier(c) !== 'bronze' ? Date.parse(c.sub_expires_at) : Date.now();
+        body = { tier: tier, sub_period: per, sub_started_at: new Date().toISOString(), sub_expires_at: new Date(base + (per === 'yearly' ? 365 : 30) * DAY).toISOString() };
+      }
+      m.close(); patch(c.id, body);
+    };
+  }
+
+  function infoModal(c) {
+    const f = (id, l, v, ltr) => '<div class="field"><label>' + l + '</label><input id="' + id + '"' + (ltr ? ' class="ltr"' : '') + ' maxlength="60" value="' + F.esc(v || '') + '"></div>';
+    const m = F.modal('<h2>بيانات السائق</h2>' + f('in-owner', 'اسم مالك السيارة', c.owner_name) + f('in-model', 'نوع السيارة', c.vehicle_model) + f('in-plate', 'رقم السيارة', c.plate) +
+      '<div class="row mt"><button class="btn grow" id="in-ok">حفظ</button><button class="btn secondary" id="in-x">رجوع</button></div>');
+    F.$('#in-x', m.el).onclick = m.close;
+    F.$('#in-ok', m.el).onclick = () => {
+      const v = (i) => F.$(i, m.el).value.trim() || null;
+      m.close(); patch(c.id, { owner_name: v('#in-owner'), vehicle_model: v('#in-model'), plate: v('#in-plate') });
+    };
+  }
+
+  async function setting(key, value) {
+    try { await F.sb.q('app_settings', 'key=eq.' + key, { method: 'PATCH', body: { value: value, updated_at: new Date().toISOString() } }); F.toast('تم', 'ok'); render(); }
+    catch (e) { F.toast(F.errMsg(e), 'err'); }
   }
 
   function addModal() {
@@ -132,7 +227,7 @@
       if (name.length < 3) { F.$('#ad-err', m.el).textContent = 'اكتب اسم الكرين.'; return; }
       if (!F.validPhone(phone)) { F.$('#ad-err', m.el).textContent = 'الرقم لازم 11 رقم ويبدأ بـ 07.'; return; }
       try {
-        const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation', body: { name: name, type: F.$('#ad-type', m.el).value, governorate: F.govOf(loc.lat, loc.lng), lat: loc.lat, lng: loc.lng, status: 'busy', listed: true, verified: false, package: 'free', is_demo: false } });
+        const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation', body: { name: name, type: F.$('#ad-type', m.el).value, governorate: F.govOf(loc.lat, loc.lng), lat: loc.lat, lng: loc.lng, status: 'busy', listed: true, verified: false, tier: 'bronze', is_demo: false } });
         await F.sb.q('crane_contacts', '', { method: 'POST', body: { crane_id: r[0].id, phone: phone } });
         m.close(); F.toast('تمت الإضافة', 'ok'); render();
       } catch (ex) { F.$('#ad-err', m.el).textContent = F.errMsg(ex); }
@@ -146,6 +241,13 @@
     const a = t.dataset.a, id = t.dataset.id;
     const c = cache.cranes.find((x) => x.id === id);
     if (a === 'add') return addModal();
+    if (a === 'shop-add') return F.shops.add();
+    if (a === 'shop-ok') return F.sb.q('shops', 'id=eq.' + id, { method: 'PATCH', body: { status: 'approved' } }).then(() => { F.shops.resetComm(); F.toast('تم القبول', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
+    if (a === 'shop-del') return F.sb.q('shops', 'id=eq.' + id, { method: 'DELETE' }).then(() => { F.shops.resetComm(); F.toast('تم', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
+    if (a === 'sub' && c) return subModal(c);
+    if (a === 'info') { const cc = c || cache.cranes.find((x) => x.id === id); if (cc) return infoModal(cc); return F.sb.q('cranes', 'select=*&id=eq.' + id).then((r) => r && r[0] && infoModal(r[0])); }
+    if (a === 'mt-toggle') return setting('maintenance', { on: t.dataset.on !== '1', msg: F.$('#mt-msg').value.trim() || 'التطبيق تحت الصيانة، نرجع لك بعد قليل.' });
+    if (a === 'an-save') return setting('announcement', { on: t.dataset.on === '1', msg: F.$('#an-msg').value.trim() });
     if (a === 'list' && c) return patch(id, { listed: !c.listed });
     if (a === 'verify' && c) return patch(id, { verified: !c.verified });
     if (a === 'del') return confirmBox('حذف الكرين؟', F.esc(c ? c.name : ''), 'احذف', async () => {
@@ -162,7 +264,8 @@
   F.admin = {
     init: function () { F.$('#v-admin').addEventListener('click', onClick); },
     // يرجّع true إذا مسموح يعرض الصفحة
-    async show() {
+    async show(md) {
+      if (md && md !== mode) { mode = md; tab = TABSETS[mode][0][0]; }
       if (!F.isAdmin()) { F.toast('هذي الصفحة للمدير فقط', 'err'); return false; }
       render();
       return true;

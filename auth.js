@@ -21,7 +21,7 @@
   };
 
   // الخطوات: phone → code → profile. والمدير يدخل بالإيميل من رابط صغير.
-  let step = 'phone', mode = 'phone', phone = '', channel = 'whatsapp', cooldown = 0, timer = null, busy = false;
+  let step = 'phone', mode = 'login', phone = '', channel = 'whatsapp', cooldown = 0, timer = null, busy = false;
 
   function hero() {
     return '<div class="auth-hero"><img src="logo.svg" width="84" height="84" alt=""><h1>سند جايك</h1>' +
@@ -40,12 +40,25 @@
   }
 
   function formHtml() {
-    if (mode === 'email') {
-      return '<h2 style="margin-top:0">دخول المدير</h2>' +
+    if (mode === 'login') {
+      return '<h2 style="margin-top:0">دخول</h2>' +
         '<div class="field"><label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
         '<div class="field"><label for="a-pass">كلمة المرور</label><input id="a-pass" class="ltr" type="password" autocomplete="current-password"><div class="err" id="e-pass"></div></div>' +
         '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">دخول</button>' +
-        '<button class="btn ghost block mt-s" type="button" id="a-back">رجوع للدخول برقم الموبايل</button>';
+        '<button class="btn secondary block mt-s" type="button" id="a-to-signup">حساب جديد</button>' +
+        (F.PHONE_LOGIN ? '<button class="btn ghost block mt-s" type="button" id="a-to-phone">الدخول برقم الموبايل</button>' : '');
+    }
+    if (mode === 'signup') {
+      return '<h2 style="margin-top:0">حساب جديد</h2>' +
+        '<div class="field"><label for="a-name">الاسم الثلاثي</label><input id="a-name" autocomplete="name" placeholder="مثال: علي حسين كاظم"><div class="err" id="e-name"></div></div>' +
+        '<div class="field"><label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
+        '<div class="field"><label for="a-pass">كلمة المرور (8 أحرف أو أكثر)</label><input id="a-pass" class="ltr" type="password" autocomplete="new-password"><div class="err" id="e-pass"></div></div>' +
+        '<div class="field"><label for="a-gov">المحافظة</label><select id="a-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') + '</select><div class="err" id="e-gov"></div></div>' +
+        '<div class="field"><label for="a-phone">رقم الهاتف (اختياري)</label><input id="a-phone" class="ltr" inputmode="tel" autocomplete="tel" placeholder="07701234567" maxlength="16"><div class="err" id="e-phone"></div></div>' +
+        '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a>.</span></label>' +
+        '<div class="err" id="e-consent" style="margin:-8px 0 10px"></div><div class="err" id="e-form" style="margin-bottom:8px"></div>' +
+        '<button class="btn big block" type="submit" id="a-go">إنشاء الحساب</button>' +
+        '<button class="btn ghost block mt-s" type="button" id="a-to-login">عندي حساب</button>';
     }
     if (step === 'phone') {
       return '<h2 style="margin-top:0">أدخل رقم موبايلك</h2><p class="muted small">راح نرسل لك رمز تحقق من 6 أرقام عبر واتساب، وإذا ما وصل نرسله SMS.</p>' +
@@ -53,7 +66,7 @@
         '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a>.</span></label>' +
         '<div class="err" id="e-consent" style="margin:-8px 0 10px"></div><div class="err" id="e-form" style="margin-bottom:8px"></div>' +
         '<button class="btn big block" type="submit" id="a-go">أرسل الرمز</button>' +
-        '<button class="btn ghost block mt-s" type="button" id="a-admin">دخول المدير</button>';
+        '<button class="btn ghost block mt-s" type="button" id="a-to-login">الدخول بالإيميل</button>';
     }
     if (step === 'code') {
       return '<h2 style="margin-top:0">أدخل الرمز</h2><p class="muted small">أرسلنا الرمز إلى <b style="direction:ltr;display:inline-block">' + F.esc(phone) + '</b></p>' +
@@ -66,6 +79,7 @@
     return '<h2 style="margin-top:0">كمّل بياناتك</h2><p class="muted small">مرة وحدة بس.</p>' +
       '<div class="field"><label for="a-name">الاسم الثلاثي</label><input id="a-name" autocomplete="name" placeholder="مثال: علي حسين كاظم"><div class="err" id="e-name"></div></div>' +
       '<div class="field"><label for="a-gov">المحافظة اللي تسكنها</label><select id="a-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') + '</select><div class="err" id="e-gov"></div></div>' +
+      '<div class="field"><label for="a-ph2">رقم الهاتف (اختياري)</label><input id="a-ph2" class="ltr" inputmode="tel" placeholder="07701234567" maxlength="16" value="' + F.esc(phone || '') + '"><div class="err" id="e-phone"></div></div>' +
       '<div class="field"><label for="a-car">نوع السيارة</label><input id="a-car" placeholder="مثال: كيا سيراتو 2018"><div class="err" id="e-car"></div></div>' +
       '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">ابدأ</button>';
   }
@@ -98,8 +112,8 @@
   F.auth = {
     // يعرض شاشة الدخول (ويخفي التطبيق)
     // مستخدم مسجّل بدون اسم (قطع الخطوة الأخيرة سابقاً)
-    completeProfile: function () { phone = F.authPhone(); step = 'profile'; mode = 'phone'; F.$('#app').hidden = true; F.auth.render(); },
-    open: function () { F.$('#app').hidden = true; step = 'phone'; mode = 'phone'; F.auth.render(); },
+    completeProfile: function () { phone = F.authPhone() || ''; step = 'profile'; mode = 'phone'; F.$('#app').hidden = true; F.auth.render(); },
+    open: function () { F.$('#app').hidden = true; step = 'phone'; mode = 'login'; F.auth.render(); },
 
     render: function () {
       const root = F.$('#auth');
@@ -109,8 +123,9 @@
       F.$('#auth-form').onsubmit = (e) => { e.preventDefault(); F.auth.submit(); };
       const on = (id, fn) => { const n = F.$('#' + id); if (n) n.onclick = fn; };
       const pv = F.$('#a-priv'); if (pv) pv.onclick = (e) => { e.preventDefault(); F.showPrivacy(); };
-      on('a-admin', () => { mode = 'email'; F.auth.render(); });
-      on('a-back', () => { mode = 'phone'; F.auth.render(); });
+      on('a-to-signup', () => { mode = 'signup'; F.auth.render(); });
+      on('a-to-login', () => { mode = 'login'; step = 'phone'; F.auth.render(); });
+      on('a-to-phone', () => { mode = 'phone'; step = 'phone'; F.auth.render(); });
       on('a-change', () => { step = 'phone'; F.auth.render(); });
       on('a-resend', () => guarded(() => send(channel)));
     },
@@ -118,11 +133,26 @@
     submit: function () {
       return guarded(async () => {
         errAt('e-form');
-        if (mode === 'email') {
+        if (mode === 'login') {
           const email = F.$('#a-email').value.trim().toLowerCase(), pass = F.$('#a-pass').value;
           const ok = errAt('e-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'اكتب إيميل صحيح.') & errAt('e-pass', pass ? '' : 'اكتب كلمة المرور.');
           if (!ok) return;
           await F.sb.signIn(email, pass);
+          return done();
+        }
+        if (mode === 'signup') {
+          const name = F.$('#a-name').value.trim().replace(/\s+/g, ' '), email = F.$('#a-email').value.trim().toLowerCase(), pass = F.$('#a-pass').value;
+          const gov = F.$('#a-gov').value, ph = F.cleanPhone(F.$('#a-phone').value);
+          const ok = errAt('e-name', name.split(' ').length >= 3 ? '' : 'اكتب الاسم الثلاثي (ثلاث كلمات).') &
+            errAt('e-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'اكتب إيميل صحيح.') &
+            errAt('e-pass', pass.length >= 8 ? '' : 'كلمة المرور 8 أحرف على الأقل.') &
+            errAt('e-gov', gov ? '' : 'اختر محافظتك.') &
+            errAt('e-phone', !ph || F.validPhone(ph) ? '' : 'الرقم لازم 11 رقم ويبدأ بـ 07.') &
+            errAt('e-consent', F.$('#a-consent').checked ? '' : 'لازم توافق حتى نكمل.');
+          if (!ok) return;
+          const r = await F.sb.signUp({ email: email, password: pass, name: name, phone: ph || null, car: '' });
+          if (r.needsConfirm) { errAt('e-form', ''); mode = 'login'; F.auth.render(); F.toast('أرسلنا رابط تأكيد لإيميلك. افتحه ثم سجّل دخول.', 'ok'); return; }
+          await F.sb.saveProfile({ governorate: gov }).catch(() => {});
           return done();
         }
         if (step === 'phone') {
@@ -142,7 +172,9 @@
         const name = F.$('#a-name').value.trim().replace(/\s+/g, ' '), car = F.$('#a-car').value.trim(), gov = F.$('#a-gov').value;
         const ok = errAt('e-name', name.split(' ').length >= 3 ? '' : 'اكتب الاسم الثلاثي (ثلاث كلمات).') & errAt('e-gov', gov ? '' : 'اختر محافظتك.') & errAt('e-car', car.length >= 2 ? '' : 'اكتب نوع السيارة.');
         if (!ok) return;
-        await F.sb.saveProfile({ full_name: name, phone: phone, car: car, governorate: gov });
+        const ph2 = F.cleanPhone(F.$('#a-ph2').value);
+        if (ph2 && !F.validPhone(ph2)) { errAt('e-phone', 'الرقم لازم 11 رقم ويبدأ بـ 07.'); return; }
+        await F.sb.saveProfile({ full_name: name, phone: ph2 || phone || null, car: car, governorate: gov });
         done();
       });
     }

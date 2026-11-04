@@ -3,6 +3,7 @@
   'use strict';
   const F = window.F;
 
+  let avaV = 0;
   async function render() {
     const el = F.$('#v-profile');
     const u = F.user();
@@ -17,8 +18,9 @@
     }
     el.innerHTML =
       '<h1>' + F.icon('user') + ' حسابي</h1>' +
+      (F.isAdmin() ? '<div class="card admin-box"><h2>' + F.icon('lock') + ' لوحة المدير</h2><div class="stack"><a class="btn block" href="#admin-drivers">' + F.icon('wheel') + ' إدارة السواق</a><a class="btn block secondary" href="#admin-app">' + F.icon('sliders') + ' إدارة التطبيق</a></div></div>' : '') +
       '<div class="card"><div class="row">' +
-        '<div class="avatar" style="width:56px;height:56px;font-size:22px;font-weight:800;display:grid;place-items:center">' + F.esc((u.name || '؟').trim().charAt(0)) + '</div>' +
+        '<button class="pf-ava" id="p-ava" type="button" aria-label="تغيير الصورة">' + (u.avatar ? '<img src="' + F.esc(F.sb.avatarUrl(u.avatar, avaV)) + '" alt="">' : F.esc((u.name || '؟').trim().charAt(0))) + '<span class="pf-cam">' + F.icon('camera') + '</span></button>' +
         '<div class="grow"><h2 style="margin:0">' + F.esc(u.name || 'بدون اسم') + (F.isRealAdmin() ? ' <span class="badge amber">مدير</span>' : '') + '</h2>' +
         '<div class="muted small">' + F.icon('pin') + ' ' + F.esc(u.gov || 'المحافظة غير محددة') + '</div>' +
         '<div class="muted small" style="direction:ltr;text-align:right">' + F.esc(u.phone) + '</div>' +
@@ -34,7 +36,7 @@
         '<button class="btn danger" id="p-delete">' + F.icon('trash') + ' حذف حسابي وكل بياناتي</button></div></div>' +
       '<div class="row wrap mt"><button class="btn ghost" id="p-settings">' + F.icon('sliders') + ' الإعدادات</button>' +
         '<button class="btn ghost" id="p-logout">تسجيل خروج</button>' +
-        (F.isAdmin() ? '<button class="btn ghost" id="p-admin">' + F.icon('lock') + ' لوحة الإدارة</button>' : '') + '</div>' +
+        '' + '</div>' +
       '<p class="muted small mt center">سند جايك · النسخة التجريبية 2.0</p>';
 
     F.$('#p-edit', el).onclick = () => editModal(u);
@@ -42,13 +44,14 @@
     F.$('#p-export', el).onclick = exportMine;
     F.$('#p-delete', el).onclick = deleteMine;
     F.$('#p-logout', el).onclick = async () => { if (F.driver) F.driver.stop(); await F.sb.signOut(); location.hash = ''; location.reload(); };
-    const ad = F.$('#p-admin', el); if (ad) ad.onclick = () => { location.hash = '#admin'; };
+    F.$('#p-ava', el).onclick = pickAvatar;
     F.$('#p-settings', el).onclick = () => { location.hash = '#settings'; };
 
     try {
-      const [nr, nc, cr] = await Promise.all([F.sb.count('requests', 'customer_id=eq.' + u.id), F.sb.count('calls', 'user_id=eq.' + u.id), F.sb.q('cranes', 'select=name,type,governorate,listed&owner_id=eq.' + u.id + '&limit=1')]);
+      const [nr, nc, cr] = await Promise.all([F.sb.count('requests', 'customer_id=eq.' + u.id), F.sb.count('calls', 'user_id=eq.' + u.id), F.sb.q('cranes', 'select=name,type,governorate,listed,tier,sub_expires_at&owner_id=eq.' + u.id + '&limit=1')]);
       const bs = F.$$('#p-stats b', el); if (bs[0]) { bs[0].textContent = nr; bs[1].textContent = nc; }
       const c = cr && cr[0], dv = F.$('#p-driver', el);
+      if (c) { const eff = c.tier !== 'bronze' && c.sub_expires_at && Date.parse(c.sub_expires_at) > Date.now() ? c.tier : 'bronze'; const av = F.$('#p-ava', el); if (av) av.className = 'pf-ava tier-' + eff; }
       if (dv) {
         dv.innerHTML = c
           ? '<h2>' + F.icon('crane') + ' أنت سائق</h2><div class="row between"><div>' + F.esc(c.name) + '<div class="muted small">' + F.esc(c.type) + ' · ' + F.esc(c.governorate || '') + ' · ' + (c.listed ? 'ظاهر للزبائن' : 'قيد المراجعة') + '</div></div><a class="btn sm" href="#driver">لوحة السائق</a></div>'
@@ -61,6 +64,39 @@
         ? '<ul class="list">' + rows.map((e) => '<li><span>' + F.esc(e.cranes ? e.cranes.name : '—') + '</span><span class="muted">' + F.fmtDate(Date.parse(e.created_at)) + '</span></li>').join('') + '</ul>'
         : 'ما اتصلت بأي كرين بعد.';
     } catch (e) { const n = F.$('#p-calls', el); if (n) n.textContent = 'تعذّر التحميل.'; }
+  }
+
+  // قصّ الصورة مربعة وتصغيرها قبل الرفع
+  function squareShrink(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image(), url = URL.createObjectURL(file);
+      img.onload = () => {
+        const side = Math.min(img.width, img.height), S = 480;
+        const c = document.createElement('canvas'); c.width = S; c.height = S;
+        c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        c.toBlob((b) => (b ? resolve(b) : reject(new Error('الصورة غير صالحة.'))), 'image/jpeg', 0.85);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('الصورة غير صالحة.')); };
+      img.src = url;
+    });
+  }
+  function pickAvatar() {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0];
+      if (!f) return;
+      try {
+        F.toast('جاري رفع الصورة…');
+        const u = F.user(), blob = await squareShrink(f), path = u.id + '/avatar.jpg';
+        await F.sb.upload('avatars', path, blob, true);
+        await F.sb.saveProfile({ avatar_path: path });
+        avaV = Date.now();
+        F.toast('تم تغيير الصورة', 'ok'); render();
+      } catch (e) { F.toast(F.errMsg(e), 'err'); }
+    };
+    inp.click();
   }
 
   function editModal(u) {

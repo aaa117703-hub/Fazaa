@@ -58,9 +58,10 @@
   var done = function () {
     if (!s.parentNode) return;
     s.classList.add('out');
-    setTimeout(function () { if (s.parentNode) s.remove(); }, 500);
+    document.dispatchEvent(new Event('splash-out'));
+    setTimeout(function () { if (s.parentNode) s.remove(); }, 600);
   };
-  setTimeout(done, 3200);
+  setTimeout(done, 5000);
   s.addEventListener('click', done);
 })();
 </script>
@@ -112,7 +113,8 @@
 <script src="push.js"></script>
 <script src="shops.js"></script>
 <script src="offline.js"></script>
-<script src="home.js"></script>
+<script src="cprofile.js"></script>
+  <script src="home.js"></script>
 <script src="driver.js"></script>
 <script src="packages.js"></script>
 <script src="profile.js"></script>
