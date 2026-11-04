@@ -1,0 +1,46 @@
+name: Build IPA
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Install Capacitor and add iOS
+        working-directory: .github/apk
+        run: |
+          npm install
+          npx cap add ios
+      - name: Icon, permissions, dark launch screen
+        working-directory: .github/apk
+        run: |
+          brew list imagemagick >/dev/null 2>&1 || brew install imagemagick
+          IM=$(command -v magick || command -v convert)
+          A=ios/App/App/Assets.xcassets
+          $IM ../../icon-512.png -background '#0d1012' -alpha remove -alpha off -resize 1024x1024 $A/AppIcon.appiconset/AppIcon-512@2x.png
+          for f in $(find $A/Splash.imageset -name '*.png'); do $IM -size 2732x2732 xc:'#0d1012' "$f"; done
+          /usr/libexec/PlistBuddy -c "Add :NSLocationWhenInUseUsageDescription string سند جايك يحتاج موقعك حتى يعرض لك أقرب كرين ويرسل موقعك عند الطلب" ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.${{ github.run_number }}" ios/App/App/Info.plist || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" ios/App/App/Info.plist || true
+      - name: Build unsigned app
+        working-directory: .github/apk/ios/App
+        run: |
+          if [ -d App.xcworkspace ]; then T="-workspace App.xcworkspace"; else T="-project App.xcodeproj"; fi
+          xcodebuild $T -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R .github/apk/ios/App/build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qr sanad-jaik.ipa Payload
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "ios-${{ github.run_number }}" sanad-jaik.ipa --title "سند جايك IPA #${{ github.run_number }}" --notes "ملف IPA غير موقّع. ثبّته بـ Sideloadly أو AltStore أو TrollStore (يوقّعه بحسابك)."
+      - uses: actions/upload-artifact@v4
+        with: { name: sanad-jaik-ipa, path: sanad-jaik.ipa }
