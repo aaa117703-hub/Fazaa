@@ -107,7 +107,17 @@
     };
   }
 
-  F.showApp = function () {
+  // نأخّر تشغيل التطبيق (الخريطة والبيانات) لحد ما تخلص الافتتاحية حتى ما تتقطع الحركة
+  function afterSplash(fn) {
+    const s = document.getElementById('splash');
+    if (!s || !s.parentNode) return fn();
+    let d = false;
+    const go = () => { if (d) return; d = true; fn(); };
+    document.addEventListener('splash-out', go, { once: true });
+    setTimeout(go, 5700);
+  }
+  F.showApp = function () { afterSplash(showAppNow); };
+  function showAppNow() {
     F.$('#auth').hidden = true;
     F.$('#app').hidden = false;
     if (!ready) {
@@ -120,7 +130,9 @@
     }
     viewChip();
     route();
-  };
+    const app = F.$('#app');
+    app.classList.remove('app-in'); void app.offsetWidth; app.classList.add('app-in');
+  }
 
   // قفل الصيانة + شريط الإعلان (من app_settings)
   async function applyRemote() {
