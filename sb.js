@@ -185,7 +185,7 @@
     if (!sess || F.viewAs() === 'visitor') return null;
     const u = sess.user || {};
     const p = profile || {};
-    return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', car: p.car || '', gov: p.governorate || '', createdAt: p.created_at || '' };
+    return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', avatar: p.avatar_path || '', car: p.car || '', gov: p.governorate || '', createdAt: p.created_at || '' };
   };
 
   // استدعاء Edge Function (بدون انتظار فشلها)
@@ -198,9 +198,9 @@
   }
 
   // رفع ملف للتخزين الخاص
-  async function upload(bucket, path, blob) {
+  async function upload(bucket, path, blob, upsert) {
     const t = await token();
-    const r = await fetch(API + '/storage/v1/object/' + bucket + '/' + path, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + t, 'Content-Type': blob.type || 'image/jpeg', 'x-upsert': 'false' }, body: blob });
+    const r = await fetch(API + '/storage/v1/object/' + bucket + '/' + path, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + t, 'Content-Type': blob.type || 'image/jpeg', 'x-upsert': upsert ? 'true' : 'false' }, body: blob });
     if (!r.ok) throw mkErr(r.status, 'تعذّر رفع الملف (الحد 5 ميغا، صورة فقط).');
     return path;
   }
@@ -209,7 +209,7 @@
     return API + '/storage/v1' + r.data.signedURL;
   }
 
-  F.sb = { fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
+  F.sb = { avatarUrl: function (p, v) { return p ? API + '/storage/v1/object/public/avatars/' + p + (v ? '?v=' + v : '') : ''; }, fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
 
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {

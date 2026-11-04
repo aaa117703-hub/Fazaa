@@ -3,7 +3,7 @@
   'use strict';
   const F = window.F;
 
-  const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', settings: 'v-settings', offline: 'v-offline', admin: 'v-admin' };
+  const VIEWS = { home: 'v-home', driver: 'v-driver', packages: 'v-packages', profile: 'v-profile', settings: 'v-settings', offline: 'v-offline', admin: 'v-admin', 'admin-drivers': 'v-admin', 'admin-app': 'v-admin' };
   const NAV = [
     ['home', 'home', 'الرئيسية'],
     ['driver', 'wheel', 'سائق'],
@@ -11,7 +11,7 @@
     ['profile', 'user', 'حسابي']
   ];
   let ready = false, current = '';
-  const ORDER = ['home', 'driver', 'packages', 'profile', 'settings', 'offline', 'admin'];
+  const ORDER = ['home', 'driver', 'packages', 'profile', 'settings', 'offline', 'admin', 'admin-drivers', 'admin-app'];
 
   function buildNav() {
     const html = NAV.map((n) =>
@@ -57,16 +57,18 @@
     if (!F.canEnter()) return;
     let v = (location.hash || '#home').slice(1);
     if (!VIEWS[v]) v = 'home';
-    if (v === 'admin' && !F.isAdmin()) { v = 'profile'; history.replaceState(null, '', '#profile'); }
+    const isAd = v === 'admin' || v === 'admin-drivers' || v === 'admin-app';
+    if (isAd && !F.isAdmin()) { v = 'profile'; history.replaceState(null, '', '#profile'); }
 
-    if (v === 'admin') {
-      const ok = await F.admin.show();
+    if (isAd) {
+      const ok = await F.admin.show(v === 'admin-app' ? 'app' : 'drivers');
       if (!ok) { location.hash = '#profile'; return; }
     }
 
     const prev = current;
-    Object.keys(VIEWS).forEach((k) => { F.$('#' + VIEWS[k]).hidden = k !== v; });
-    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (v === 'admin' || v === 'settings' ? 'profile' : v === 'offline' ? 'home' : v)));
+    const vid = VIEWS[v];
+    Object.keys(VIEWS).forEach((k) => { F.$('#' + VIEWS[k]).hidden = VIEWS[k] !== vid; });
+    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (isAd || v === 'settings' ? 'profile' : v === 'offline' ? 'home' : v)));
     current = v;
     document.body.classList.toggle('off-page', v === 'offline');
 
@@ -112,12 +114,32 @@
       buildNav();
       F.driver.init();
       F.admin.init();
+      applyRemote(); setInterval(applyRemote, 120000);
       ready = true;
       F.driver.resume();
     }
     viewChip();
     route();
   };
+
+  // قفل الصيانة + شريط الإعلان (من app_settings)
+  async function applyRemote() {
+    try {
+      const st = await F.sb.q('app_settings', 'select=key,value');
+      const g = (k) => ((st || []).find((x) => x.key === k) || { value: {} }).value || {};
+      const m = g('maintenance'), n = g('announcement');
+      let lock = F.$('#maint');
+      if (m.on && !F.isRealAdmin()) {
+        if (!lock) { lock = document.createElement('div'); lock.id = 'maint'; document.body.appendChild(lock); }
+        lock.innerHTML = '<div class="maint-in">' + F.icon('lock') + '<h2>صيانة</h2><p>' + F.esc(m.msg || 'التطبيق تحت الصيانة.') + '</p></div>';
+      } else if (lock) lock.remove();
+      let bar = F.$('#announce');
+      if (n.on && n.msg) {
+        if (!bar) { bar = document.createElement('div'); bar.id = 'announce'; bar.setAttribute('role', 'status'); document.body.prepend(bar); }
+        bar.textContent = n.msg;
+      } else if (bar) bar.remove();
+    } catch (e) { /* بدون نت: تجاهل */ }
+  }
 
   F.start = async function () {
     F.applySettings();

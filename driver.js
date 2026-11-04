@@ -203,20 +203,26 @@
     }).join('') + '</ul></div>';
   }
 
-  const KINDS = [['id', 'الهوية أو البطاقة الموحدة'], ['license', 'إجازة السوق'], ['vehicle', 'سنوية الكرين']];
+  const GROUPS = [
+    ['البطاقة الموحدة', [['id_front', 'الوجه الأمامي'], ['id_back', 'الوجه الخلفي']]],
+    ['سنوية السيارة', [['vehicle_front', 'الوجه الأمامي'], ['vehicle_back', 'الوجه الخلفي']]],
+    ['إجازة السوق (الرخصة)', [['license_front', 'الوجه الأمامي'], ['license_back', 'الوجه الخلفي']]]
+  ];
   const ST = { pending: ['amber', 'قيد المراجعة'], approved: ['green', 'مقبول'], rejected: ['red', 'مرفوض'] };
 
+  function docSlot(k) {
+    const mine = docs.filter((x) => x.kind === k[0])[0];
+    const st = mine ? ST[mine.status] : null;
+    return '<div class="doc-slot"><b>' + k[1] + '</b>' +
+      (st ? '<span class="badge ' + st[0] + '">' + st[1] + '</span>' : '<span class="muted small">ما انرفع</span>') +
+      (mine && mine.status === 'rejected' && mine.note ? '<span class="muted small">السبب: ' + F.esc(mine.note) + '</span>' : '') +
+      (!mine || mine.status === 'rejected' ? '<button class="btn sm secondary" data-up="' + k[0] + '">' + F.icon('camera') + ' رفع</button>' : '') + '</div>';
+  }
   function docsHtml() {
-    return '<div class="card"><h2>' + F.icon('shield') + ' توثيق حسابك</h2>' +
-      '<p class="muted small">ارفع صور واضحة. نراجعها وبعدها تظهر لك شارة «موثق» وتزيد ثقة الزبائن. الصور خاصة، ما يشوفها غير الإدارة.</p>' +
-      '<ul class="list">' + KINDS.map((k) => {
-        const mine = docs.filter((x) => x.kind === k[0])[0];
-        const st = mine ? ST[mine.status] : null;
-        return '<li style="display:block"><div class="row between"><span>' + k[1] + '</span>' +
-          (st ? '<span class="badge ' + st[0] + '">' + st[1] + '</span>' : '<span class="muted small">ما انرفع</span>') + '</div>' +
-          (mine && mine.status === 'rejected' && mine.note ? '<div class="muted small">السبب: ' + F.esc(mine.note) + '</div>' : '') +
-          (!mine || mine.status === 'rejected' ? '<button class="btn sm secondary mt-s" data-up="' + k[0] + '">' + F.icon('download') + ' رفع صورة</button>' : '') + '</li>';
-      }).join('') + '</ul></div>';
+    const done = docs.length, all = 6;
+    return '<div class="card"><h2>' + F.icon('shield') + ' وثائقك (' + done + '/' + all + ')</h2>' +
+      '<p class="muted small">ارفع صوراً واضحة لوجهي كل وثيقة. الإدارة تراجعها وتسجّل بياناتك بنفسها، وبعدها تظهر شارة «موثق». الصور خاصة ولا يراها غير المدير.</p>' +
+      GROUPS.map((g) => '<div class="doc-title">' + g[0] + '</div><div class="doc-grid">' + g[1].map(docSlot).join('') + '</div>').join('') + '</div>';
   }
 
   function pushHtml() {
@@ -265,7 +271,7 @@
 
   function renderDash(u) {
     const c = crane, avail = c.status === 'available';
-    const pkg = F.PACKAGES.find((p) => p.id === c.package) || F.PACKAGES[0];
+    const pkg = F.tierOf(c.tier || 'bronze');
     el.innerHTML =
       '<h1>' + F.icon('crane') + ' وضع السائق</h1>' +
       '<p class="lead">' + F.esc(c.name) + ' · ' + F.esc(c.type) + (c.governorate ? ' · ' + F.esc(c.governorate) : '') + (c.verified ? ' <span class="badge green">موثق</span>' : '') + '</p>' +

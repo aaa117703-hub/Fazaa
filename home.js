@@ -65,14 +65,14 @@
     const badges =
       (c.demo ? ' <span class="badge">تجريبي</span>' : '') +
       (c.verified ? ' <span class="badge green">موثق</span>' : '') +
-      (c.package === 'premium' || c.package === 'annual' ? ' <span class="badge amber">مميز</span>' : '');
+      ((c.tier && c.tier !== 'bronze') ? ' <span class="badge tier-b-' + c.tier + '">' + F.tierOf(c.tier).name + '</span>' : '');
     return (
       '<article class="card crane ' + (c.status === 'available' ? '' : 'busy') + '" data-id="' + F.esc(c.id) + '">' +
         '<div class="row">' +
-          '<div class="avatar">' + F.icon('crane') + '</div>' +
+          '<div class="avatar tier-' + (c.tier || 'bronze') + '" title="' + F.tierOf(c.tier).name + '">' + F.icon('crane') + '</div>' +
           '<div class="grow">' +
             '<h3>' + F.esc(c.name) + badges + '</h3>' +
-            '<div class="sub">' + F.esc(c.type) + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + F.fmtDist(c.d) + (c.ratingCount ? ' · ★ ' + c.rating.toFixed(1) + ' (' + c.ratingCount + ')' : '') + '</div>' +
+            '<div class="sub">' + F.esc(c.type) + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + F.fmtDist(c.d) + (c.ratingCount ? ' · <span class="stars">★ ' + c.rating.toFixed(1) + '</span> (' + c.ratingCount + ')' : ' · بدون تقييم') + '</div>' +
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
           '<div class="stack" style="gap:6px"><button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
