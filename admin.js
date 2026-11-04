@@ -7,7 +7,7 @@
 
   const TABSETS = {
     drivers: [['subs', 'المشتركين'], ['cranes', 'كل السواق'], ['docs', 'الوثائق']],
-    app: [['control', 'التحكم'], ['overview', 'نظرة عامة'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']]
+    app: [['control', 'التحكم'], ['shops', 'المحلات'], ['overview', 'نظرة عامة'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']]
   };
   const DAY = 864e5;
   const left = (c) => {
@@ -125,6 +125,18 @@
       '<p class="muted small mt-s">الحالة: ' + (n.on ? 'ظاهر' : 'مخفي') + '</p></div>';
   }
 
+  const SK = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات' };
+  async function shopsTab() {
+    const rows = await F.sb.q('shops', 'select=*&order=created_at.desc&limit=300');
+    const pend = (rows || []).filter((r) => r.status === 'pending'), ok = (rows || []).filter((r) => r.status === 'approved');
+    const line = (r, btns) => '<div class="sub-row"><div><b>' + F.esc(r.name) + '</b><div class="muted small">' + (SK[r.kind] || r.kind) + (r.governorate ? ' · ' + F.esc(r.governorate) : '') + (r.phone ? ' · ' + F.esc(r.phone) : '') + '</div>' +
+      (r.note ? '<div class="muted small">' + F.esc(r.note) + '</div>' : '') + '<a class="small" target="_blank" rel="noopener" href="https://maps.google.com/?q=' + r.lat + ',' + r.lng + '">عرض بالخريطة</a></div><div class="row">' + btns + '</div></div>';
+    return '<div class="card"><div class="row between"><h2 style="margin:0">بانتظار المراجعة (' + pend.length + ')</h2><button class="btn sm" data-a="shop-add">+ إضافة محل</button></div>' +
+      (pend.map((r) => line(r, '<button class="btn sm green" data-a="shop-ok" data-id="' + r.id + '">قبول</button><button class="btn sm danger" data-a="shop-del" data-id="' + r.id + '">رفض</button>')).join('') || '<p class="muted small">ما كو محلات جديدة.</p>') + '</div>' +
+      '<div class="card mt"><h2>المحلات المقبولة (' + ok.length + ')</h2>' +
+      (ok.map((r) => line(r, '<button class="btn sm danger" data-a="shop-del" data-id="' + r.id + '">حذف</button>')).join('') || '<p class="muted small">ما كو بعد.</p>') + '</div>';
+  }
+
   async function health() {
     const checks = [];
     const t = async (name, fn) => { try { checks.push([name, true, await fn()]); } catch (e) { checks.push([name, false, F.errMsg(e)]); } };
@@ -146,7 +158,7 @@
       TABS.map((t) => '<button class="chip ' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
     el.innerHTML = hdr + '<p class="muted center mt">جاري التحميل…</p>';
     let body;
-    try { body = await ({ overview: overview, subs: subs, control: control, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
+    try { body = await ({ overview: overview, shops: shopsTab, subs: subs, control: control, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
     catch (e) { body = '<div class="warn">' + F.esc(F.errMsg(e)) + '</div>'; }
     el.innerHTML = hdr + body;
     const gs = F.$('#ad-gov', el); if (gs) gs.onchange = () => { govFilter = gs.value; render(); };
@@ -229,6 +241,9 @@
     const a = t.dataset.a, id = t.dataset.id;
     const c = cache.cranes.find((x) => x.id === id);
     if (a === 'add') return addModal();
+    if (a === 'shop-add') return F.shops.add();
+    if (a === 'shop-ok') return F.sb.q('shops', 'id=eq.' + id, { method: 'PATCH', body: { status: 'approved' } }).then(() => { F.shops.resetComm(); F.toast('تم القبول', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
+    if (a === 'shop-del') return F.sb.q('shops', 'id=eq.' + id, { method: 'DELETE' }).then(() => { F.shops.resetComm(); F.toast('تم', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
     if (a === 'sub' && c) return subModal(c);
     if (a === 'info') { const cc = c || cache.cranes.find((x) => x.id === id); if (cc) return infoModal(cc); return F.sb.q('cranes', 'select=*&id=eq.' + id).then((r) => r && r[0] && infoModal(r[0])); }
     if (a === 'mt-toggle') return setting('maintenance', { on: t.dataset.on !== '1', msg: F.$('#mt-msg').value.trim() || 'التطبيق تحت الصيانة، نرجع لك بعد قليل.' });
