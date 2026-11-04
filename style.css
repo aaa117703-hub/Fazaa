@@ -610,3 +610,11 @@ body { font-weight: 500; font-size: 15px; -webkit-font-smoothing: antialiased; t
 /* دخول التطبيق بعد الافتتاحية (حركة خفيفة على GPU فقط) */
 #app.app-in { animation: app-in .7s cubic-bezier(.22, 1, .36, 1) both; }
 @keyframes app-in { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: none; } }
+
+.cp { text-align: center; display: grid; gap: 8px; justify-items: center; }
+.pf-ava.big { width: 96px; height: 96px; }
+.pf-ava.big svg { width: 44px; height: 44px; }
+.cp-stats { display: flex; gap: 10px; width: 100%; }
+.cp-stats > div { flex: 1; background: var(--surface-2); border-radius: 12px; padding: 10px 6px; display: grid; gap: 2px; }
+.cp-stats b { font-size: 18px; } .cp-stats span { font-size: 12px; color: var(--muted, #8a94a3); }
+.cp-rev { width: 100%; text-align: right; } .cp-rev .rv { border-top: 1px solid var(--line); padding: 8px 0; } .cp-rev p { margin: 4px 0 0; }

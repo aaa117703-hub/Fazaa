@@ -302,6 +302,8 @@
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-call]');
       if (b) return callOf(b.dataset.call, 'call');
+      const pf = e.target.closest('.crane .avatar, .crane h3');
+      if (pf) { const card = pf.closest('.crane'); if (card && card.dataset.id) return F.cprofile.show(card.dataset.id); }
       const w = e.target.closest('[data-wa]');
       if (w) return callOf(w.dataset.wa, 'whatsapp');
       if (e.target.closest('[data-clear]')) return clearFilters();
