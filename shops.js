@@ -100,8 +100,65 @@
     return out;
   }
 
-  // محلات داخل صندوق (غرب، جنوب، شرق، شمال). allowNet=false: من الذاكرة فقط.
+  // محلات أضافها المستخدمون ووافق عليها المدير (جدول shops)
+  const CK = 'sanad_shops_comm_v1';
+  let commMem = null;
+  async function comm(allowNet) {
+    if (!commMem) { try { commMem = JSON.parse(localStorage.getItem(CK) || 'null'); } catch (e) { commMem = null; } }
+    if (commMem && Date.now() - commMem.t < 30 * 60000) return commMem.l;
+    if (allowNet !== false && navigator.onLine !== false) {
+      try {
+        const rows = await F.sb.q('shops', 'select=id,name,kind,phone,lat,lng&status=eq.approved&limit=3000');
+        commMem = { t: Date.now(), l: (rows || []).map((r) => ['c' + r.id, +r.lat, +r.lng, r.name, r.phone || '', r.kind, 1]) };
+        try { localStorage.setItem(CK, JSON.stringify(commMem)); } catch (e) {}
+      } catch (e) {}
+    }
+    return commMem ? commMem.l : [];
+  }
+  const inB = (b) => (s) => s[2] >= b[0] && s[2] <= b[2] && s[1] >= b[1] && s[1] <= b[3];
+  function resetComm() { commMem = null; try { localStorage.removeItem(CK); } catch (e) {} }
+
   async function inBox(b, allowNet) {
+    const C = (await comm(allowNet)).filter(inB(b));
+    const O = await inBoxOsm(b, allowNet);
+    return C.concat(O);
+  }
+
+  function addShop() {
+    if (F.isGuest()) { F.toast('سجّل دخول أول حتى تضيف محل.', 'err'); return; }
+    const admin = F.isRealAdmin();
+    let loc = F.loc().source === 'default' ? null : { lat: F.loc().lat, lng: F.loc().lng };
+    const m = F.modal(
+      '<h2>' + F.icon('wrench') + ' أضف محل تصليح</h2>' +
+      '<p class="muted small">' + (admin ? 'كمدير: المحل يظهر فوراً.' : 'المحل يظهر للجميع بعد مراجعة الإدارة.') + '</p>' +
+      '<form id="sh-form" novalidate>' +
+      '<div class="field"><label>اسم المحل</label><input id="sh-name" maxlength="60"></div>' +
+      '<div class="field"><label>النوع</label><select id="sh-kind">' + Object.keys(KINDS).map((k) => '<option value="' + k + '">' + KINDS[k] + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label>رقم الهاتف (اختياري)</label><input id="sh-phone" class="ltr" inputmode="tel" maxlength="16"></div>' +
+      '<div class="field"><label>ملاحظة (اختياري)</label><input id="sh-note" maxlength="140" placeholder="مثال: يشتغل 24 ساعة، متخصص كهرباء"></div>' +
+      '<div class="field"><label>الموقع</label><button type="button" class="btn secondary" id="sh-loc">' + F.icon('pin') + (loc ? ' موقعي الحالي (اضغط للتغيير)' : ' حدد موقع المحل على الخريطة') + '</button></div>' +
+      '<div class="err" id="sh-err" style="margin-bottom:8px"></div>' +
+      '<div class="row"><button class="btn grow" type="submit">' + (admin ? 'إضافة' : 'أرسل للمراجعة') + '</button><button class="btn secondary" type="button" id="sh-x">إلغاء</button></div></form>');
+    const $ = (i) => F.$(i, m.el);
+    $('#sh-x').onclick = m.close;
+    $('#sh-loc').onclick = async () => { const p = await F.pickLocation(loc); if (p) { loc = p; $('#sh-loc').innerHTML = F.icon('check-circle') + ' تم تحديد الموقع'; } };
+    $('#sh-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const name = $('#sh-name').value.trim(), ph = F.cleanPhone($('#sh-phone').value), err = $('#sh-err');
+      if (name.length < 2) { err.textContent = 'اكتب اسم المحل.'; return; }
+      if (ph && !F.validPhone(ph)) { err.textContent = 'الرقم لازم 11 رقم ويبدأ بـ 07.'; return; }
+      if (!loc) { err.textContent = 'حدد موقع المحل.'; return; }
+      try {
+        await F.sb.q('shops', '', { method: 'POST', body: { name: name, kind: $('#sh-kind').value, phone: ph || null, note: $('#sh-note').value.trim() || null, lat: loc.lat, lng: loc.lng, governorate: F.govOf ? F.govOf(loc.lat, loc.lng) : null, status: admin ? 'approved' : 'pending' } });
+        resetComm(); m.close();
+        F.toast(admin ? 'تمت الإضافة' : 'وصل طلبك. راح نراجعه ونضيفه قريباً.', 'ok');
+        if (F.home && F.home.reloadShops) F.home.reloadShops();
+      } catch (ex) { err.textContent = F.errMsg(ex); }
+    };
+  }
+
+  // محلات داخل صندوق (غرب، جنوب، شرق، شمال). allowNet=false: من الذاكرة فقط.
+  async function inBoxOsm(b, allowNet) {
     // إذا قائمة كل العراق جاهزة نستخدمها، وإلا نجلب الخلايا القريبة بسرعة ونكمل كل العراق بالخلفية
     const A = await allCached();
     if (!A && allowNet !== false) all(true).catch(() => {});
@@ -123,5 +180,5 @@
     for (const c of cellsOf(b)) await ensureCell(c[0], c[1], true);
   }
 
-  F.shops = { failed: () => failed, all: all, inBox: inBox, prefetch: prefetch, parse: parse, query: query, KINDS: KINDS, cellsOf: cellsOf };
+  F.shops = { add: addShop, resetComm: resetComm, failed: () => failed, all: all, inBox: inBox, prefetch: prefetch, parse: parse, query: query, KINDS: KINDS, cellsOf: cellsOf };
 })();

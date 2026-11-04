@@ -68,6 +68,48 @@
     };
   }
 
+  const SOSK = 'sanad_sos_contact';
+  const getC = () => { try { return JSON.parse(localStorage.getItem(SOSK) || 'null'); } catch (e) { return null; } };
+  const waNum = (p) => '964' + String(p).replace(/^0/, '');
+
+  // زر الطوارئ: أرقام النجدة + إرسال الموقع لجهة اتصالك بواتساب
+  async function sos() {
+    const c = getC();
+    const m = F.modal(
+      '<h2 style="color:var(--danger,#ff5a5a)">' + F.icon('alert') + ' طوارئ</h2>' +
+      '<p class="muted small">إذا كو خطر على حياتك أو إصابات، اتصل بالنجدة أول شي.</p>' +
+      '<div class="sos-nums">' +
+        '<a class="btn danger block" href="tel:104">' + F.icon('phone') + ' الشرطة 104</a>' +
+        '<a class="btn danger block" href="tel:122">' + F.icon('phone') + ' الإسعاف 122</a>' +
+        '<a class="btn danger block" href="tel:115">' + F.icon('phone') + ' الإطفاء 115</a>' +
+      '</div>' +
+      '<div class="card mt"><b>جهة الاتصال الخاصة بك</b>' +
+        (c ? '<p class="small" style="margin:6px 0">' + F.esc(c.name) + ' · <span style="direction:ltr;display:inline-block">' + F.esc(c.phone) + '</span></p>' +
+             '<button class="btn big block" id="sos-send">' + F.icon('share') + ' أرسل موقعي لـ ' + F.esc(c.name) + '</button>' +
+             '<button class="btn ghost block mt-s" id="sos-edit">تغيير الجهة</button>'
+           : '<p class="muted small">سجّل شخص تثق بيه (أخ، صديق) حتى نرسله موقعك بضغطة وحدة وقت الخطر.</p>' +
+             '<div class="field"><input id="sos-name" maxlength="30" placeholder="الاسم (مثال: أخوي)"></div>' +
+             '<div class="field"><input id="sos-phone" class="ltr" inputmode="tel" maxlength="16" placeholder="07701234567"><div class="err" id="sos-err"></div></div>' +
+             '<button class="btn block" id="sos-save">حفظ</button>') +
+      '</div><button class="btn secondary block mt" id="sos-x">إغلاق</button>');
+    const $ = (i) => F.$(i, m.el);
+    $('#sos-x').onclick = m.close;
+    if ($('#sos-edit')) $('#sos-edit').onclick = () => { try { localStorage.removeItem(SOSK); } catch (e) {} m.close(); sos(); };
+    if ($('#sos-save')) $('#sos-save').onclick = () => {
+      const name = $('#sos-name').value.trim(), ph = F.cleanPhone($('#sos-phone').value);
+      if (name.length < 2) { $('#sos-err').textContent = 'اكتب الاسم.'; return; }
+      if (!F.validPhone(ph)) { $('#sos-err').textContent = 'الرقم لازم 11 رقم ويبدأ بـ 07.'; return; }
+      try { localStorage.setItem(SOSK, JSON.stringify({ name: name, phone: ph })); } catch (e) {}
+      m.close(); sos();
+    };
+    if ($('#sos-send')) $('#sos-send').onclick = async () => {
+      const l = await currentLocation();
+      if (!l) return;
+      const text = 'طوارئ! أحتاج مساعدة فوراً.\nموقعي: ' + mapsLink(l);
+      window.open('https://wa.me/' + waNum(c.phone) + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
+    };
+  }
+
   function show() {
     const m = F.modal(
       '<h2>' + F.icon('shield') + ' سيارتي تعطلت — شنو أسوي؟</h2>' +
@@ -84,5 +126,5 @@
     F.$('#gd-share', m.el).onclick = () => { m.close(); shareLocation(); };
   }
 
-  F.guide = { show: show, shareLocation: shareLocation };
+  F.guide = { show: show, shareLocation: shareLocation, sos: sos };
 })();
