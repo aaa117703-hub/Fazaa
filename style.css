@@ -376,35 +376,34 @@ th { color: var(--muted); font-weight: 600; }
   .nav-ind { transition: none; }
 }
 
-/* ---------- شاشة الدخول (3 ثواني) ---------- */
+/* ---------- شاشة الافتتاح ---------- */
 #splash {
-  --muted: #9AA0A8; --accent: #FF6B2C;
-  position: fixed; inset: 0; z-index: 9999; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: radial-gradient(60% 42% at 50% 40%, rgba(255, 107, 44, .12), transparent 72%), #101214;
-  transition: opacity .45s ease;
+  --accent: #FF6B2C;
+  position: fixed; inset: 0; z-index: 9999; overflow: hidden; padding: 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  background: #0d1012; transition: opacity .45s ease;
 }
 #splash.out { opacity: 0; pointer-events: none; }
-#splash svg { width: min(84vw, 340px); height: auto; overflow: visible; }
-.sp-roads { opacity: 0; animation: sp-fade .8s .05s forwards; }
-.sp-base { opacity: 0; animation: sp-fade .5s .3s forwards; }
-.sp-route { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sp-draw 1.35s .5s cubic-bezier(.45, 0, .2, 1) forwards; }
-.sp-ring { fill: none; stroke: #3B82F6; stroke-width: 1.6; opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-ring 2.1s ease-out infinite; }
-.sp-ring.r2 { animation-delay: .7s; }
-.sp-ring.r3 { animation-delay: 1.4s; }
-.sp-you { transform-box: fill-box; transform-origin: center; animation: sp-pop .4s .1s both; }
-.sp-truck { opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-pop .3s .45s both, sp-gone .25s 1.9s forwards; }
-.sp-ok { opacity: 0; transform-box: fill-box; transform-origin: center; animation: sp-pop .35s 1.9s both; }
-.sp-check { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sp-draw .35s 2.05s ease-out forwards; }
-.sp-text { text-align: center; margin-top: 6px; }
-.sp-name { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1.2; opacity: 0; animation: sp-up .6s 1.95s both; }
-.sp-tag { color: var(--muted); font-size: 15px; opacity: 0; animation: sp-up .6s 2.1s both; }
+.sp-glow { position: absolute; inset: -20%; background: radial-gradient(45% 35% at 50% 38%, rgba(255, 107, 44, .22), transparent 70%); opacity: 0; animation: sp-fade 1s .1s forwards; }
+.sp-logo { position: relative; width: 132px; height: 132px; display: grid; place-items: center; animation: sp-pop .6s cubic-bezier(.2, 1.3, .4, 1) both; }
+.sp-logo svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 24px rgba(255, 107, 44, .35)); }
+.sp-arch { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sp-draw .9s .25s cubic-bezier(.5, 0, .2, 1) forwards; }
+.sp-dot { transform-box: fill-box; transform-origin: center; opacity: 0; animation: sp-pop .4s 1s both; }
+.sp-chev { opacity: 0; animation: sp-rise .5s 1.15s both; }
+.sp-pulse { position: absolute; inset: 14px; border-radius: 50%; border: 2px solid rgba(255, 107, 44, .6); opacity: 0; animation: sp-ring 2.2s 1.2s ease-out infinite; }
+.sp-pulse.r2 { animation-delay: 1.9s; }
+.sp-name { margin-top: 18px; font-size: 38px; font-weight: 800; color: #fff; line-height: 1.2; opacity: 0; animation: sp-up .6s 1.2s both; }
+.sp-tag { color: #FF8A3D; font-size: 15px; font-weight: 600; letter-spacing: .3px; opacity: 0; animation: sp-up .6s 1.4s both; }
+.sp-tip { position: absolute; bottom: calc(46px + env(safe-area-inset-bottom)); left: 20px; right: 20px; max-width: 420px; margin-inline: auto; padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: #E8EAED; font-size: 15px; line-height: 1.7; opacity: 0; animation: sp-up .6s 1.7s both; }
+.sp-tip b { display: block; color: #FF8A3D; font-size: 12.5px; margin-bottom: 4px; }
+.sp-bar { position: absolute; bottom: 0; right: 0; height: 3px; width: 100%; background: linear-gradient(90deg, transparent, #FF6B2C); transform-origin: right; transform: scaleX(0); animation: sp-bar 3.1s linear forwards; }
 @keyframes sp-fade { to { opacity: 1; } }
 @keyframes sp-draw { to { stroke-dashoffset: 0; } }
-@keyframes sp-ring { 0% { transform: scale(1); opacity: .75; } 100% { transform: scale(8); opacity: 0; } }
-@keyframes sp-pop { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
-@keyframes sp-gone { to { opacity: 0; transform: scale(.4); } }
+@keyframes sp-ring { 0% { transform: scale(.9); opacity: .7; } 100% { transform: scale(2.1); opacity: 0; } }
+@keyframes sp-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
+@keyframes sp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes sp-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes sp-bar { to { transform: scaleX(1); } }
 
 /* ---------- أزرار الشريط العلوي ---------- */
 .tb-actions { display: flex; align-items: center; gap: 6px; }
@@ -545,3 +544,28 @@ h1, h2, h3, .brand-name, .hero .name, .off-title, .off-h, .off-t b { font-family
 .brand-name { font-size: 22px; font-weight: 800; }
 .off .off-title { font-size: 34px; font-weight: 700; }
 .off-t b { font-size: 19px; font-weight: 600; }
+
+/* ---------- ضبط للموبايل: وضوح الخط وأحجام العناصر ---------- */
+:root { --muted: #B7BDC6; }
+:root[data-theme="light"] { --muted: #4A525B; }
+body { font-weight: 500; font-size: 15px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+@media (max-width: 480px) {
+  main { padding-inline: 12px; }
+  .btn { padding: 9px 14px; font-size: 14px; min-height: 42px; border-radius: 12px; }
+  .btn.big { font-size: 16px; padding: 12px 16px; }
+  .btn .ic, .chip .ic { width: 1.05em; height: 1.05em; }
+  .nav-bottom button .ic { width: 22px; height: 22px; }
+  .nav-bottom button span { font-size: 11.5px; }
+  .avatar { width: 40px; height: 40px; }
+  .avatar .ic { width: 22px; height: 22px; }
+  .card { padding: 12px; }
+  .view h1 { font-size: 20px; }
+  .hero .name { font-size: 18px; }
+  .pin.green, .pin.red { width: 34px; height: 34px; }
+  .pin.shop { width: 36px; height: 36px; }
+  .pin.shop .ic { width: 20px; height: 20px; }
+  .pin .ic { width: 17px; height: 17px; }
+  #map, .map { height: clamp(260px, 42vh, 380px); }
+  .map-pick { height: 56vh; }
+  .quick .btn { font-size: 13.5px; padding-inline: 8px; }
+}
