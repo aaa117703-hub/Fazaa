@@ -15,6 +15,7 @@
     '<div id="h-active"></div>' +
     '<div id="h-hero"></div>' +
     '<div class="row wrap quick">' +
+      '<button class="btn danger grow" id="h-sos">' + F.icon('alert') + ' طوارئ SOS</button>' +
       '<button class="btn secondary grow" id="h-guide">' + F.icon('shield') + ' شنو أسوي؟</button>' +
       '<button class="btn secondary grow" id="h-share">' + F.icon('share') + ' أرسل موقعي</button>' +
       '<button class="btn secondary grow" id="h-offline">' + F.icon('map') + ' خرائط دون اتصال</button>' +
@@ -26,6 +27,7 @@
         '<div class="filters">' +
           '<button class="chip" id="h-avail">متاح فقط</button>' +
           '<button class="chip" id="h-shops">' + F.icon('wrench') + ' محلات تصليح</button>' +
+          '<button class="chip" id="h-addshop">+ أضف محل</button>' +
           '<select id="h-gov" aria-label="المحافظة"><option value="">كل المحافظات</option>' +
             F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') +
           '</select>' +
@@ -144,7 +146,7 @@
   const SHOP_ZOOM = 7;
   function shopPop(s) {
     const tel = (s[4] || '').split(/[;,\/]/)[0].trim();
-    return '<b>' + F.esc(s[3] || F.shops.KINDS[s[5]] || 'محل تصليح') + '</b><br>' + F.esc(F.shops.KINDS[s[5]] || '') +
+    return '<b>' + F.esc(s[3] || F.shops.KINDS[s[5]] || 'محل تصليح') + '</b>' + (s[6] ? ' <span class="badge green">موثّق من المجتمع</span>' : '') + '<br>' + F.esc(F.shops.KINDS[s[5]] || '') +
       (tel ? '<br><a href="tel:' + F.esc(tel.replace(/[^+\d]/g, '')) + '">' + F.icon('phone') + ' ' + F.esc(tel) + '</a>' : '<br><span class="muted small">بدون رقم مسجّل</span>') +
       '<br><a href="https://maps.google.com/?q=' + s[1] + ',' + s[2] + '" target="_blank" rel="noopener">فتح بالخرائط</a>';
   }
@@ -302,6 +304,8 @@
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-call]');
       if (b) return callOf(b.dataset.call, 'call');
+      const pf = e.target.closest('.crane .avatar, .crane h3');
+      if (pf) { const card = pf.closest('.crane'); if (card && card.dataset.id) return F.cprofile.show(card.dataset.id); }
       const w = e.target.closest('[data-wa]');
       if (w) return callOf(w.dataset.wa, 'whatsapp');
       if (e.target.closest('[data-clear]')) return clearFilters();
@@ -312,9 +316,11 @@
     });
     F.$('#h-gps', el).onclick = () => locateGPS(false);
     F.$('#h-guide', el).onclick = () => F.guide.show();
+    F.$('#h-sos', el).onclick = () => F.guide.sos();
     F.$('#h-share', el).onclick = () => F.guide.shareLocation();
     F.$('#h-offline', el).onclick = () => { location.hash = '#offline'; };
     F.$('#h-shops', el).onclick = () => toggleShops(!shopsOn);
+    F.$('#h-addshop', el).onclick = () => F.shops.add();
     if (map) map.on('moveend', () => { clearTimeout(shopTimer); shopTimer = setTimeout(loadShops, 600); });
     try { if (localStorage.getItem('sanad_shops_on') === '1') setTimeout(() => toggleShops(true), 800); } catch (e) {}
     F.$('#h-avail', el).classList.toggle('on', state.onlyAvail);
@@ -343,6 +349,7 @@
   }
 
   F.home = {
+    reloadShops: function () { clearShops(); loadShops(); },
     init: init,
     show: function () {
       if (!ready) init();
