@@ -36,6 +36,21 @@ jobs:
             cp $R/mipmap-$n/ic_launcher.png $R/mipmap-$n/ic_launcher_foreground.png
           done
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+      - name: Native splash (dark, no icon)
+        working-directory: .github/apk
+        run: |
+          R=android/app/src/main/res
+          IM=$(command -v magick || command -v convert)
+          for f in $(find $R -name 'splash*.png'); do $IM -size 480x800 xc:'#0d1012' "$f"; done
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#00000000"/><size android:width="1dp" android:height="1dp"/></shape>\n' > $R/drawable/splash_empty.xml
+          python3 - <<'PY'
+          import re
+          p='android/app/src/main/res/values/styles.xml'
+          s=open(p,encoding='utf-8').read()
+          add='<item name="windowSplashScreenBackground">#0d1012</item><item name="windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>'
+          s=re.sub(r'(<style name="AppTheme.NoActionBarLaunch"[^>]*>)', r'\1'+add, s, count=1)
+          open(p,'w',encoding='utf-8').write(s)
+          PY
       - name: Build debug APK
         working-directory: .github/apk/android
         run: ./gradlew assembleDebug --no-daemon
