@@ -314,6 +314,7 @@
       if (e.target.closest('[data-retry]')) { load(); return; }
       if (e.target.closest('[data-req]')) F.request.start();
     });
+    if (map && F.traffic) F.traffic.mount(map, F.$('.filters', el)); // يظهر الزر فقط إذا الزحام مفعّل من app_settings
     F.$('#h-gps', el).onclick = () => locateGPS(false);
     F.$('#h-guide', el).onclick = () => F.guide.show();
     F.$('#h-sos', el).onclick = () => F.guide.sos();

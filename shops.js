@@ -157,8 +157,24 @@
     };
   }
 
+  // المصدر الأول: جدول places بقاعدة البيانات (مستورد ومنظّف، نفس الشي لكل المستخدمين).
+  // إذا الجدول فارغ أو السيرفر ما رد، نرجع للطريقة القديمة (Overpass من الجهاز).
+  const SRV_KINDS = ['car_repair', 'tyres', 'car_parts', 'mechanic', 'car_electrics']; // بدون محطات الوقود (طبقة مستقلة لاحقاً)
+  let srvDownUntil = 0; // إذا السيرفر فشل نوقف المحاولة دقيقتين
+  async function inBoxSrv(b) {
+    const rows = await F.sb.rpc('places_in_bbox', { p_west: b[0], p_south: b[1], p_east: b[2], p_north: b[3], p_kinds: SRV_KINDS, p_limit: 800 });
+    return (rows || []).map((r) => ['p' + r.id, +r.lat, +r.lng, r.name_ar || r.name || '', r.phone || '', r.kind]);
+  }
+
   // محلات داخل صندوق (غرب، جنوب، شرق، شمال). allowNet=false: من الذاكرة فقط.
   async function inBoxOsm(b, allowNet) {
+    if (allowNet !== false && navigator.onLine !== false && F.sb && Date.now() > srvDownUntil) {
+      try {
+        const S = await inBoxSrv(b);
+        if (S.length) return S; // السيرفر عنده بيانات لهذي المنطقة
+      } catch (e) { srvDownUntil = Date.now() + 120000; }
+    }
+    // السيرفر فارغ لهذي المنطقة أو ما رد: نكمل بالطريقة القديمة
     // إذا قائمة كل العراق جاهزة نستخدمها، وإلا نجلب الخلايا القريبة بسرعة ونكمل كل العراق بالخلفية
     const A = await allCached();
     if (!A && allowNet !== false) all(true).catch(() => {});
