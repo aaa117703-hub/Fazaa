@@ -125,7 +125,7 @@
       '<p class="muted small mt-s">الحالة: ' + (n.on ? 'ظاهر' : 'مخفي') + '</p></div>';
   }
 
-  const SK = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات' };
+  const SK = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات', oil_change: 'تبديل زيوت' };
   async function shopsTab() {
     const rows = await F.sb.q('shops', 'select=*&order=created_at.desc&limit=300');
     const pend = (rows || []).filter((r) => r.status === 'pending'), ok = (rows || []).filter((r) => r.status === 'approved');

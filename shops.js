@@ -18,14 +18,15 @@
   const cellKey = (i, j) => i + '_' + j;
   const cellBox = (i, j) => [i * CELL, j * CELL, (i + 1) * CELL, (j + 1) * CELL]; // غرب، جنوب، شرق، شمال
 
-  const KINDS = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات' };
+  const KINDS = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات', oil_change: 'تبديل زيوت' };
+  const OIL = /زيت|زيوت|oil|lube|lubric/i;
   function parse(json) {
     const out = [];
     ((json && json.elements) || []).forEach((e) => {
       const t = e.tags || {};
       const lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
       if (lat == null || lng == null) return;
-      const k = t.shop === 'car_repair' || t.amenity === 'car_repair' ? 'car_repair' : t.shop === 'tyres' ? 'tyres' : t.shop === 'car_parts' ? 'car_parts' : t.craft === 'mechanic' ? 'mechanic' : t.craft === 'car_electrics' ? 'car_electrics' : 'car_repair';
+      const k = t['service:vehicle:oil_change'] === 'yes' || OIL.test((t['name:ar'] || '') + ' ' + (t.name || '') + ' ' + (t['name:en'] || '')) ? 'oil_change' : t.shop === 'car_repair' || t.amenity === 'car_repair' ? 'car_repair' : t.shop === 'tyres' ? 'tyres' : t.shop === 'car_parts' ? 'car_parts' : t.craft === 'mechanic' ? 'mechanic' : t.craft === 'car_electrics' ? 'car_electrics' : 'car_repair';
       out.push([String(e.id), +lat.toFixed(5), +lng.toFixed(5), t['name:ar'] || t.name || '', t.phone || t['contact:phone'] || t.mobile || t['contact:mobile'] || '', k]);
     });
     return out;
@@ -33,14 +34,14 @@
   function query(b) {
     const bb = '(' + b[1] + ',' + b[0] + ',' + b[3] + ',' + b[2] + ')';
     return '[out:json][timeout:25];(' +
-      ['"shop"="car_repair"', '"amenity"="car_repair"', '"shop"="tyres"', '"shop"="car_parts"', '"craft"="mechanic"', '"craft"="car_electrics"'].map((q) => 'nwr[' + q + ']' + bb + ';').join('') +
+      ['"shop"="car_repair"', '"amenity"="car_repair"', '"shop"="tyres"', '"shop"="car_parts"', '"craft"="mechanic"', '"craft"="car_electrics"', '"service:vehicle:oil_change"="yes"'].map((q) => 'nwr[' + q + ']' + bb + ';').join('') + 'nwr["name"~"زيوت|زيت|oil change|lube",i]' + bb + ';' +
       ');out center tags 500;';
   }
-  const ALL = 'sanad_shops_all_v1';
+  const ALL = 'sanad_shops_all_v2';
   let allMem = null;
   function allQuery() {
     return '[out:json][timeout:120];area["ISO3166-1"="IQ"]->.a;(' +
-      ['"shop"="car_repair"', '"amenity"="car_repair"', '"shop"="tyres"', '"shop"="car_parts"', '"craft"="mechanic"', '"craft"="car_electrics"'].map((q) => 'nwr[' + q + '](area.a);').join('') +
+      ['"shop"="car_repair"', '"amenity"="car_repair"', '"shop"="tyres"', '"shop"="car_parts"', '"craft"="mechanic"', '"craft"="car_electrics"', '"service:vehicle:oil_change"="yes"'].map((q) => 'nwr[' + q + '](area.a);').join('') + 'nwr["name"~"زيوت|زيت|oil change|lube",i]["shop"~"car|tyres|car_repair|car_parts"](area.a);nwr["name"~"زيوت|تبديل زيت|oil change|lube",i]["amenity"](area.a);' +
       ');out center tags 6000;';
   }
   async function allCached() {

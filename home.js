@@ -28,6 +28,7 @@
           '<button class="chip" id="h-avail">متاح فقط</button>' +
           '<button class="chip" id="h-shops">' + F.icon('wrench') + ' محلات تصليح</button>' +
           '<button class="chip" id="h-addshop">+ أضف محل</button>' +
+          '<button class="chip" id="h-speed">' + F.icon('gauge') + ' عداد السرعة</button>' +
           '<select id="h-gov" aria-label="المحافظة"><option value="">كل المحافظات</option>' +
             F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') +
           '</select>' +
@@ -285,6 +286,7 @@
     if (F.hasMap()) {
       try {
         map = F.createMap(F.$('#map', el), F.loc(), F.loc().source === 'default' ? 6 : 13);
+        if (F.speedo) F.speedo.attach(F.$('#map', el));
       } catch (e) {
         map = null;
         F.$('#map', el).innerHTML = '<div class="empty">تعذّر تشغيل الخريطة على هذا الجهاز. القائمة تشتغل عادي.</div>';

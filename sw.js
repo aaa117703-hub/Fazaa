@@ -30,6 +30,7 @@ const SHELL_FILES = [
   './traffic.js',
   './offline.js',
   './cprofile.js',
+  './speedo.js',
   './home.js',
   './driver.js',
   './packages.js',
