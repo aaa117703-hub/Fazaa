@@ -94,6 +94,7 @@
         cur = r;
         cur.targets = a.targets;
         if (r.status === 'accepted' || r.status === 'completed') cur.crane = await craneInfo(r);
+        if (r.status === 'accepted') { try { cur.track = await F.sb.rpc('track_request', { p_request_id: r.id }); } catch (e) { cur.track = null; } }
         if (was && was !== r.status && r.status === 'accepted') { F.toast('كرين قبل طلبك!', 'ok'); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} }
         if (['cancelled', 'expired'].includes(r.status) && !(mod && mod.open)) setActive(null);
       }
@@ -108,10 +109,52 @@
 
   function stars(n) { return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
 
+  function steps(s) {
+    const i = { open: 0, accepted: 1, completed: 2 }[s];
+    if (i == null) return '';
+    return '<div class="steps">' + ['أُرسل', 'انقبل', 'اكتمل'].map((t, k) => '<div class="st' + (k <= i ? ' on' : '') + '"><i></i><span>' + t + '</span></div>').join('') + '</div>';
+  }
+
+  // ---- خريطة التتبّع (تبقى حيّة بين التحديثات) ----
+  let tm = null, tEl = null, tCrane = null, tMe = null;
+  const km = (a, b) => { const R = 6371, r = Math.PI / 180, dl = (b.lat - a.lat) * r, dg = (b.lng - a.lng) * r; const h = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dg / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+  function dropTrack() { try { tm && tm.remove(); } catch (e) {} tm = tEl = tCrane = tMe = null; }
+  function drawTrack(el) {
+    const ph = F.$('#rq-map', el);
+    if (!ph) { return; }
+    const t = cur && cur.track;
+    if (!t || t.lat == null) { ph.outerHTML = '<div class="muted small center" style="margin:8px 0">الموقع المباشر للسائق يظهر هنا لما يفتح تطبيقه.</div>'; return; }
+    if (!window.maplibregl) { ph.remove(); return; }
+    const me = { lat: cur.lat, lng: cur.lng }, cr = { lat: t.lat, lng: t.lng };
+    if (!tm) {
+      tEl = document.createElement('div'); tEl.id = 'rq-map';
+      tm = F.createMap(tEl, cr, 13);
+      if (!tm) { ph.remove(); return; }
+      tm.on('load', () => {
+        tm.addSource('rt', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[me.lng, me.lat], [cr.lng, cr.lat]] } } });
+        tm.addLayer({ id: 'rt', type: 'line', source: 'rt', paint: { 'line-color': '#FFC21A', 'line-width': 4, 'line-dasharray': [1.5, 1.5] } });
+      });
+      tMe = new maplibregl.Marker({ color: '#FF6B2C' }).setLngLat([me.lng, me.lat]).addTo(tm);
+      tCrane = new maplibregl.Marker({ color: '#FFC21A' }).setLngLat([cr.lng, cr.lat]).addTo(tm);
+    }
+    ph.replaceWith(tEl);
+    tCrane.setLngLat([cr.lng, cr.lat]);
+    try {
+      const s = tm.getSource && tm.getSource('rt');
+      if (s) s.setData({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[me.lng, me.lat], [cr.lng, cr.lat]] } });
+      const bb = new maplibregl.LngLatBounds([me.lng, me.lat], [me.lng, me.lat]); bb.extend([cr.lng, cr.lat]);
+      tm.resize(); tm.fitBounds(bb, { padding: 50, maxZoom: 15, duration: 600 });
+    } catch (e) {}
+    const d = km(me, cr), eta = Math.max(1, Math.round(d / 35 * 60));
+    const info = F.$('#rq-eta', el);
+    if (info) info.textContent = d < 0.15 ? 'السائق وصل أو قريب جداً' : 'يبعد ' + d.toFixed(1) + ' كم · يصل تقريباً خلال ' + eta + ' دقيقة';
+  }
+
   function body() {
     const r = cur;
     if (!r) return '<p class="muted">جاري التحميل…</p>';
-    const head = '<div class="muted small">' + issueName(r.issue) + (r.destination ? ' · إلى ' + F.esc(r.destination) : '') + ' · ' + F.ago(Date.parse(r.created_at)) + '</div>';
+    const SC = { open: ['amber', 'قيد البحث'], accepted: ['green', 'مؤكد'], completed: ['blue', 'مكتمل'], cancelled: ['red', 'ملغي'], expired: ['red', 'منتهي'] }[r.status] || ['', r.status];
+    const head = '<div class="row between"><b class="req-no">طلب #' + (r.number || '') + '</b><span class="badge ' + SC[0] + '">' + SC[1] + '</span></div>' + steps(r.status) + '<div class="muted small">' + issueName(r.issue) + (r.destination ? ' · إلى ' + F.esc(r.destination) : '') + ' · ' + F.ago(Date.parse(r.created_at)) + '</div>';
     if (r.status === 'open') {
       return head + '<div class="hero" style="margin-top:10px"><h2>' + F.icon('radar') + ' نبحث لك عن كرين…</h2>' +
         '<div class="sub">أرسلنا طلبك إلى ' + (r.targets != null ? r.targets : 'أقرب') + ' كرين. الطلب ينتهي بعد 15 دقيقة إذا ما انقبل.</div></div>' +
@@ -122,6 +165,7 @@
       return head + '<div class="hero" style="margin-top:10px"><h2>' + F.icon('check-circle') + ' انقبل طلبك</h2>' +
         '<div class="name">' + F.esc(c ? c.name : 'كرين') + (c && c.verified ? ' <span class="badge green">موثق</span>' : '') + '</div>' +
         '<div class="sub">' + F.esc(c ? c.type : '') + ' — اتصل وتفاهم على السعر ووقت الوصول.</div>' +
+        '<div id="rq-map" class="rq-map"></div><div class="eta" id="rq-eta"></div>' +
         (c && c.phone ? '<a class="btn big block green" id="rq-tel" href="tel:' + F.esc(c.phone) + '">' + F.icon('phone') + ' اتصل بالسائق</a>' +
           '<div class="row" style="margin-top:8px"><a class="btn secondary grow" id="rq-wa" href="' + F.esc(F.contact.waLink(c.phone)) + '" target="_blank" rel="noopener">' + F.icon('share') + ' واتساب + موقعي</a>' +
           '<button class="btn secondary grow" id="rq-copy">نسخ الرقم</button></div>' +
@@ -146,6 +190,8 @@
     if (!mod || !mod.open) return;
     const el = mod.m.el;
     el.innerHTML = '<h2>' + F.icon('alert') + ' طلبك</h2>' + body();
+    if (!cur || cur.status !== 'accepted') dropTrack();
+    drawTrack(el);
     const on = (id, fn) => { const n = F.$('#' + id, el); if (n) n.onclick = fn; };
     on('rq-hide', () => mod.m.close());
     on('rq-cancel', async () => {
@@ -180,7 +226,7 @@
   function track(id, targets) {
     if (mod && mod.open) return;
     if (!getActive()) setActive({ id: id, targets: targets });
-    const m = F.modal('', { sticky: false, onClose: () => { mod.open = false; if (!getActive()) stopTimer(); } });
+    const m = F.modal('', { sticky: false, onClose: () => { dropTrack(); mod.open = false; if (!getActive()) stopTimer(); } });
     mod = { m: m, open: true };
     if (!cur || cur.id !== id) cur = null;
     draw();

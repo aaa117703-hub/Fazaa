@@ -23,17 +23,19 @@
   const RSTATUS = { open: 'مفتوح', accepted: 'مقبول', completed: 'منتهي', cancelled: 'ملغي', expired: 'منتهي الوقت' };
 
   async function overview() {
-    const c = await Promise.all([
-      F.sb.count('cranes'), F.sb.count('cranes', 'listed=eq.true'), F.sb.count('cranes', 'listed=eq.false'),
-      F.sb.count('cranes', 'status=eq.available&listed=eq.true'), F.sb.count('profiles'),
-      F.sb.count('requests'), F.sb.count('requests', 'status=eq.open'), F.sb.count('requests', 'status=eq.completed'),
-      F.sb.count('calls'), F.sb.count('reports', 'status=eq.new')
-    ]);
-    return '<div class="stats">' + stat(c[0], 'كل الكرينات') + stat(c[1], 'ظاهر للزبائن') + stat(c[2], 'بانتظار الموافقة') + '</div>' +
-      '<div class="stats mt">' + stat(c[3], 'متاح الحين') + stat(c[4], 'مستخدمين') + stat(c[9], 'بلاغات جديدة') + '</div>' +
-      '<div class="stats mt">' + stat(c[5], 'كل الطلبات') + stat(c[6], 'طلبات مفتوحة') + stat(c[7], 'طلبات منتهية') + '</div>' +
-      '<div class="stats mt">' + stat(c[8], 'كل الاتصالات') + '</div>' +
-      '<div class="card mt"><h2>معيار الانتقال للمرحلة 2</h2><p class="muted small">20+ اتصال أو طلب حقيقي خلال أسبوعين من سواقين حقيقيين. الكرينات التجريبية ما تُحسب.</p></div>';
+    const [st, rep] = await Promise.all([F.sb.rpc('admin_stats'), F.sb.count('reports', 'status=eq.new')]);
+    const price = (id) => (F.tierOf(id) || {}).price || 0;
+    let monthly = 0, total = 0;
+    (st.subs || []).forEach((x) => { const p = price(x.tier); if (x.period === 'yearly') { monthly += x.n * p * 10 / 12; total += x.n * p * 10; } else { monthly += x.n * p; total += x.n * p; } });
+    const days = st.daily || [], mx = Math.max(1, ...days.map((d) => d.n));
+    const chart = '<div class="bars">' + days.map((d) => '<div class="bar" title="' + d.d + ': ' + d.n + '"><i style="height:' + Math.round(d.n / mx * 100) + '%"></i><span>' + d.d.slice(3) + '</span></div>').join('') + '</div>';
+    const gmax = Math.max(1, ...(st.by_gov || []).map((g) => g.n));
+    return '<div class="stats">' + stat(st.today, 'طلبات اليوم') + stat(st.week, 'آخر 7 أيام') + stat(st.month, 'آخر 30 يوم') + '</div>' +
+      '<div class="stats mt">' + stat(st.drivers, 'سواق مسجلين') + stat(st.online, 'متاح الحين') + stat(st.users, 'مستخدمين') + '</div>' +
+      '<div class="stats mt">' + stat(F.money(Math.round(monthly)), 'إيراد شهري تقريبي') + stat(F.money(Math.round(total)), 'قيمة الاشتراكات الفعّالة') + stat(st.avg_rating != null ? '★ ' + st.avg_rating : '—', 'متوسط التقييم') + '</div>' +
+      '<div class="stats mt">' + stat(st.completed_month, 'طلبات مكتملة (30 يوم)') + stat(rep, 'بلاغات جديدة') + stat(st.month ? Math.round(st.completed_month / st.month * 100) + '%' : '—', 'نسبة الإنجاز') + '</div>' +
+      '<div class="card mt"><h2>الطلبات آخر 14 يوم</h2>' + chart + '</div>' +
+      '<div class="card mt"><h2>السواق حسب المحافظة</h2>' + ((st.by_gov || []).map((g) => '<div class="hbar"><span>' + F.esc(g.g) + '</span><div><i style="width:' + Math.round(g.n / gmax * 100) + '%"></i></div><b>' + g.n + '</b></div>').join('') || '<p class="muted small">ما كو بيانات.</p>') + '</div>';
   }
 
   async function cranes() {
@@ -115,8 +117,9 @@
   async function control() {
     const st = await F.sb.q('app_settings', 'select=key,value');
     const g = (k) => ((st || []).find((x) => x.key === k) || { value: {} }).value || {};
-    const m = g('maintenance'), n = g('announcement');
-    return '<div class="card"><h2>قفل التطبيق (صيانة)</h2><p class="muted small">عند التفعيل يظهر للزبائن والسواق شاشة صيانة ولا يدخلون. أنت (المدير) تبقى تدخل.</p>' +
+    const m = g('maintenance'), n = g('announcement'), sp = g('support');
+    return '<div class="card"><h2>رقم الدعم الفني (واتساب)</h2><p class="muted small">يظهر زر «تواصل مع الدعم» للمستخدمين.</p><div class="field"><input id="sp-phone" class="ltr" inputmode="tel" maxlength="16" placeholder="07701234567" value="' + F.esc(sp.phone || '') + '"></div><button class="btn block" data-a="sp-save">حفظ</button></div>' +
+      '<div class="card mt"><h2>قفل التطبيق (صيانة)</h2><p class="muted small">عند التفعيل يظهر للزبائن والسواق شاشة صيانة ولا يدخلون. أنت (المدير) تبقى تدخل.</p>' +
       '<div class="field"><label>رسالة الصيانة</label><input id="mt-msg" maxlength="140" value="' + F.esc(m.msg || '') + '"></div>' +
       '<button class="btn block ' + (m.on ? 'danger' : '') + '" data-a="mt-toggle" data-on="' + (m.on ? 1 : 0) + '">' + (m.on ? 'التطبيق مقفول — اضغط للفتح' : 'اقفل التطبيق الآن') + '</button></div>' +
       '<div class="card mt"><h2>إعلان لكل المستخدمين</h2><p class="muted small">شريط يظهر أعلى التطبيق.</p>' +
@@ -241,6 +244,7 @@
     const a = t.dataset.a, id = t.dataset.id;
     const c = cache.cranes.find((x) => x.id === id);
     if (a === 'add') return addModal();
+    if (a === 'sp-save') { const ph = F.cleanPhone(F.$('#sp-phone').value); if (ph && !F.validPhone(ph)) return F.toast('الرقم لازم 11 رقم ويبدأ بـ 07.', 'err'); return setting('support', { phone: ph || '' }); }
     if (a === 'shop-add') return F.shops.add();
     if (a === 'shop-ok') return F.sb.q('shops', 'id=eq.' + id, { method: 'PATCH', body: { status: 'approved' } }).then(() => { F.shops.resetComm(); F.toast('تم القبول', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
     if (a === 'shop-del') return F.sb.q('shops', 'id=eq.' + id, { method: 'DELETE' }).then(() => { F.shops.resetComm(); F.toast('تم', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
