@@ -31,6 +31,7 @@
       '<div class="card" id="p-driver"></div>' +
       '<div class="card"><h2>سجل اتصالاتي بالكرينات</h2><div id="p-calls" class="muted small">جاري التحميل…</div></div>' +
       '<div class="card"><h2>بياناتي وخصوصيتي</h2><div class="stack">' +
+        '<button class="btn green" id="p-support">' + F.icon('share') + ' تواصل مع الدعم (واتساب)</button>' +
         '<button class="btn secondary" id="p-priv">' + F.icon('doc') + ' سياسة الخصوصية</button>' +
         '<button class="btn secondary" id="p-export">' + F.icon('download') + ' تنزيل بياناتي</button>' +
         '<button class="btn danger" id="p-delete">' + F.icon('trash') + ' حذف حسابي وكل بياناتي</button></div></div>' +
@@ -41,6 +42,7 @@
 
     F.$('#p-edit', el).onclick = () => editModal(u);
     F.$('#p-priv', el).onclick = F.showPrivacy;
+    F.$('#p-support', el).onclick = () => F.contact.support();
     F.$('#p-export', el).onclick = exportMine;
     F.$('#p-delete', el).onclick = deleteMine;
     F.$('#p-logout', el).onclick = async () => { if (F.driver) F.driver.stop(); await F.sb.signOut(); location.hash = ''; location.reload(); };
