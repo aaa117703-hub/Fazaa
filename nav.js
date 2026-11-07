@@ -176,14 +176,18 @@
 
   /* ---------- المسار ---------- */
   async function fetchRoute(from, to) {
-    const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 8000);
-    try {
-      const r = await fetch(OSRM + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat + '?overview=full&geometries=geojson&steps=true', { signal: ctrl.signal });
-      const j = await r.json();
-      const rt = j.routes && j.routes[0];
-      if (!rt) throw new Error('no route');
-      return { coords: rt.geometry.coordinates, distance: rt.distance / 1000, duration: rt.duration, steps: rt.legs[0].steps, approx: false };
-    } finally { clearTimeout(t); }
+    let last;
+    for (const base of ((F.drive && F.drive.BASES) || ['https://router.project-osrm.org'])) {
+      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const r = await fetch(base + '/route/v1/driving/' + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat + '?overview=full&geometries=geojson&steps=true', { signal: ctrl.signal });
+        const j = await r.json();
+        const rt = j.routes && j.routes[0];
+        if (!rt) throw new Error('no route');
+        return { coords: rt.geometry.coordinates, distance: rt.distance / 1000, duration: rt.duration, steps: rt.legs[0].steps, approx: false };
+      } catch (e) { last = e; } finally { clearTimeout(t); }
+    }
+    throw last || new Error('no route');
   }
 
   async function routeTo(crane, silent) {
