@@ -27,7 +27,6 @@
         '<div class="filters">' +
           '<button class="chip" id="h-avail">متاح فقط</button>' +
           '<button class="chip" id="h-shops">' + F.icon('wrench') + ' محلات تصليح</button>' +
-          '<button class="chip" id="h-addshop">+ أضف محل</button>' +
           '<button class="chip" id="h-speed">' + F.icon('gauge') + ' عداد السرعة</button>' +
           '<select id="h-gov" aria-label="المحافظة"><option value="">كل المحافظات</option>' +
             F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') +
@@ -323,7 +322,6 @@
     F.$('#h-share', el).onclick = () => F.guide.shareLocation();
     F.$('#h-offline', el).onclick = () => { location.hash = '#offline'; };
     F.$('#h-shops', el).onclick = () => toggleShops(!shopsOn);
-    F.$('#h-addshop', el).onclick = () => F.shops.add();
     if (map) map.on('moveend', () => { clearTimeout(shopTimer); shopTimer = setTimeout(loadShops, 600); });
     try { if (localStorage.getItem('sanad_shops_on') === '1') setTimeout(() => toggleShops(true), 800); } catch (e) {}
     F.$('#h-avail', el).classList.toggle('on', state.onlyAvail);
