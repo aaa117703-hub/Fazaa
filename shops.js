@@ -160,7 +160,7 @@
 
   // المصدر الأول: جدول places بقاعدة البيانات (مستورد ومنظّف، نفس الشي لكل المستخدمين).
   // إذا الجدول فارغ أو السيرفر ما رد، نرجع للطريقة القديمة (Overpass من الجهاز).
-  const SRV_KINDS = ['car_repair', 'tyres', 'car_parts', 'mechanic', 'car_electrics']; // بدون محطات الوقود (طبقة مستقلة لاحقاً)
+  const SRV_KINDS = ['car_repair', 'tyres', 'car_parts', 'mechanic', 'car_electrics', 'oil_change']; // بدون محطات الوقود (طبقة مستقلة لاحقاً)
   let srvDownUntil = 0; // إذا السيرفر فشل نوقف المحاولة دقيقتين
   async function inBoxSrv(b) {
     const rows = await F.sb.rpc('places_in_bbox', { p_west: b[0], p_south: b[1], p_east: b[2], p_north: b[3], p_kinds: SRV_KINDS, p_limit: 800 });
