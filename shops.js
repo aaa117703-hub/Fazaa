@@ -18,7 +18,7 @@
   const cellKey = (i, j) => i + '_' + j;
   const cellBox = (i, j) => [i * CELL, j * CELL, (i + 1) * CELL, (j + 1) * CELL]; // غرب، جنوب، شرق، شمال
 
-  const KINDS = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات', oil_change: 'تبديل زيوت' };
+  const KINDS = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات', oil_change: 'تبديل زيوت', fuel: 'محطة وقود', restaurant: 'مطعم على الطريق الدولي', rest_area: 'استراحة على الطريق الدولي' };
   const OIL = /زيت|زيوت|oil|lube|lubric/i;
   function parse(json) {
     const out = [];
@@ -26,7 +26,7 @@
       const t = e.tags || {};
       const lat = e.lat != null ? e.lat : e.center && e.center.lat, lng = e.lon != null ? e.lon : e.center && e.center.lon;
       if (lat == null || lng == null) return;
-      const k = t['service:vehicle:oil_change'] === 'yes' || OIL.test((t['name:ar'] || '') + ' ' + (t.name || '') + ' ' + (t['name:en'] || '')) ? 'oil_change' : t.shop === 'car_repair' || t.amenity === 'car_repair' ? 'car_repair' : t.shop === 'tyres' ? 'tyres' : t.shop === 'car_parts' ? 'car_parts' : t.craft === 'mechanic' ? 'mechanic' : t.craft === 'car_electrics' ? 'car_electrics' : 'car_repair';
+      const k = t.amenity === 'fuel' ? 'fuel' : /^(restaurant|fast_food)$/.test(t.amenity || '') ? 'restaurant' : t.amenity === 'cafe' || /^(rest_area|services)$/.test(t.highway || '') ? 'rest_area' : t['service:vehicle:oil_change'] === 'yes' || OIL.test((t['name:ar'] || '') + ' ' + (t.name || '') + ' ' + (t['name:en'] || '')) ? 'oil_change' : t.shop === 'car_repair' || t.amenity === 'car_repair' ? 'car_repair' : t.shop === 'tyres' ? 'tyres' : t.shop === 'car_parts' ? 'car_parts' : t.craft === 'mechanic' ? 'mechanic' : t.craft === 'car_electrics' ? 'car_electrics' : 'car_repair';
       out.push([String(e.id), +lat.toFixed(5), +lng.toFixed(5), t['name:ar'] || t.name || '', t.phone || t['contact:phone'] || t.mobile || t['contact:mobile'] || '', k]);
     });
     return out;
@@ -119,10 +119,48 @@
   const inB = (b) => (s) => s[2] >= b[0] && s[2] <= b[2] && s[1] >= b[1] && s[1] <= b[3];
   function resetComm() { commMem = null; try { localStorage.removeItem(CK); } catch (e) {} }
 
+  // ---- استراحات ومطاعم الطريق الدولي فقط (خارج المدن) من OSM، تُخزَّن 7 أيام ----
+  const HK = 'sanad_hw_v1', HTTL = 7 * 864e5, HC = 0.25;
+  let hwMem = null;
+  const hwLoad = () => { if (!hwMem) { try { hwMem = JSON.parse(localStorage.getItem(HK) || '{}'); } catch (e) { hwMem = {}; } } return hwMem; };
+  function hwQuery(c) {
+    const bb = '(' + c[1] + ',' + c[0] + ',' + (c[1] + HC) + ',' + (c[0] + HC) + ')';
+    return '[out:json][timeout:40];way["highway"~"^(motorway|trunk)$"]' + bb + '->.h;' +
+      '(nwr(around.h:450)["amenity"~"^(restaurant|fast_food|cafe)$"]' + bb + ';nwr(around.h:450)["highway"~"^(rest_area|services)$"]' + bb + ';)->.x;' +
+      'node["place"~"^(city|town)$"](' + (c[1] - 0.1) + ',' + (c[0] - 0.1) + ',' + (c[1] + HC + 0.1) + ',' + (c[0] + HC + 0.1) + ')->.c;' +
+      'nwr.x(around.c:3500)->.ic;(.x;-.ic;);out center tags 300;';
+  }
+  async function hwCell(c, net) {
+    const key = c[0] + ',' + c[1], m = hwLoad(), e = m[key];
+    if (e && Date.now() - e.t < HTTL) return e.l;
+    if (!net || navigator.onLine === false) return e ? e.l : [];
+    for (const u of EP) {
+      try {
+        const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 30000);
+        const r = await fetch(u, { method: 'POST', signal: ac.signal, headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(hwQuery(c)) }).finally(() => clearTimeout(tm));
+        if (!r.ok) continue;
+        const l = parse(await r.json()).filter((x) => x[5] === 'restaurant' || x[5] === 'rest_area').map((x) => { x[0] = 'h' + x[0]; return x; });
+        m[key] = { t: Date.now(), l: l };
+        try { localStorage.setItem(HK, JSON.stringify(m)); } catch (er) {}
+        return l;
+      } catch (er) {}
+    }
+    return e ? e.l : [];
+  }
+  async function hwBox(b, net) {
+    const x0 = Math.floor(b[0] / HC) * HC, y0 = Math.floor(b[1] / HC) * HC, cs = [];
+    for (let x = x0; x <= b[2]; x += HC) for (let y = y0; y <= b[3]; y += HC) cs.push([+x.toFixed(2), +y.toFixed(2)]);
+    if (cs.length > 6) return [];
+    const parts = await Promise.all(cs.map((c) => hwCell(c, net)));
+    const out = [];
+    parts.forEach((l) => l.forEach((s) => { if (s[2] >= b[0] && s[2] <= b[2] && s[1] >= b[1] && s[1] <= b[3]) out.push(s); }));
+    return out;
+  }
+
   async function inBox(b, allowNet) {
     const C = (await comm(allowNet)).filter(inB(b));
-    const O = await inBoxOsm(b, allowNet);
-    return C.concat(O);
+    const [O, H] = await Promise.all([inBoxOsm(b, allowNet), hwBox(b, allowNet !== false).catch(() => [])]);
+    const seen = {}; return C.concat(O, H).filter((x) => (seen[x[0]] ? false : (seen[x[0]] = 1)));
   }
 
   function addShop() {
@@ -160,7 +198,7 @@
 
   // المصدر الأول: جدول places بقاعدة البيانات (مستورد ومنظّف، نفس الشي لكل المستخدمين).
   // إذا الجدول فارغ أو السيرفر ما رد، نرجع للطريقة القديمة (Overpass من الجهاز).
-  const SRV_KINDS = ['car_repair', 'tyres', 'car_parts', 'mechanic', 'car_electrics', 'oil_change']; // بدون محطات الوقود (طبقة مستقلة لاحقاً)
+  const SRV_KINDS = ['car_repair', 'tyres', 'car_parts', 'mechanic', 'car_electrics', 'oil_change', 'fuel']; // بدون محطات الوقود (طبقة مستقلة لاحقاً)
   let srvDownUntil = 0; // إذا السيرفر فشل نوقف المحاولة دقيقتين
   async function inBoxSrv(b) {
     const rows = await F.sb.rpc('places_in_bbox', { p_west: b[0], p_south: b[1], p_east: b[2], p_north: b[3], p_kinds: SRV_KINDS, p_limit: 800 });
