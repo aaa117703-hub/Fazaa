@@ -18,7 +18,7 @@
       F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + id),
       F.sb.q('calls', 'select=created_at&crane_id=eq.' + id + '&order=created_at.desc&limit=500'),
       F.sb.q('crane_rating_summary', 'select=rating_avg,rating_count&crane_id=eq.' + id),
-      F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,lat,lng,issue,destination,note,status,created_at)&crane_id=eq.' + id + '&status=eq.sent&order=sent_at.desc&limit=20'),
+      F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)&crane_id=eq.' + id + '&status=eq.sent&order=sent_at.desc&limit=20'),
       F.sb.q('requests', 'select=*&accepted_crane_id=eq.' + id + '&status=eq.accepted&order=accepted_at.desc'),
       F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&order=created_at.desc')
     ]);
@@ -61,13 +61,14 @@
     F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'PATCH', body: { lat: lat, lng: lng, status: 'available' } }).catch(() => {});
   }
 
+  let fastUntil = 0;
   function startWatch() {
     stopWatch();
     if (!crane || crane.status !== 'available') return;
     if (navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition((p) => {
         const now = Date.now();
-        if (now - lastPush < 45000) return;
+        if (now - lastPush < (fastUntil > now ? 12000 : 45000)) return;
         lastPush = now;
         F.setLoc(p.coords.latitude, p.coords.longitude, 'gps');
         crane.lat = p.coords.latitude; crane.lng = p.coords.longitude;
@@ -183,7 +184,7 @@
     return '<div class="card"><h2>طلبات واردة' + (incoming.length ? ' (' + incoming.length + ')' : '') + '</h2>' +
       (incoming.length ? '<ul class="list">' + incoming.map((t) => {
         const r = t.requests;
-        return '<li style="display:block"><div class="row between"><b>' + (ISSUE[r.issue] || r.issue) + '</b><span class="muted small">' + F.fmtDist(+t.distance_km) + ' · ' + F.ago(Date.parse(r.created_at)) + '</span></div>' +
+        return '<li style="display:block"><div class="row between"><b>' + (r.number ? '#' + r.number + ' · ' : '') + (ISSUE[r.issue] || r.issue) + '</b><span class="muted small">' + F.fmtDist(+t.distance_km) + ' · ' + F.ago(Date.parse(r.created_at)) + '</span></div>' +
           (r.destination ? '<div class="muted small">إلى: ' + F.esc(r.destination) + '</div>' : '') +
           (r.note ? '<div class="muted small">' + F.esc(r.note) + '</div>' : '') +
           '<div class="row mt-s"><button class="btn grow green" data-acc="' + r.id + '">قبول</button><button class="btn secondary" data-dec="' + r.id + '">رفض</button></div></li>';
@@ -307,6 +308,8 @@
   async function act(fn, id, okMsg) {
     try {
       await F.sb.rpc(fn, { p_request_id: id });
+      if (fn === 'accept_request') fastUntil = Date.now() + 2 * 3600000;
+      if (fn === 'complete_request') fastUntil = 0;
       if (fn === 'accept_request') F.sb.fn('notify', { kind: 'accepted', request_id: id }).catch(() => {});
       if (okMsg) F.toast(okMsg, 'ok'); await refresh();
     }
