@@ -2,6 +2,9 @@ name: Native bootstrap (Expo)
 # يولّد مشروع Expo بأحدث إصدار متوافق مع Expo Go ويحفظ package.json في فرع native-base
 on:
   workflow_dispatch:
+  push:
+    branches: [native-app]
+    paths: ['.github/workflows/native-bootstrap.yml']
 permissions:
   contents: write
 jobs:
@@ -24,14 +27,11 @@ jobs:
           ls app
       - name: Publish scaffold to branch native-base
         run: |
-          cd native-gen
-          rm -rf node_modules .expo
+          rm -rf native-gen/node_modules native-gen/.expo native-gen/.git
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git checkout -b native-base
-          git rm -rq --cached . 2>/dev/null || true
-          cd ..
-          rm -rf native && mv native-gen native
+          mv native-gen native
           git add native
           git commit -m "Expo scaffold (generated)"
           git push -f origin native-base
