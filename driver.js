@@ -199,7 +199,7 @@
         (p && p.car ? '<div class="muted small">' + F.icon('car') + ' ' + F.esc(p.car) + '</div>' : '') +
         '<div class="row wrap mt-s">' +
           (p && p.phone ? '<a class="btn sm green" href="tel:' + F.esc(p.phone) + '">' + F.icon('phone') + ' اتصل</a>' : '') +
-          '<a class="btn sm secondary" target="_blank" rel="noopener" href="https://www.google.com/maps?q=' + r.lat + ',' + r.lng + '">' + F.icon('pin') + ' الموقع</a>' +
+          '<button class="btn sm secondary" data-go="' + r.lat + ',' + r.lng + '">' + F.icon('cursor') + ' مسار لموقع الزبون</button>' +
           '<button class="btn sm" data-done="' + r.id + '">تم الإنجاز</button></div></li>';
     }).join('') + '</ul></div>';
   }
@@ -347,6 +347,11 @@
         const g = (a) => e.target.closest('[' + a + ']');
         let b;
         if ((b = g('data-acc'))) act('accept_request', b.dataset.acc, 'قبلت الطلب. تواصل مع الزبون.');
+        else if ((b = g('data-go'))) {
+          const [la, ln] = b.dataset.go.split(',').map(Number);
+          location.hash = '#home';
+          setTimeout(() => F.nav.routeTo({ lat: la, lng: ln, name: 'موقع الزبون', id: 'cust' }), 700);
+        }
         else if ((b = g('data-dec'))) act('decline_request', b.dataset.dec);
         else if ((b = g('data-done'))) act('complete_request', b.dataset.done, 'تم إنجاز الطلب');
         else if ((b = g('data-up'))) pickDoc(b.dataset.up);

@@ -701,3 +701,6 @@ main { padding-bottom: calc(var(--nav-h) + 40px + env(safe-area-inset-bottom)); 
 .pin.poi.k-food { background: #8B5CF6; border-radius: 50%; }
 .pin.poi.k-rest { background: #2F7DF6; border-radius: 50%; }
 @media (max-width: 480px) { .pin.poi { width: 36px; height: 36px; } .pin.poi .ic { width: 20px; height: 20px; } }
+
+.road { color: var(--green); font-weight: 700; }
+.far { color: var(--red); font-weight: 700; }
