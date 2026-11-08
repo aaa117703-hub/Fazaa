@@ -16,7 +16,8 @@
   function buildNav() {
     const html = NAV.map((n) =>
       '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>').join('');
-    F.$('#nav-top').innerHTML = html;
+    F.$('#nav-top').innerHTML = html + '<button class="sos-top" id="nav-sos-top" aria-label="طوارئ SOS">' + F.icon('siren') + '<span>طوارئ SOS</span></button>';
+    const st = F.$('#nav-sos-top'); if (st) st.onclick = () => { if (F.guide && F.guide.sos) F.guide.sos(); };
     const parts = NAV.map((n) => '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>');
     parts.splice(2, 0, '<button class="fab" id="nav-sos" aria-label="طوارئ SOS">' + F.icon('siren') + '</button>');
     F.$('#nav-bottom').innerHTML = parts.join('');
@@ -186,13 +187,10 @@
     setInterval(() => { if (current === 'home' && !document.hidden) F.home.refresh(); }, 60000);
     window.addEventListener('storage', () => { if (current === 'home') F.home.refresh(); });
 
-    if (F.canEnter()) {
-      await F.sb.init();
-      if (F.canEnter() && !F.isRealAdmin() && !(F.user() && F.user().name)) F.auth.completeProfile();
-      else if (F.canEnter()) F.showApp();
-      else F.auth.render();
-    }
-    else F.auth.render();
+    await F.sb.init();
+    // مسجّل بلا اسم: نكمّل بياناته. غير ذلك (زائر أو مسجّل) يدخل التطبيق مباشرة
+    if (!F.isGuest() && !F.isRealAdmin() && !(F.user() && F.user().name)) F.auth.completeProfile();
+    else F.showApp();
   };
 
   F.start();
