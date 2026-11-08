@@ -3,7 +3,7 @@
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'sanad-v37';
+const VERSION = 'sanad-v38';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -39,6 +39,7 @@ const SHELL_FILES = [
   './settings.js',
   './guide.js',
   './admin.js',
+  './native.js',
   './app.js',
   './logo.svg',
   './icon-192.png',

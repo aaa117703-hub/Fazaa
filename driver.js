@@ -47,9 +47,10 @@
       incoming.forEach((t) => {
         if (!known[t.request_id]) {
           known[t.request_id] = 1;
-          if (silent) { F.toast('طلب جديد من زبون قريب!', 'ok'); try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch (e) {} }
+          if (silent) { F.toast('طلب جديد من زبون قريب!', 'ok'); F.native && F.native.notify('طلب جديد قريب منك', 'افتح التطبيق وقبّل الطلب', './#driver', 'req-' + t.request_id); }
         }
       });
+      if (F.native) F.native.badge(incoming.length);
       if (el && !el.hidden) render();
     } catch (e) { if (!silent) F.toast(F.errMsg(e), 'err'); }
     busy = false;

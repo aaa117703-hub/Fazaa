@@ -127,6 +127,7 @@
       applyRemote(); setInterval(applyRemote, 120000);
       ready = true;
       F.driver.resume();
+      if (F.native) F.native.onReady();
     }
     viewChip();
     route();
