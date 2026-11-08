@@ -1,0 +1,27 @@
+name: Native deps
+# يثبّت الحزم المذكورة في native/deps.txt بإصدارات متوافقة مع Expo ويحدّث package.json والـ lock
+on:
+  push:
+    branches: ['native-app']
+    paths: ['native/deps.txt']
+permissions:
+  contents: write
+jobs:
+  deps:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx expo install $(grep -v '^#' deps.txt | tr '\n' ' ')
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add package.json package-lock.json
+          git diff --cached --quiet || (git commit -m "Native deps: $(tr '\n' ' ' < deps.txt) [skip ci]" && git pull --rebase origin native-app && git push origin HEAD:native-app)

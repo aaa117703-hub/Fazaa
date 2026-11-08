@@ -1,0 +1,2 @@
+@expo/vector-icons
+expo-updates
