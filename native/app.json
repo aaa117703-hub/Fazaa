@@ -47,7 +47,16 @@
       "typedRoutes": false
     },
     "extra": {
-      "supabaseUrl": "https://hwlpzlfimplzkdleaclw.supabase.co"
+      "supabaseUrl": "https://hwlpzlfimplzkdleaclw.supabase.co",
+      "eas": {
+        "projectId": "bf1c74d5-bffb-4d4c-a75a-92bee54f8a12"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bf1c74d5-bffb-4d4c-a75a-92bee54f8a12"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }
