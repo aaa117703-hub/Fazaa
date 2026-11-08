@@ -19,7 +19,7 @@
     F.$('#nav-top').innerHTML = html + '<button class="sos-top" id="nav-sos-top" aria-label="طوارئ SOS">' + F.icon('siren') + '<span>طوارئ SOS</span></button>';
     const st = F.$('#nav-sos-top'); if (st) st.onclick = () => { if (F.guide && F.guide.sos) F.guide.sos(); };
     const parts = NAV.map((n) => '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>');
-    parts.splice(2, 0, '<button class="fab" id="nav-sos" aria-label="طوارئ SOS">' + F.icon('siren') + '</button>');
+    parts.splice(2, 0, '<button id="nav-sos" aria-label="طوارئ SOS">' + F.icon('siren') + '<span>طوارئ</span></button>');
     F.$('#nav-bottom').innerHTML = parts.join('');
     const sos = F.$('#nav-sos');
     if (sos) sos.onclick = () => { if (F.guide && F.guide.sos) F.guide.sos(); };
