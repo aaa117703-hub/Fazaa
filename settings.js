@@ -51,6 +51,8 @@
         '<div class="set-label">الوضع</div>' +
         seg('theme', s.theme, [['auto', 'تلقائي'], ['dark', 'داكن'], ['light', 'فاتح']]) +
         '<p class="muted small mt-s">الخريطة تتبع الوضع عند فتح الصفحة من جديد.</p>' +
+        '<div class="set-label mt-s">مكان شريط الأيقونات</div>' +
+        seg('navpos', s.navPos === 'top' ? 'top' : 'bottom', [['bottom', 'تحت'], ['top', 'فوق']]) +
         toggle('s-motion', s.reduceMotion, 'تقليل الحركة', 'يوقّف الحركات والانتقالات المتحركة.') +
       '</div>' +
 
@@ -88,6 +90,9 @@
 
     F.$$('[data-seg="theme"] button', el).forEach((b) => {
       b.onclick = () => { F.saveSettings({ theme: b.dataset.v }); render(); };
+    });
+    F.$$('[data-seg="navpos"] button', el).forEach((b) => {
+      b.onclick = () => { F.saveSettings({ navPos: b.dataset.v }); render(); };
     });
     F.$$('[data-seg="lang"] button', el).forEach((b) => {
       b.onclick = () => { F.saveSettings({ lang: b.dataset.v }); location.reload(); };

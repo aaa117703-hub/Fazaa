@@ -790,3 +790,21 @@ html.is-en input, html.is-en textarea { text-align: left; }
 @keyframes sp-letter { 60% { filter: blur(0); } to { opacity: 1; transform: none; filter: blur(0); } }
 .sp-tag { animation-delay: 2.5s !important; }
 .sp-name span:nth-last-child(-n+4) { color: #FF8A3D; }
+
+/* ===== الأيقونة النشطة: برتقالية، أكبر وأعلى من أخواتها ===== */
+.nav-bottom button.active .ic { color: var(--accent); width: 31px; height: 31px; transform: translateY(-7px); stroke-width: 2.3; filter: drop-shadow(0 4px 8px rgba(255, 107, 44, .45)); }
+.nav-bottom button.active span { color: var(--accent); transform: translateY(-5px); }
+.nav-bottom button span { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.nav-bottom button .ic { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), width .25s, height .25s, filter .25s; }
+.nav-bottom { overflow: visible; }
+
+/* ===== مكان الشريط: فوق (من الإعدادات) ===== */
+@media (max-width: 899px) {
+  html[data-nav="top"] .nav-bottom { bottom: auto; top: calc(64px + env(safe-area-inset-top)); }
+  html[data-nav="top"] .nav-bottom button.fab { margin-top: 0; margin-bottom: -26px; }
+  html[data-nav="top"] .nav-bottom button.active .ic { transform: translateY(5px); }
+  html[data-nav="top"] .nav-bottom button.active span { transform: translateY(7px); }
+  html[data-nav="top"] main { padding-top: 88px; padding-bottom: 28px; }
+  html[data-nav="top"] #toasts { bottom: 24px; }
+  html[data-nav="top"] #nsheet { bottom: 20px; }
+}

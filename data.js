@@ -83,6 +83,7 @@
     const theme = F.resolveTheme(s.theme);
     root.setAttribute('data-theme', theme);
     root.classList.toggle('reduce-motion', !!s.reduceMotion);
+    root.setAttribute('data-nav', s.navPos === 'top' ? 'top' : 'bottom');
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'light' ? '#F4F5F7' : '#101214');
   };
