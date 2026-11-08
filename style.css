@@ -791,20 +791,21 @@ html.is-en input, html.is-en textarea { text-align: left; }
 .sp-tag { animation-delay: 2.5s !important; }
 .sp-name span:nth-last-child(-n+4) { color: #FF8A3D; }
 
-/* ===== الزر النشط: برتقالي، مرتفع وأكبر قليلاً (غير النشط يبقى طبيعي) ===== */
-.nav-bottom .nav-ind { display: none; }
-.nav-bottom button { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), background .25s, box-shadow .25s, color .2s; }
-.nav-bottom button .ic { transition: none; }
-.nav-bottom button.active:not(.fab) { background: linear-gradient(145deg, #FF8A3D, #E5531C); color: #fff; transform: translateY(-12px) scale(1.1); box-shadow: 0 10px 20px -6px rgba(255, 107, 44, .65); }
-.nav-bottom button.active:not(.fab) .ic { transform: none; width: 24px; height: 24px; filter: none; color: #fff; }
-.nav-bottom button.active:not(.fab) span { color: #fff; transform: none; font-weight: 800; }
+/* ===== الزر النشط: كرة برتقالية تنزلق وترتفع فوق الشريط (الباقي يبقى طبيعي) ===== */
 .nav-bottom { overflow: visible; }
+.nav-bottom button { position: relative; z-index: 1; background: none; transition: color .25s; }
+.nav-bottom .nav-ind { display: block; background: none; border-radius: 0; z-index: 0; pointer-events: none; transition: transform .45s cubic-bezier(.34, 1.4, .64, 1), width .3s, opacity .2s; }
+.nav-bottom .nav-ind::before { content: ''; display: block; position: absolute; inset: auto; padding: 0; -webkit-mask: none; mask: none; left: 50%; top: -25px; width: 50px; height: 50px; margin-left: -25px; border-radius: 50%; background: linear-gradient(150deg, #FF9A4D, #F0541C); border: 5px solid var(--bg, #101214); box-shadow: 0 10px 22px -6px rgba(255, 107, 44, .7); }
+.nav-bottom button .ic { transition: transform .45s cubic-bezier(.34, 1.4, .64, 1), color .2s; }
+.nav-bottom button.active { color: var(--accent); }
+.nav-bottom button.active .ic { color: #fff; width: 24px; height: 24px; transform: translateY(-20px); stroke-width: 2.2; filter: none; }
+.nav-bottom button.active span { color: var(--accent); font-weight: 800; transform: none; }
 
 /* ===== مكان الشريط: فوق (من الإعدادات) ===== */
 @media (max-width: 899px) {
   html[data-nav="top"] .nav-bottom { bottom: auto; top: calc(64px + env(safe-area-inset-top)); }
-  html[data-nav="top"] .nav-bottom button.fab { margin-top: 0; margin-bottom: -26px; }
-  html[data-nav="top"] .nav-bottom button.active:not(.fab) { transform: translateY(12px) scale(1.1); }
+  html[data-nav="top"] .nav-bottom .nav-ind::before { top: -1px; width: 38px; height: 38px; margin-left: -19px; border-width: 0; }
+  html[data-nav="top"] .nav-bottom button.active .ic { transform: translateY(-1px); }
   html[data-nav="top"] main { padding-top: 88px; padding-bottom: 28px; }
   html[data-nav="top"] #toasts { bottom: 24px; }
   html[data-nav="top"] #nsheet { bottom: 20px; }
