@@ -105,7 +105,7 @@ export default function Home() {
       data={list}
       keyExtractor={(c) => c.id}
       ListHeaderComponent={header}
-      refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => pos && load(pos)} />}
+      refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => { if (pos) load(pos); }} />}
       ListEmptyComponent={loading ? <ActivityIndicator color={C.accent} style={{ marginTop: 24 }} /> : <Muted style={{ textAlign: 'center', marginTop: 24 }}>ما كو كرينات مسجّلة قريبة منك هسه.</Muted>}
       renderItem={({ item: c }) => (
         <Card style={{ gap: 8 }}>
