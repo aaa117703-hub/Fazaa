@@ -95,7 +95,8 @@
         cur.targets = a.targets;
         if (r.status === 'accepted' || r.status === 'completed') cur.crane = await craneInfo(r);
         if (r.status === 'accepted') { try { cur.track = await F.sb.rpc('track_request', { p_request_id: r.id }); } catch (e) { cur.track = null; } }
-        if (was && was !== r.status && r.status === 'accepted') { F.toast('كرين قبل طلبك!', 'ok'); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} }
+        if (was && was !== r.status && r.status === 'accepted') { F.toast('كرين قبل طلبك!', 'ok'); F.native && F.native.notify('انقبل طلبك', ((cur.crane && cur.crane.name) || 'كرين') + ' بالطريق إليك', './#home', 'acc-' + r.id); }
+        if (was && was !== r.status && r.status === 'completed') { F.native && F.native.notify('انتهى الطلب', 'سلامتك! قيّم الخدمة حتى نحسّن.', './#home', 'done-' + r.id); }
         if (['cancelled', 'expired'].includes(r.status) && !(mod && mod.open)) setActive(null);
       }
       draw();
@@ -105,6 +106,7 @@
   }
 
   function startTimer() { stopTimer(); timer = setInterval(() => { if (!document.hidden) poll(); }, 5000); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
   function stopTimer() { if (timer) clearInterval(timer); timer = null; }
 
   function stars(n) { return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n); }
