@@ -1,0 +1,30 @@
+name: Native check
+# فحص أنواع TypeScript + تجميع Metro للتطبيق الأصلي
+on:
+  push:
+    branches: ['native-app']
+    paths: ['native/**', '.github/workflows/native-check.yml']
+  pull_request:
+    paths: ['native/**']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Doctor
+        run: npx expo-doctor || true
+      - name: Bundle (iOS)
+        run: npx expo export --platform ios --output-dir /tmp/out-ios
+      - name: Bundle (Android)
+        run: npx expo export --platform android --output-dir /tmp/out-android
