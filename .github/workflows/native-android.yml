@@ -1,0 +1,33 @@
+name: Native Android APK
+# يبني APK أصلي. للتشغيل: عدّل native/android.trigger أو شغّله يدوياً بعد الدمج بـ main
+on:
+  workflow_dispatch:
+  push:
+    branches: ['native-app']
+    paths: ['.github/workflows/native-android.yml', 'native/android.trigger']
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - run: npx expo prebuild --platform android --no-install
+      - name: Build release APK
+        working-directory: native/android
+        run: ./gradlew assembleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sanad-jaik-native-apk
+          path: native/android/app/build/outputs/apk/release/*.apk
