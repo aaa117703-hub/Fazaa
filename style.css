@@ -690,5 +690,17 @@ main { padding-bottom: calc(var(--nav-h) + 40px + env(safe-area-inset-bottom)); 
 .hbar div { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .hbar div i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(to left, var(--accent), var(--accent-2)); }
 
+/* علامات الخدمات: كل نوع شكل ولون ورمز مختلف */
+.pin.poi { width: 40px; height: 40px; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 5px 12px rgba(0,0,0,.5); margin-bottom: 8px; color: #fff; }
+.pin.poi .ic { width: 22px; height: 22px; stroke-width: 2.1; }
+.pin.poi.k-repair { background: #FFC21A; color: #1B1B1B; border-radius: 11px; transform: rotate(45deg); margin-bottom: 14px; }
+.pin.poi.k-repair .ic { transform: rotate(-45deg); }
+.pin.poi.k-oil { background: #0E9F9A; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); margin-bottom: 12px; }
+.pin.poi.k-oil .ic { transform: rotate(45deg); }
+.pin.poi.k-fuel { background: #E5342C; border-radius: 12px; }
+.pin.poi.k-food { background: #8B5CF6; border-radius: 50%; }
+.pin.poi.k-rest { background: #2F7DF6; border-radius: 50%; }
+@media (max-width: 480px) { .pin.poi { width: 36px; height: 36px; } .pin.poi .ic { width: 20px; height: 20px; } }
+
 .road { color: var(--green); font-weight: 700; }
 .far { color: var(--red); font-weight: 700; }

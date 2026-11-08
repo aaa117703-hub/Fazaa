@@ -39,6 +39,12 @@
     map: '<path d="M3.5 6.5 9 4l6 2.5L20.5 4v13.5L15 20l-6-2.5-5.5 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
     wrench: '<path d="M17.2 3.2a4.6 4.6 0 0 0-4.4 6L4.2 17.8a1.9 1.9 0 0 0 2.7 2.7l8.6-8.6a4.6 4.6 0 0 0 6-4.4l-3.1 3.1-2.9-.6-.6-2.9z"/>',
     gauge: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/><circle cx="12" cy="17" r="1.2"/>',
+    // أيقونات خدمات الطريق (كل نوع له رمز خاص)
+    gear: '<circle cx="12" cy="12" r="2.6"/><circle cx="12" cy="12" r="5.2"/><circle cx="12" cy="12" r="7.9" stroke-width="2.6" stroke-dasharray="2.5 3.1" stroke-dashoffset="1.2"/>',
+    oilcan: '<path d="M12 3.2c3.3 4 5.6 6.9 5.6 9.9a5.6 5.6 0 0 1-11.2 0c0-3 2.3-5.9 5.6-9.9z"/><path d="M9.1 13.9a3 3 0 0 0 2.6 2.6"/>',
+    pump: '<rect x="4.5" y="3.8" width="9.5" height="16.2" rx="1.6"/><path d="M4.5 9.5H14"/><path d="M14 8h2.2A1.8 1.8 0 0 1 18 9.8V16a1.5 1.5 0 0 0 3 0V9l-2.6-2.6"/><path d="M3 20.2h12.5"/>',
+    fork: '<path d="M6 3v6a2.5 2.5 0 0 0 5 0V3"/><path d="M8.5 3v18"/><path d="M17 21V3c-2.3 1.2-3.6 3.8-3.6 7.6H17"/>',
+    cup: '<path d="M4.5 9.5h11.5v4.5a5 5 0 0 1-5 5h-1.5a5 5 0 0 1-5-5z"/><path d="M16 11h1.8a2.2 2.2 0 0 1 0 4.4H16"/><path d="M8 3.5c-.9 1.1.9 1.7 0 2.9M12 3.5c-.9 1.1.9 1.7 0 2.9"/>',
     camera: '<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/>',
     radar: '<circle cx="12" cy="12" r="8.8"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'
   };

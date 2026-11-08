@@ -26,7 +26,7 @@
       '<div>' +
         '<div class="filters">' +
           '<button class="chip" id="h-avail">متاح فقط</button>' +
-          '<button class="chip" id="h-shops">' + F.icon('wrench') + ' محلات تصليح</button>' +
+          '<button class="chip" id="h-shops">' + F.icon('gear') + ' محلات وخدمات</button>' +
           '<button class="chip" id="h-speed">' + F.icon('gauge') + ' عداد السرعة</button>' +
           '<select id="h-gov" aria-label="المحافظة"><option value="">كل المحافظات</option>' +
             F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') +
@@ -123,6 +123,7 @@
     state.onlyAvail = false; state.type = ''; state.gov = '';
     F.$('#h-avail', el).classList.remove('on');
     F.$('#h-gov', el).value = ''; F.$('#h-type', el).value = '';
+    if (typeof loadShops === 'function') { clearShops(); loadShops(); }
     refresh();
   }
 
@@ -150,29 +151,31 @@
 
 
   /* ---------- محلات تصليح السيارات (OpenStreetMap) ---------- */
-  const SHOP_ZOOM = 7;
+  const SHOP_ZOOM = 11; // ≈ 20 كم أو أقل بعرض الشاشة
+  const KMK = { car_repair: ['repair', 'gear'], tyres: ['repair', 'gear'], car_parts: ['repair', 'gear'], mechanic: ['repair', 'gear'], car_electrics: ['repair', 'gear'], oil_change: ['oil', 'oilcan'], fuel: ['fuel', 'pump'], restaurant: ['food', 'fork'], rest_area: ['rest', 'cup'] };
   function shopPop(s) {
     const tel = (s[4] || '').split(/[;,\/]/)[0].trim();
     return '<b>' + F.esc(s[3] || F.shops.KINDS[s[5]] || 'محل تصليح') + '</b>' + (s[6] ? ' <span class="badge green">موثّق من المجتمع</span>' : '') + '<br>' + F.esc(F.shops.KINDS[s[5]] || '') +
       (tel ? '<br><a href="tel:' + F.esc(tel.replace(/[^+\d]/g, '')) + '">' + F.icon('phone') + ' ' + F.esc(tel) + '</a>' : '<br><span class="muted small">بدون رقم مسجّل</span>') +
-      '<br><a href="https://maps.google.com/?q=' + s[1] + ',' + s[2] + '" target="_blank" rel="noopener">فتح بالخرائط</a>';
+      '<br><a href="#" data-pop-route="' + s[1] + ',' + s[2] + '">' + F.icon('cursor') + ' مسار داخل التطبيق</a>';
   }
   async function loadShops() {
     if (!map || !shopsOn || !F.shops) return;
-    if (map.getZoom() < SHOP_ZOOM) { clearShops(); setShopHint('قرّب الخريطة شوية حتى تظهر محلات التصليح'); return; }
+    if (map.getZoom() < SHOP_ZOOM) { clearShops(); setShopHint('قرّب الخريطة (حوالي 20 كم) حتى تظهر المحلات والخدمات'); return; }
     const b = map.getBounds();
     let list = [];
     try { list = await F.shops.inBox([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], true); } catch (e) {}
     if (!shopsOn) return;
     const chip = F.$('#h-shops', el);
-    if (chip) chip.innerHTML = F.icon('wrench') + ' محلات تصليح' + (list.length ? ' (' + list.length + ')' : '');
+    if (chip) chip.innerHTML = F.icon('gear') + ' محلات وخدمات';
     setShopHint(list.length ? '' : F.shops.failed() ? 'تعذّر جلب المحلات (تأكد من الإنترنت). اضغط الزر مرتين للمحاولة من جديد.' : 'ما لكينا محلات مسجّلة بهذي المنطقة بخرائط OpenStreetMap');
+    if (state.gov) list = list.filter((s) => (s[7] || F.govOf(s[1], s[2])) === state.gov);
     const keep = {};
     const mc = map.getCenter();
     list.sort((a, b) => Math.hypot(a[1] - mc.lat, a[2] - mc.lng) - Math.hypot(b[1] - mc.lat, b[2] - mc.lng));
     list.slice(0, 150).forEach((s) => {
       keep[s[0]] = 1;
-      if (!shopMk[s[0]]) shopMk[s[0]] = F.marker(map, s[1], s[2], 'shop', F.icon('wrench'), shopPop(s));
+      if (!shopMk[s[0]]) { const k = KMK[s[5]] || KMK.car_repair; shopMk[s[0]] = F.marker(map, s[1], s[2], 'poi k-' + k[0], F.icon(k[1]), shopPop(s)); }
     });
     Object.keys(shopMk).forEach((id) => { if (!keep[id]) { shopMk[id].remove(); delete shopMk[id]; } });
   }
@@ -184,7 +187,7 @@
     F.$('#h-shops', el).classList.toggle('on', on);
     if (!on) { clearShops(); setShopHint(''); return; }
     if (map && map.getZoom() < SHOP_ZOOM) {
-      const l = F.loc(); map.flyTo({ center: [l.lng, l.lat], zoom: l.source === 'default' ? 10 : 12, duration: 700 });
+      const l = F.loc(); map.flyTo({ center: [l.lng, l.lat], zoom: l.source === 'default' ? 11 : 12, duration: 700 });
     }
     loadShops();
   }
@@ -316,6 +319,8 @@
       if (b) return callOf(b.dataset.call, 'call');
       const pf = e.target.closest('.crane .avatar, .crane h3');
       if (pf) { const card = pf.closest('.crane'); if (card && card.dataset.id) return F.cprofile.show(card.dataset.id); }
+      const pr = e.target.closest('[data-pop-route]');
+      if (pr) { e.preventDefault(); const [la, ln] = pr.dataset.popRoute.split(',').map(Number); F.nav.routeTo({ lat: la, lng: ln, name: 'المحل', id: 'poi' }); return; }
       const w = e.target.closest('[data-wa]');
       if (w) return callOf(w.dataset.wa, 'whatsapp');
       if (e.target.closest('[data-clear]')) return clearFilters();
@@ -347,6 +352,7 @@
         if (F.loc().source === 'default') F.setLoc(g.lat, g.lng, 'manual');
         if (map) map.flyTo({ center: [g.lng, g.lat], zoom: 10, duration: 700 });
       }
+      clearShops(); loadShops();
       refresh();
     };
     F.$('#h-type', el).onchange = (e) => { state.type = e.target.value; refresh(); };
