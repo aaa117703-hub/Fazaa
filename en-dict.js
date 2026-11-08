@@ -1,6 +1,6 @@
 /* سند جايك — قاموس الإنجليزية: مطابقة نص كامل أولاً، ثم عبارات طويلة بحدود كلمات */
 window.F = window.F || {};
-F.EN_DICT = {
+F.EN_DICT = {"مكان شريط الأيقونات":"Icon bar position","تحت":"Bottom","فوق":"Top",
 "(تقريبي)": "(Approx.)",
 "(مدير)": "(Admin)",
 ". شوف القائمة وجرّب تتصل.": ". Browse the list and try calling.",
