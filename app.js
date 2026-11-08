@@ -17,7 +17,11 @@
     const html = NAV.map((n) =>
       '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>').join('');
     F.$('#nav-top').innerHTML = html;
-    F.$('#nav-bottom').innerHTML = html;
+    const parts = NAV.map((n) => '<button data-nav="' + n[0] + '">' + F.icon(n[1]) + '<span>' + n[2] + '</span></button>');
+    parts.splice(2, 0, '<button class="fab" id="nav-sos" aria-label="طوارئ SOS">' + F.icon('siren') + '</button>');
+    F.$('#nav-bottom').innerHTML = parts.join('');
+    const sos = F.$('#nav-sos');
+    if (sos) sos.onclick = () => { if (F.guide && F.guide.sos) F.guide.sos(); };
     const gear = F.$('#tb-settings');
     gear.innerHTML = F.icon('sliders');
     gear.onclick = () => { location.hash = '#settings'; };
