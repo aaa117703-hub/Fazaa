@@ -202,7 +202,7 @@
   let srvDownUntil = 0; // إذا السيرفر فشل نوقف المحاولة دقيقتين
   async function inBoxSrv(b) {
     const rows = await F.sb.rpc('places_in_bbox', { p_west: b[0], p_south: b[1], p_east: b[2], p_north: b[3], p_kinds: SRV_KINDS, p_limit: 800 });
-    return (rows || []).map((r) => ['p' + r.id, +r.lat, +r.lng, r.name_ar || r.name || '', r.phone || '', r.kind]);
+    return (rows || []).map((r) => ['p' + r.id, +r.lat, +r.lng, r.name_ar || r.name || '', r.phone || '', r.kind, 0, r.governorate || '']);
   }
 
   // محلات داخل صندوق (غرب، جنوب، شرق، شمال). allowNet=false: من الذاكرة فقط.

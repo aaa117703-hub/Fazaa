@@ -116,6 +116,7 @@
     state.onlyAvail = false; state.type = ''; state.gov = '';
     F.$('#h-avail', el).classList.remove('on');
     F.$('#h-gov', el).value = ''; F.$('#h-type', el).value = '';
+    if (typeof loadShops === 'function') { clearShops(); loadShops(); }
     refresh();
   }
 
@@ -161,6 +162,7 @@
     const chip = F.$('#h-shops', el);
     if (chip) chip.innerHTML = F.icon('gear') + ' محلات وخدمات';
     setShopHint(list.length ? '' : F.shops.failed() ? 'تعذّر جلب المحلات (تأكد من الإنترنت). اضغط الزر مرتين للمحاولة من جديد.' : 'ما لكينا محلات مسجّلة بهذي المنطقة بخرائط OpenStreetMap');
+    if (state.gov) list = list.filter((s) => (s[7] || F.govOf(s[1], s[2])) === state.gov);
     const keep = {};
     const mc = map.getCenter();
     list.sort((a, b) => Math.hypot(a[1] - mc.lat, a[2] - mc.lng) - Math.hypot(b[1] - mc.lat, b[2] - mc.lng));
@@ -341,6 +343,7 @@
         if (F.loc().source === 'default') F.setLoc(g.lat, g.lng, 'manual');
         if (map) map.flyTo({ center: [g.lng, g.lat], zoom: 10, duration: 700 });
       }
+      clearShops(); loadShops();
       refresh();
     };
     F.$('#h-type', el).onchange = (e) => { state.type = e.target.value; refresh(); };
