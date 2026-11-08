@@ -23,8 +23,7 @@ jobs:
           npx expo install @supabase/supabase-js react-native-maps expo-location expo-notifications expo-haptics expo-secure-store expo-image-picker expo-localization @react-native-async-storage/async-storage react-native-url-polyfill expo-linking expo-device
           npx tsc --version
           node -e "const p=require('./package.json');console.log(JSON.stringify({name:p.name,expo:p.dependencies.expo,rn:p.dependencies['react-native'],react:p.dependencies.react,router:p.dependencies['expo-router']}))"
-          ls
-          ls app
+          ls -a; find . -maxdepth 2 -not -path "./node_modules*" -not -path "./.git*" | head -60
       - name: Publish scaffold to branch native-base
         run: |
           rm -rf native-gen/node_modules native-gen/.expo native-gen/.git
