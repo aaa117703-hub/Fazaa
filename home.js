@@ -57,9 +57,16 @@
     if (state.gov) arr = arr.filter((c) => (c.gov || F.govOf(c.lat, c.lng)) === state.gov);
     arr.sort((a, b) => {
       const av = (a.status === 'available' ? 0 : 1) - (b.status === 'available' ? 0 : 1);
-      return av || a.d - b.d;
+      const ra = F.drive && F.drive.get(a.id), rb = F.drive && F.drive.get(b.id);
+      return av || (ra && rb ? ra.min - rb.min : a.d - b.d);
     });
     return arr;
+  }
+
+  function roadTxt(c) {
+    const x = F.drive && F.drive.get(c.id);
+    if (!x) return F.fmtDist(c.d);
+    return '<span class="' + (F.drive.far(c.id) ? 'far' : 'road') + '">' + F.drive.label(x) + (F.drive.far(c.id) ? ' · بعيد' : '') + '</span>';
   }
 
   function cardHtml(c) {
@@ -74,7 +81,7 @@
           '<div class="avatar tier-' + (c.tier || 'bronze') + '" title="' + F.tierOf(c.tier).name + '">' + F.icon('crane') + '</div>' +
           '<div class="grow">' +
             '<h3>' + F.esc(c.name) + badges + '</h3>' +
-            '<div class="sub">' + F.esc(c.type) + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + F.fmtDist(c.d) + (c.ratingCount ? ' · <span class="stars">★ ' + c.rating.toFixed(1) + '</span> (' + c.ratingCount + ')' : ' · بدون تقييم') + '</div>' +
+            '<div class="sub">' + F.esc(c.type) + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + roadTxt(c) + (c.ratingCount ? ' · <span class="stars">★ ' + c.rating.toFixed(1) + '</span> (' + c.ratingCount + ')' : ' · بدون تقييم') + '</div>' +
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
           '<div class="stack" style="gap:6px"><button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
@@ -223,13 +230,15 @@
     } catch (e) { loadErr = true; if (!items.length) F.toast(F.errMsg(e), 'err'); }
     loading = false;
     refresh();
+    if (F.drive) F.drive.enrich(sorted(), F.loc(), 10).then((ch) => { if (ch) refresh(); }).catch(() => {});
     F.contact.warm(sorted());
     return items;
   }
 
   function callOf(id, how) {
     const c = items.find((x) => x.id === id);
-    if (c) F.contact[how](c);
+    if (!c) return;
+    F.drive.guard(c, sorted(), () => F.contact[how](c), (nid) => callOf(nid, how));
   }
 
   async function locateGPS(silent) {
@@ -314,7 +323,7 @@
       if (w) return callOf(w.dataset.wa, 'whatsapp');
       if (e.target.closest('[data-clear]')) return clearFilters();
       const r = e.target.closest('[data-route]');
-      if (r) { const c = items.find((x) => x.id === r.dataset.route); if (c) F.nav.routeTo(c); return; }
+      if (r) { const c = items.find((x) => x.id === r.dataset.route); if (c) F.drive.guard(c, sorted(), () => F.nav.routeTo(c), (nid) => { const o = items.find((x) => x.id === nid); if (o) F.nav.routeTo(o); }); return; }
       if (e.target.closest('[data-retry]')) { load(); return; }
       if (e.target.closest('[data-req]')) F.request.start();
     });
