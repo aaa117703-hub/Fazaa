@@ -1,0 +1,36 @@
+name: Native bootstrap (Expo)
+# يولّد مشروع Expo بأحدث إصدار متوافق مع Expo Go ويحفظ package.json في فرع native-base
+on:
+  workflow_dispatch:
+  push:
+    branches: [native-app]
+    paths: ['.github/workflows/native-bootstrap.yml']
+permissions:
+  contents: write
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Create Expo project
+        run: |
+          npx --yes create-expo-app@latest native-gen --template default --no-install
+          cd native-gen
+          npm install
+          npx expo install @supabase/supabase-js react-native-maps expo-location expo-notifications expo-haptics expo-secure-store expo-image-picker expo-localization @react-native-async-storage/async-storage react-native-url-polyfill expo-linking expo-device
+          npx tsc --version
+          node -e "const p=require('./package.json');console.log(JSON.stringify({name:p.name,expo:p.dependencies.expo,rn:p.dependencies['react-native'],react:p.dependencies.react,router:p.dependencies['expo-router']}))"
+          ls -a; find . -maxdepth 2 -not -path "./node_modules*" -not -path "./.git*" | head -60
+      - name: Publish scaffold to branch native-base
+        run: |
+          rm -rf native-gen/node_modules native-gen/.expo native-gen/.git
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout -b native-base
+          mv native-gen native
+          git add native
+          git commit -m "Expo scaffold (generated)"
+          git push -f origin native-base
