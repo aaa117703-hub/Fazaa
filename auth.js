@@ -119,7 +119,9 @@
       const root = F.$('#auth');
       root.hidden = false;
       root.innerHTML = '<div class="auth-box">' + hero() + '<form class="card" id="auth-form" novalidate>' + formHtml() + '</form>' +
-        '<p class="muted small center mt">رقمك يظهر فقط للسائق اللي يقبل طلبك.</p></div>';
+        '<p class="muted small center mt">رقمك يظهر فقط للسائق اللي يقبل طلبك.</p>' +
+        (step !== 'profile' ? '<button type="button" class="btn ghost block mt" id="a-skip">تصفح بدون حساب</button>' : '') + '</div>';
+      const sk = F.$('#a-skip'); if (sk) sk.onclick = () => { root.hidden = true; F.showApp(); };
       F.$('#auth-form').onsubmit = (e) => { e.preventDefault(); F.auth.submit(); };
       const on = (id, fn) => { const n = F.$('#' + id); if (n) n.onclick = fn; };
       const pv = F.$('#a-priv'); if (pv) pv.onclick = (e) => { e.preventDefault(); F.showPrivacy(); };

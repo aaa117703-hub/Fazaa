@@ -178,7 +178,7 @@
   F.isGuest = () => !sess || F.viewAs() === 'visitor';
   F.isAdmin = () => realAdmin() && F.viewAs() === 'admin';
   F.isRealAdmin = realAdmin;
-  F.canEnter = () => !!sess; // الدخول برقم الموبايل إجباري
+  F.canEnter = () => true; // التصفح مفتوح للزائر (متطلب آبل 5.1.1)؛ الحساب فقط للطلب/التسجيل كسائق
   F.authPhone = () => { const p = sess && sess.user && sess.user.phone; return p ? '0' + String(p).replace(/^\+?964/, '') : ''; };
 
   F.user = function () {
