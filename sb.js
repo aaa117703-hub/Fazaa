@@ -220,7 +220,7 @@
       updatedAt: Date.parse(c.updated_at) || 0,
       rating: c.rating_avg != null ? +c.rating_avg : null, ratingCount: c.rating_count || 0,
       d: c.distance_km != null ? +c.distance_km : null,
-      gov: c.governorate || ''
+      gov: c.governorate || '', tier: c.tier || 'bronze', avatar: c.avatar || ''
     }));
   };
 

@@ -78,10 +78,10 @@
     return (
       '<article class="card crane ' + (c.status === 'available' ? '' : 'busy') + '" data-id="' + F.esc(c.id) + '">' +
         '<div class="row">' +
-          '<div class="avatar tier-' + (c.tier || 'bronze') + '" title="' + F.tierOf(c.tier).name + '">' + F.icon('crane') + '</div>' +
+          '<div class="avatar cava tier-' + (c.tier || 'bronze') + (c.verified ? ' ver' : '') + '" title="' + F.tierOf(c.tier).name + '">' + (c.avatar ? '<img src="' + F.esc(F.sb.avatarUrl(c.avatar)) + '" alt="" loading="lazy" onerror="this.remove()">' : '') + '<span>' + F.esc((c.name || '؟').trim().charAt(0)) + '</span></div>' +
           '<div class="grow">' +
             '<h3>' + F.esc(c.name) + badges + '</h3>' +
-            '<div class="sub">' + F.esc(c.type) + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + roadTxt(c) + (c.ratingCount ? ' · <span class="stars">★ ' + c.rating.toFixed(1) + '</span> (' + c.ratingCount + ')' : ' · بدون تقييم') + '</div>' +
+            '<div class="sub"><b class="ctype">' + F.esc(c.type) + '</b>' + (c.gov ? ' · ' + F.esc(c.gov) : '') + ' · ' + roadTxt(c) + (c.ratingCount ? ' · <span class="stars">★ ' + c.rating.toFixed(1) + '</span> (' + c.ratingCount + ')' : ' · بدون تقييم') + '</div>' +
             '<div class="meta ' + (s.stale ? 'stale' : '') + '"><span class="dot ' + s.cls + '"></span>' + s.txt + '</div>' +
           '</div>' +
           '<div class="stack" style="gap:6px"><button class="btn ' + (c.status === 'available' ? 'green' : 'secondary') + '" data-call="' + F.esc(c.id) + '">' + F.icon('phone') + ' اتصال</button>' +
