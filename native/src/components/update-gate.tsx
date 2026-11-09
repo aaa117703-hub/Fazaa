@@ -77,7 +77,7 @@ export function UpdateGate() {
   const rotRev = spin.interpolate({ inputRange: [0, 1], outputRange: ['45deg', '-315deg'] });
 
   return (
-    <Modal visible={avail} transparent animationType="fade" onRequestClose={() => phase === 'ask' && setAvail(false)}>
+    <Modal visible={avail} transparent animationType="fade" onRequestClose={() => { if (phase === 'ask') setAvail(false); }}>
       <View style={s.back}>
         <View style={s.card}>
           {phase === 'ask' ? (
