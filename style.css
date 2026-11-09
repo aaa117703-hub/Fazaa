@@ -859,3 +859,9 @@ button:active, .btn:active, [data-nav]:active, .chip:active { transform: none; f
 .sp-tip b { display: block; margin-bottom: 4px; font-family: 'Changa', 'Tajawal', sans-serif; font-size: 13.5px; font-weight: 700; letter-spacing: .3px; color: #FF9A55; }
 .sp-tip span { display: block; font-family: 'Changa', 'Tajawal', sans-serif; font-size: 17.5px; font-weight: 600; line-height: 1.65; color: #fff; }
 @keyframes sp-bulb { 0%, 100% { box-shadow: 0 8px 18px -6px rgba(255, 107, 44, .7); } 50% { box-shadow: 0 0 0 7px rgba(255, 107, 44, .16), 0 8px 22px -4px rgba(255, 107, 44, .9); } }
+
+/* خط شاشة الدخول: Noto Kufi Arabic */
+.sp-tip b, .sp-tip span, .sp-tag { font-family: 'Noto Kufi Arabic', 'Tajawal', sans-serif; }
+.sp-tip span { font-size: 15.5px; font-weight: 600; line-height: 1.9; }
+.sp-tip b { font-size: 13px; font-weight: 700; }
+.sp-tag { font-size: 15px; font-weight: 600; }
