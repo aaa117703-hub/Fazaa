@@ -3,7 +3,7 @@
  * - MapLibre والخط: يُخزَّنون أول مرة يُحمَّلون.
  * - بلاطات الخريطة: تُخزَّن للي شفته فقط (بحد أقصى).
  */
-const VERSION = 'sanad-v52';
+const VERSION = 'sanad-v53';
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const TILES = `${VERSION}-tiles`;
@@ -28,6 +28,7 @@ const SHELL_FILES = [
   './en-dict.js',
   './en.js',
   './tips.js',
+  './update.js',
   './iraqmap.js',
   './shops.js',
   './traffic.js',
@@ -68,10 +69,17 @@ self.addEventListener('notificationclick', (e) => {
 });
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(SHELL).then((c) => c.addAll(SHELL_FILES)).then(() => self.skipWaiting())
-  );
+  e.waitUntil((async () => {
+    const c = await caches.open(SHELL);
+    let done = 0; const total = SHELL_FILES.length;
+    const say = async () => { (await self.clients.matchAll({ includeUncontrolled: true })).forEach((x) => x.postMessage({ type: 'sw-progress', done, total })); };
+    await Promise.all(SHELL_FILES.map(async (f) => { await c.add(new Request(f, { cache: 'reload' })); done++; say(); }));
+    // أول تثبيت: فعّل فوراً. تحديث: ننتظر ضغطة المستخدم على «تحديث».
+    if (!self.registration.active) self.skipWaiting();
+  })());
 });
+
+self.addEventListener('message', (e) => { if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting(); });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
