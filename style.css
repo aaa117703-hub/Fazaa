@@ -225,6 +225,11 @@ h1 .ic { color: var(--accent); width: 1.15em; height: 1.15em; margin-left: 8px; 
   background: var(--surface-2); display: grid; place-items: center; color: var(--accent);
 }
 .crane .avatar .ic { width: 26px; height: 26px; }
+/* صورة صاحب الكرين بدل الشعار: إطار أخضر للموثق، ونوع الكرين برتقالي */
+.crane .avatar.cava { position: relative; overflow: hidden; background: var(--surface-2); display: grid; place-items: center; font-size: 22px; font-weight: 800; color: var(--text); }
+.crane .avatar.cava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.crane .avatar.cava.ver { border-color: #22C55E; box-shadow: 0 0 12px rgba(34, 197, 94, .45); }
+.crane .ctype { color: var(--accent); font-weight: 800; }
 .crane h3 { font-size: 15px; }
 .crane .sub { font-size: 13px; color: var(--muted); }
 .crane .meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
