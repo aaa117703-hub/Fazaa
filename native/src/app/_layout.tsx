@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { I18nManager } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { UpdateGate } from '@/components/update-gate';
 import { AuthProvider } from '@/lib/auth';
 import { C } from '@/lib/theme';
 
@@ -20,6 +21,7 @@ export default function RootLayout() {
           <Stack.Screen name="login" options={{ presentation: 'modal' }} />
           <Stack.Screen name="sos" options={{ presentation: 'modal' }} />
         </Stack>
+        <UpdateGate />
       </AuthProvider>
     </SafeAreaProvider>
   );
