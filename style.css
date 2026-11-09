@@ -381,7 +381,6 @@ th { color: var(--muted); font-weight: 600; }
 .sp-chev { opacity: 0; animation: sp-rise .5s 1.15s both; }
 .sp-pulse { position: absolute; inset: 14px; border-radius: 50%; border: 2px solid rgba(255, 107, 44, .6); opacity: 0; animation: sp-ring 2.2s 1.2s ease-out infinite; }
 .sp-pulse.r2 { animation-delay: 1.9s; }
-.sp-name { margin-top: 18px; font-size: 38px; font-weight: 800; color: #fff; line-height: 1.2; opacity: 0; animation: sp-up .6s 1.2s both; }
 .sp-tag { color: #FF8A3D; font-size: 15px; font-weight: 600; letter-spacing: .3px; opacity: 0; animation: sp-up .6s 1.4s both; }
 .sp-tip { position: absolute; bottom: calc(46px + env(safe-area-inset-bottom)); left: 20px; right: 20px; max-width: 420px; margin-inline: auto; padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: #E8EAED; font-size: 15px; line-height: 1.7; opacity: 0; animation: sp-up .7s 2s both; }
 .sp-tip b { display: block; color: #FF8A3D; font-size: 12.5px; margin-bottom: 4px; }
@@ -784,12 +783,7 @@ html.is-en input, html.is-en textarea { text-align: left; }
 }
 
 /* ===== افتتاحية: حروف Sanad Jaik تتجمع من أطراف الشاشة ===== */
-.sp-name { opacity: 1 !important; animation: none !important; display: flex; justify-content: center; font-family: 'Changa', 'Tajawal', sans-serif; font-size: 42px; font-weight: 800; letter-spacing: 1.5px; direction: ltr; }
-.sp-name span { display: inline-block; opacity: 0; transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(.4); filter: blur(10px); animation: sp-letter .95s var(--d) cubic-bezier(.2, .9, .25, 1.12) forwards; will-change: transform, opacity; }
-.sp-name .sp-gap { width: .38em; animation: none; opacity: 0; }
-@keyframes sp-letter { 60% { filter: blur(0); } to { opacity: 1; transform: none; filter: blur(0); } }
 .sp-tag { animation-delay: 2.5s !important; }
-.sp-name span:nth-last-child(-n+4) { color: #FF8A3D; }
 
 /* ===== الزر النشط: كرة برتقالية تنزلق وترتفع فوق الشريط (الباقي يبقى طبيعي) ===== */
 .nav-bottom { overflow: visible; }
@@ -843,3 +837,16 @@ button:active, .btn:active, [data-nav]:active, .chip:active { transform: none; f
   html[data-nav="top"] .nav-bottom button.active .ic { transform: none !important; }
   html[data-nav="top"] main { padding-top: 90px; }
 }
+
+/* ===== شعار الدخول: SANAD JAIK بحروف كبيرة هندسية تُرسم بخط واحد ===== */
+.sp-word { width: min(86vw, 460px); height: auto; margin-top: 26px; overflow: visible; }
+.sp-l { stroke: #fff; stroke-dasharray: 1; stroke-dashoffset: 0; animation: sp-stroke .55s calc(1.05s + var(--i) * .09s) cubic-bezier(.6, 0, .2, 1) backwards; }
+.sp-l.o { stroke: #FF6B2C; }
+.sp-rule { stroke: rgba(255, 255, 255, .22); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 0; animation: sp-stroke .9s 1s cubic-bezier(.6, 0, .2, 1) backwards; }
+.sp-rule.b { stroke: rgba(255, 107, 44, .55); animation-delay: 1.9s; }
+.sp-sq { fill: #FF6B2C; stroke: none; animation: sp-fade .3s 1.9s backwards; }
+.sp-sq.r { animation-delay: 2.7s; }
+.sp-word { animation: sp-sheen 2.4s 2.2s ease-in-out 1; }
+@keyframes sp-stroke { from { stroke-dashoffset: 1; opacity: 0; } 10% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes sp-sheen { 50% { filter: drop-shadow(0 0 14px rgba(255, 107, 44, .55)); } }
+.sp-tag { margin-top: 14px; letter-spacing: .5px; }
