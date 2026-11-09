@@ -850,3 +850,12 @@ button:active, .btn:active, [data-nav]:active, .chip:active { transform: none; f
 @keyframes sp-stroke { from { stroke-dashoffset: 1; opacity: 0; } 10% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes sp-sheen { 50% { filter: drop-shadow(0 0 14px rgba(255, 107, 44, .55)); } }
 .sp-tag { margin-top: 14px; letter-spacing: .5px; }
+
+/* ===== بطاقة النصيحة: واضحة، بخط أكبر، بأيقونة وشريط برتقالي ===== */
+.sp-tip { display: flex; align-items: center; gap: 14px; padding: 16px 16px; border-radius: 20px; background: linear-gradient(135deg, rgba(255, 107, 44, .16), rgba(255, 255, 255, .05) 60%); border: 1px solid rgba(255, 138, 61, .35); border-inline-start: 4px solid #FF6B2C; box-shadow: 0 14px 34px -14px rgba(255, 107, 44, .45); max-width: 440px; }
+.sp-tip-ic { flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #FF8A3D, #F0541C); box-shadow: 0 8px 18px -6px rgba(255, 107, 44, .7); animation: sp-bulb 2.4s 2.4s ease-in-out infinite; }
+.sp-tip-ic svg { width: 26px; height: 26px; }
+.sp-tip-t { min-width: 0; text-align: start; }
+.sp-tip b { display: block; margin-bottom: 4px; font-family: 'Changa', 'Tajawal', sans-serif; font-size: 13.5px; font-weight: 700; letter-spacing: .3px; color: #FF9A55; }
+.sp-tip span { display: block; font-family: 'Changa', 'Tajawal', sans-serif; font-size: 17.5px; font-weight: 600; line-height: 1.65; color: #fff; }
+@keyframes sp-bulb { 0%, 100% { box-shadow: 0 8px 18px -6px rgba(255, 107, 44, .7); } 50% { box-shadow: 0 0 0 7px rgba(255, 107, 44, .16), 0 8px 22px -4px rgba(255, 107, 44, .9); } }
