@@ -810,3 +810,36 @@ html.is-en input, html.is-en textarea { text-align: left; }
   html[data-nav="top"] #toasts { bottom: 24px; }
   html[data-nav="top"] #nsheet { bottom: 20px; }
 }
+
+
+/* ===== تنقل حديث (v2): شريط عائم مسطّح، التبويب النشط كبسولة برتقالية تتمدد وتُظهر اسمها ===== */
+/* إصلاح: زر بتأثير filter/transform داخل عنصر backdrop-filter يختفي بـ iOS — نلغي الـ backdrop-filter ونستخدم تعتيم بدل filter */
+.topbar, .nav-bottom { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+button:active, .btn:active, [data-nav]:active, .chip:active { transform: none; filter: none; opacity: .82; }
+.nav-bottom {
+  height: 62px; padding: 6px; gap: 4px; border-radius: 22px; overflow: visible;
+  background: var(--surface, #181B1F); border: 1px solid rgba(255, 255, 255, .08);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+}
+.nav-bottom .nav-ind { display: none !important; }
+.nav-bottom button {
+  flex: 1 1 0; min-width: 0; height: 100%; border-radius: 17px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: transparent; color: var(--muted, #9AA3AF); font-size: 10.5px; font-weight: 700; transform: none !important;
+  transition: flex-grow .3s cubic-bezier(.3, .9, .3, 1), background-color .25s, color .2s;
+}
+.nav-bottom button .ic { width: 22px; height: 22px; transform: none !important; filter: none !important; transition: none; }
+.nav-bottom button span { white-space: nowrap; transform: none !important; transition: none; }
+.nav-bottom button.active {
+  flex-grow: 2.1; flex-direction: row; gap: 6px; font-size: 13px; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #FF8A3D, #F0541C); box-shadow: 0 6px 16px -4px rgba(255, 107, 44, .6);
+}
+.nav-bottom button.active .ic { color: #fff !important; width: 21px; height: 21px; filter: none !important; transform: none !important; }
+.nav-bottom button.active span { color: #fff !important; transform: none !important; }
+.nav-bottom button:active { background-color: rgba(255, 255, 255, .06); opacity: 1; }
+.nav-bottom button.active:active { opacity: .9; }
+@media (max-width: 899px) {
+  html[data-nav="top"] .nav-bottom { bottom: auto; top: calc(64px + env(safe-area-inset-top)); }
+  html[data-nav="top"] .nav-bottom .nav-ind::before { display: none; }
+  html[data-nav="top"] .nav-bottom button.active .ic { transform: none !important; }
+  html[data-nav="top"] main { padding-top: 90px; }
+}
