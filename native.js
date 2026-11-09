@@ -98,7 +98,7 @@
 
   // اهتزاز خفيف عند لمس الأزرار
   document.addEventListener('click', (e) => {
-    if (e.target.closest && e.target.closest('button, .btn, [data-nav], .chip, a.card')) haptic(7);
+    if (e.target.closest && e.target.closest('button, .btn, button[data-nav], .chip, a.card')) haptic(7);
   }, { passive: true });
 
   ptr();

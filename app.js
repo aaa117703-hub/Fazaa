@@ -26,7 +26,7 @@
     const gear = F.$('#tb-settings');
     gear.innerHTML = F.icon('sliders');
     gear.onclick = () => { location.hash = '#settings'; };
-    F.$$('[data-nav]').forEach((b) => { b.onclick = () => { location.hash = '#' + b.dataset.nav; }; });
+    F.$$('button[data-nav]').forEach((b) => { b.onclick = () => { location.hash = '#' + b.dataset.nav; }; });
     ['#nav-top', '#nav-bottom'].forEach((sel) => {
       const ind = document.createElement('span');
       ind.className = 'nav-ind';
@@ -73,7 +73,7 @@
     const prev = current;
     const vid = VIEWS[v];
     Object.keys(VIEWS).forEach((k) => { F.$('#' + VIEWS[k]).hidden = VIEWS[k] !== vid; });
-    F.$$('[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (isAd || v === 'settings' ? 'profile' : v === 'offline' ? 'home' : v)));
+    F.$$('button[data-nav]').forEach((b) => b.classList.toggle('active', b.dataset.nav === (isAd || v === 'settings' ? 'profile' : v === 'offline' ? 'home' : v)));
     current = v;
     document.body.classList.toggle('off-page', v === 'offline');
 
