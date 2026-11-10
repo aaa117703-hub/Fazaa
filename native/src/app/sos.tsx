@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
+import { warn } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
 const NUMS = [
@@ -23,7 +23,7 @@ export default function Sos() {
       {NUMS.map((x) => (
         <Pressable
           key={x.n}
-          onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {}); Linking.openURL('tel:' + x.n); }}>
+          onPress={() => { warn(); Linking.openURL('tel:' + x.n).catch(() => {}); }}>
           <Card style={[rtl.row, { gap: 14 }]}>
             <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.danger, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name={x.icon} size={24} color="#fff" />

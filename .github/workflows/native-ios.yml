@@ -1,0 +1,62 @@
+name: Native iOS IPA
+# يبني IPA غير موقّع للتطبيق الحقيقي (Expo). يُثبَّت بـ Sideloadly / AltStore (يوقّعه بحساب Apple المجاني).
+# للتشغيل: عدّل native/ios.trigger على فرع native-ios-build، أو شغّله يدوياً بعد الدمج بـ main.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['native-ios-build']
+    paths: ['.github/workflows/native-ios.yml', 'native/ios.trigger']
+permissions:
+  contents: write
+jobs:
+  ipa:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - run: npm ci
+      - run: npx expo prebuild --platform ios
+      - name: Build unsigned app
+        working-directory: native/ios
+        run: |
+          WS=$(ls -d *.xcworkspace | head -1)
+          SCHEME="${WS%.xcworkspace}"
+          echo "workspace=$WS scheme=$SCHEME"
+          xcodebuild -workspace "$WS" -scheme "$SCHEME" -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -n 40
+      - name: Package IPA
+        working-directory: native
+        run: |
+          APP=$(ls -d ios/build/Build/Products/Release-iphoneos/*.app | head -1)
+          echo "app=$APP"
+          rm -rf Payload sanad-jaik-native.ipa && mkdir Payload
+          cp -R "$APP" Payload/SanadJaik.app
+          find Payload -name '.DS_Store' -delete
+          rm -rf Payload/SanadJaik.app/_CodeSignature Payload/SanadJaik.app/embedded.mobileprovision
+          # تحقق أن البنية صحيحة لبرامج التوقيع (ESign / Sideloadly / AltStore)
+          test -f Payload/SanadJaik.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Payload/SanadJaik.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" Payload/SanadJaik.app/Info.plist
+          EXE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" Payload/SanadJaik.app/Info.plist)
+          test -f "Payload/SanadJaik.app/$EXE"
+          zip -qry -X sanad-jaik-native.ipa Payload
+          unzip -l sanad-jaik-native.ipa | head -8
+          unzip -tq sanad-jaik-native.ipa
+          ls -lh sanad-jaik-native.ipa
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "native-ios-${{ github.run_number }}" sanad-jaik-native.ipa --title "سند جايك (التطبيق الحقيقي) IPA #${{ github.run_number }}" --notes "ملف IPA غير موقّع. ثبّته بـ Sideloadly أو AltStore (يوقّعه بحساب Apple المجاني ويصلح 7 أيام)."
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sanad-jaik-native-ipa
+          path: native/sanad-jaik-native.ipa

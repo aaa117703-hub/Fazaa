@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, TextProps, TextStyle, View, ViewStyle } from 'react-native';
-import * as Haptics from 'expo-haptics';
 
+import { tap } from '@/lib/safe';
 import { C, R } from '@/lib/theme';
 
 // تخطيط عربي ثابت (من اليمين لليسار) بغضّ النظر عن لغة الجهاز.
@@ -39,7 +39,7 @@ export function Btn({ label, onPress, kind = 'primary', disabled, style, textSty
     <Pressable
       disabled={disabled}
       onPress={() => {
-        Haptics.selectionAsync().catch(() => {});
+        tap();
         onPress?.();
       }}
       style={({ pressed }) => [

@@ -1,7 +1,8 @@
 import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ArchLoader } from '@/components/arch-loader';
 import { C, R } from '@/lib/theme';
 
 const TIPS = [
@@ -28,7 +29,6 @@ export function UpdateGate() {
   const [pct, setPct] = useState(0);
   const [tip, setTip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)]);
   const [msg, setMsg] = useState('جاري التحديث… لا تسكّر التطبيق');
-  const spin = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -42,7 +42,6 @@ export function UpdateGate() {
 
   const start = () => {
     setPhase('load');
-    Animated.loop(Animated.timing(spin, { toValue: 1, duration: 5200, easing: Easing.linear, useNativeDriver: true })).start();
     let ready = false;
     let failed = false;
     Updates.fetchUpdateAsync().then(() => { ready = true; }).catch(() => { failed = true; });
@@ -73,8 +72,6 @@ export function UpdateGate() {
     pulse.setValue(0.88);
     Animated.spring(pulse, { toValue: 1, friction: 3, useNativeDriver: true }).start();
   };
-  const rot = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-  const rotRev = spin.interpolate({ inputRange: [0, 1], outputRange: ['45deg', '-315deg'] });
 
   return (
     <Modal visible={avail} transparent animationType="fade" onRequestClose={() => { if (phase === 'ask') setAvail(false); }}>
@@ -103,9 +100,7 @@ export function UpdateGate() {
             <View style={{ alignItems: 'center' }}>
               <Pressable onPress={bump} style={s.art}>
                 <Animated.View style={{ transform: [{ scale: pulse }], alignItems: 'center', justifyContent: 'center' }}>
-                  <Animated.View style={[s.sq, { width: 120, height: 120, borderColor: C.accent, transform: [{ rotate: rot }] }]} />
-                  <Animated.View style={[s.sq, { width: 120, height: 120, borderColor: 'rgba(255,255,255,0.35)', transform: [{ rotate: rotRev }] }]} />
-                  <Animated.View style={[s.sq, { width: 72, height: 72, borderColor: C.accent2, transform: [{ rotate: rotRev }] }]} />
+                  <ArchLoader pct={pct} size={150} />
                 </Animated.View>
               </Pressable>
               <Text style={s.pct}>{pct}<Text style={s.pctS}>%</Text></Text>

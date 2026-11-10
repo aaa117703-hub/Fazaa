@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -10,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { tap } from '@/lib/safe';
 import { C, R } from '@/lib/theme';
 
 type Crane = {
@@ -54,7 +54,7 @@ export default function Home() {
   const list = useMemo(() => (onlyFree ? cranes.filter((c) => c.status === 'available') : cranes), [cranes, onlyFree]);
 
   async function call(c: Crane) {
-    Haptics.selectionAsync().catch(() => {});
+    tap();
     if (!session) { router.push('/login'); return; }
     const { data } = await supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle();
     if (!data?.phone) { Alert.alert('ما كو رقم', 'هذا السائق ما سجّل رقم بعد.'); return; }
