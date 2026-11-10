@@ -1,0 +1,24 @@
+# يحدّث رقم نسخة الـ Service Worker تلقائياً بعد كل دمج على main
+# حتى لا يعدّله أحد يدوياً داخل الـ PRs (وهذا كان سبب تعارضات sw.js).
+name: bump-sw
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['sw.js', 'native/**', '.github/**']
+permissions:
+  contents: write
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump VERSION
+        run: |
+          sed -i "s/^const VERSION = .*/const VERSION = 'sanad-${GITHUB_SHA::7}';/" sw.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sw.js
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: bump sw version [skip ci]"
+            git push
+          fi
