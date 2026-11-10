@@ -37,10 +37,10 @@
 <div id="splash" aria-hidden="true">
   <div class="sp-glow"></div>
   <div class="sp-logo">
-    <i class="sp-pulse"></i><i class="sp-pulse r2"></i>
     <svg viewBox="0 0 100 100" role="presentation">
       <path class="sp-arch" pathLength="1" d="M19 86V51a31 31 0 0 1 62 0V86" fill="none" stroke="#FF6B2C" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle class="sp-dot" cx="50" cy="40" r="6.5" fill="#FF6B2C"/>
+      <path id="sp-trk" d="M19 86V51a31 31 0 0 1 62 0V86" fill="none" stroke="none"/>
+      <circle class="sp-dot" cx="50" cy="67" r="5.2" fill="#F5F5F0"/>
       <path class="sp-chev" d="M35.5 73L50 57.5L64.5 73" fill="none" stroke="#F5F5F0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
   </div>
@@ -56,6 +56,24 @@
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('reduce-motion');
   if (reduce) { s.remove(); return; }
   try { document.getElementById('sp-tip').textContent = window.F && F.randomTip ? F.randomTip() : ''; } catch (e) {}
+  /* النقطة: تنط من داخل السهم لبداية القوس، وتطلع معه حسب النسبة (50% = منتصف القوس، 100% = نهايته) */
+  (function () {
+    var dot = s.querySelector('.sp-dot'), trk = document.getElementById('sp-trk');
+    if (!dot || !trk || !trk.getTotalLength) return;
+    var L = trk.getTotalLength(), P0 = trk.getPointAtLength(0), t0 = performance.now();
+    var T_IN = 1.7, T_HOP = 2.1, T_GO = 2.6, T_END = 4.9;
+    var set = function (x, y, o) { dot.setAttribute('cx', x.toFixed(2)); dot.setAttribute('cy', y.toFixed(2)); dot.style.opacity = o; };
+    set(50, 67, 0);
+    (function step(now) {
+      if (!s.parentNode) return;
+      var t = (now - t0) / 1000;
+      if (t < T_IN) set(50, 67, 0);
+      else if (t < T_HOP) set(50, 67, Math.min(1, (t - T_IN) / 0.25));
+      else if (t < T_GO) { var u = (t - T_HOP) / (T_GO - T_HOP), e = u * u * (3 - 2 * u); set(50 + (P0.x - 50) * e, 67 + (P0.y - 67) * e - Math.sin(Math.PI * u) * 24, 1); }
+      else { var q = Math.min(1, (t - T_GO) / (T_END - T_GO)), pt = trk.getPointAtLength(q * L); set(pt.x, pt.y, 1); }
+      requestAnimationFrame(step);
+    })(t0);
+  })();
   var done = function () {
     if (!s.parentNode) return;
     s.classList.add('out');
