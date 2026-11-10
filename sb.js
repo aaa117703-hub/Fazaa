@@ -25,6 +25,8 @@
     [/rate limit|too many|after \d+ seconds/i, 'محاولات كثيرة. انتظر دقيقة وجرّب.'],
     [/otp.*(expired|invalid)|token has expired|invalid.*(token|otp|code)/i, 'الرمز غلط أو انتهت صلاحيته.'],
     [/unsupported phone provider|phone provider|sms.*(disabled|not)/i, 'خدمة الرسائل غير مفعّلة بعد. راجع الإدارة.'],
+    [/error sending|smtp|recovery email|email.*(not authorized|rate)/i, 'خدمة الإيميل غير مفعّلة بعد أو وصلت حدها. جرّب بعد قليل أو راجع الإدارة.'],
+    [/same.*password|different from the old/i, 'كلمة المرور الجديدة لازم تختلف عن القديمة.'],
     [/jwt/i, 'انتهت الجلسة. سجّل دخول من جديد.']
   ];
   function friendly(msg) {
@@ -159,7 +161,41 @@
     return profile;
   }
 
+  /* ---------- نسيت كلمة المرور ---------- */
+  let recovery = false;
+  async function forgotPassword(email) {
+    await raw('/auth/v1/recover?redirect_to=' + encodeURIComponent(location.origin + '/'), { method: 'POST', body: { email: email } });
+    return { ok: true };
+  }
+  async function updatePassword(pass) {
+    const r = await call('/auth/v1/user', { method: 'PUT', body: { password: pass } });
+    recovery = false;
+    return r.data;
+  }
+  // رابط الاستعادة يرجّع للموقع مع #access_token=...&type=recovery
+  function recoveryFromHash() {
+    const h = location.hash || '';
+    const clean = () => { try { history.replaceState(null, '', location.pathname + location.search + '#home'); } catch (e) { } };
+    if (h.indexOf('access_token=') < 0 || h.indexOf('type=recovery') < 0) {
+      if (/error_code=otp_expired|error=access_denied/.test(h)) { clean(); return 'expired'; }
+      return false;
+    }
+    const p = new URLSearchParams(h.replace(/^#/, ''));
+    setSession({ access_token: p.get('access_token'), refresh_token: p.get('refresh_token'), expires_in: +p.get('expires_in') || 3600 });
+    clean();
+    return 'ok';
+  }
+
   async function init() {
+    const rc = recoveryFromHash();
+    if (rc === 'expired') { F.recoveryExpired = true; }
+    if (rc === 'ok') {
+      try {
+        const r = await raw('/auth/v1/user', { token: sess.access_token });
+        sess.user = r.data; store(SK, sess); await afterLogin(); recovery = true;
+      } catch (e) { clearLocal(); F.recoveryExpired = true; }
+      return;
+    }
     if (sess) {
       try { await token(); if (sess) await afterLogin(); } catch (e) {}
     }
@@ -209,7 +245,7 @@
     return API + '/storage/v1' + r.data.signedURL;
   }
 
-  F.sb = { avatarUrl: function (p, v) { return p ? API + '/storage/v1/object/public/avatars/' + p + (v ? '?v=' + v : '') : ''; }, fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
+  F.sb = { forgotPassword: forgotPassword, updatePassword: updatePassword, isRecovery: () => recovery, avatarUrl: function (p, v) { return p ? API + '/storage/v1/object/public/avatars/' + p + (v ? '?v=' + v : '') : ''; }, fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
 
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {

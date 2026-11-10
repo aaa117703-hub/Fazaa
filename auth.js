@@ -27,6 +27,7 @@
     return '<div class="auth-hero"><img src="logo.svg" width="84" height="84" alt=""><h1>سند جايك</h1>' +
       '<p>سندك بضغطة — أقرب كرين لسيارتك</p></div>';
   }
+  let sentTo = '';
   const chName = (c) => (c === 'whatsapp' ? 'واتساب' : 'رسالة SMS');
 
   function tick() {
@@ -40,11 +41,25 @@
   }
 
   function formHtml() {
+    if (mode === 'forgot') {
+      if (sentTo) return '<h2 style="margin-top:0">راجع إيميلك</h2><p class="muted">إذا هذا الإيميل مسجّل عندنا، راح توصلك رسالة فيها رابط لتعيين كلمة مرور جديدة: <b class="ltr">' + F.esc(sentTo) + '</b></p><p class="muted small">ما وصلت؟ شيك مجلد الرسائل غير المرغوبة (Spam)، وانتظر دقيقة.</p><button class="btn big block" type="button" id="a-to-login">رجوع للدخول</button>';
+      return '<h2 style="margin-top:0">نسيت كلمة المرور</h2><p class="muted small">اكتب إيميل حسابك وراح نرسل لك رابط لتعيين كلمة جديدة.</p>' +
+        '<div class="field"><label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
+        '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">أرسل الرابط</button>' +
+        '<button class="btn ghost block mt-s" type="button" id="a-to-login">رجوع للدخول</button>';
+    }
+    if (mode === 'reset') {
+      return '<h2 style="margin-top:0">كلمة مرور جديدة</h2><p class="muted small">اختر كلمة مرور جديدة لحسابك.</p>' +
+        '<div class="field"><label for="a-pass">كلمة المرور الجديدة (8 أحرف أو أكثر)</label><input id="a-pass" class="ltr" type="password" autocomplete="new-password"><div class="err" id="e-pass"></div></div>' +
+        '<div class="field"><label for="a-pass2">أعد كتابتها</label><input id="a-pass2" class="ltr" type="password" autocomplete="new-password"><div class="err" id="e-pass2"></div></div>' +
+        '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">حفظ ودخول</button>';
+    }
     if (mode === 'login') {
       return '<h2 style="margin-top:0">دخول</h2>' +
         '<div class="field"><label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
         '<div class="field"><label for="a-pass">كلمة المرور</label><input id="a-pass" class="ltr" type="password" autocomplete="current-password"><div class="err" id="e-pass"></div></div>' +
         '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">دخول</button>' +
+        '<button class="btn ghost block mt-s" type="button" id="a-to-forgot">نسيت كلمة المرور؟</button>' +
         '<button class="btn secondary block mt-s" type="button" id="a-to-signup">حساب جديد</button>' +
         (F.PHONE_LOGIN ? '<button class="btn ghost block mt-s" type="button" id="a-to-phone">الدخول برقم الموبايل</button>' : '');
     }
@@ -113,6 +128,7 @@
     // يعرض شاشة الدخول (ويخفي التطبيق)
     // مستخدم مسجّل بدون اسم (قطع الخطوة الأخيرة سابقاً)
     completeProfile: function () { phone = F.authPhone() || ''; step = 'profile'; mode = 'phone'; F.$('#app').hidden = true; F.auth.render(); },
+    openReset: function () { mode = 'reset'; step = 'phone'; F.$('#app').hidden = true; F.auth.render(); },
     open: function () { F.$('#app').hidden = true; step = 'phone'; mode = 'login'; F.auth.render(); },
 
     render: function () {
@@ -126,7 +142,8 @@
       const on = (id, fn) => { const n = F.$('#' + id); if (n) n.onclick = fn; };
       const pv = F.$('#a-priv'); if (pv) pv.onclick = (e) => { e.preventDefault(); F.showPrivacy(); };
       on('a-to-signup', () => { mode = 'signup'; F.auth.render(); });
-      on('a-to-login', () => { mode = 'login'; step = 'phone'; F.auth.render(); });
+      on('a-to-login', () => { mode = 'login'; step = 'phone'; sentTo = ''; F.auth.render(); });
+      on('a-to-forgot', () => { mode = 'forgot'; sentTo = ''; F.auth.render(); });
       on('a-to-phone', () => { mode = 'phone'; step = 'phone'; F.auth.render(); });
       on('a-change', () => { step = 'phone'; F.auth.render(); });
       on('a-resend', () => guarded(() => send(channel)));
@@ -135,6 +152,20 @@
     submit: function () {
       return guarded(async () => {
         errAt('e-form');
+        if (mode === 'forgot') {
+          const email = F.$('#a-email').value.trim().toLowerCase();
+          if (!errAt('e-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'اكتب إيميل صحيح.')) return;
+          await F.sb.forgotPassword(email);
+          sentTo = email; return F.auth.render();
+        }
+        if (mode === 'reset') {
+          const a = F.$('#a-pass').value, b = F.$('#a-pass2').value;
+          const ok = errAt('e-pass', a.length >= 8 ? '' : 'كلمة المرور 8 أحرف على الأقل.') & errAt('e-pass2', a === b ? '' : 'الكلمتين مو متطابقتين.');
+          if (!ok) return;
+          await F.sb.updatePassword(a);
+          mode = 'login';
+          return done();
+        }
         if (mode === 'login') {
           const email = F.$('#a-email').value.trim().toLowerCase(), pass = F.$('#a-pass').value;
           const ok = errAt('e-email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'اكتب إيميل صحيح.') & errAt('e-pass', pass ? '' : 'اكتب كلمة المرور.');
