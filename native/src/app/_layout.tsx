@@ -27,7 +27,6 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="login" options={{ presentation: 'modal' }} />
           <Stack.Screen name="sos" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="story" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
         </Stack>
         <UpdateGate />
       </AuthProvider>
