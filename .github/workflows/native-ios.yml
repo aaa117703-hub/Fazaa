@@ -37,8 +37,19 @@ jobs:
         run: |
           APP=$(ls -d ios/build/Build/Products/Release-iphoneos/*.app | head -1)
           echo "app=$APP"
-          mkdir -p Payload && cp -R "$APP" Payload/
-          zip -qr sanad-jaik-native.ipa Payload
+          rm -rf Payload sanad-jaik-native.ipa && mkdir Payload
+          cp -R "$APP" Payload/SanadJaik.app
+          find Payload -name '.DS_Store' -delete
+          rm -rf Payload/SanadJaik.app/_CodeSignature Payload/SanadJaik.app/embedded.mobileprovision
+          # تحقق أن البنية صحيحة لبرامج التوقيع (ESign / Sideloadly / AltStore)
+          test -f Payload/SanadJaik.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Payload/SanadJaik.app/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" Payload/SanadJaik.app/Info.plist
+          EXE=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" Payload/SanadJaik.app/Info.plist)
+          test -f "Payload/SanadJaik.app/$EXE"
+          zip -qry -X sanad-jaik-native.ipa Payload
+          unzip -l sanad-jaik-native.ipa | head -8
+          unzip -tq sanad-jaik-native.ipa
           ls -lh sanad-jaik-native.ipa
       - name: Publish release
         env:
