@@ -288,11 +288,19 @@
         '<div class="stat"><b>' + stats.today + '</b><span>اتصالات اليوم</span></div>' +
         '<div class="stat"><b>' + stats.total + '</b><span>كل الاتصالات</span></div>' +
         '<div class="stat"><b>' + (stats.rating != null ? '★ ' + stats.rating.toFixed(1) : '—') + '</b><span>التقييم' + (stats.count ? ' (' + stats.count + ')' : '') + '</span></div></div></div>' +
+      '<div id="d-wk"></div>' +
       docsHtml() + pushHtml() +
       '<div class="card"><h2>باقتك</h2><div class="row between"><b>' + F.esc(pkg.name) + '</b><a class="btn sm ghost" href="#packages">الباقات</a></div></div>' +
       '<div class="row wrap mt"><button class="btn secondary" id="d-edit">' + F.icon('pencil') + ' تعديل بياناتي</button>' +
         '<button class="btn danger" id="d-remove">حذف تسجيلي كسائق</button></div>';
 
+    F.sb.rpc('my_crane_stats', {}).then((w) => {
+      const b = F.$('#d-wk', el); if (!b || !w) return;
+      const grid = (v) => '<div class="wk"><div><b>' + v[0] + '</b><span>مشاهدات ملفك</span></div><div><b>' + v[1] + '</b><span>اتصالات</span></div><div><b>' + v[2] + '</b><span>طلبات وصلتك</span></div><div><b>' + v[3] + '</b><span>طلبات قبلتها</span></div></div>';
+      b.innerHTML = w.locked
+        ? '<div class="card lock-card"><h2>إحصائيات الأسبوع</h2>' + grid(['٠٠', '٠٠', '٠٠', '٠٠']) + '<p class="muted small mt-s">شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالباقة الفضية وأعلى.</p><a class="btn sm mt-s" href="#packages">شوف الباقات</a></div>'
+        : '<div class="card"><h2>إحصائيات آخر 7 أيام</h2>' + grid([w.views, w.calls, w.requests, w.accepted]) + '</div>';
+    }).catch(() => {});
     F.$('#d-on', el).onclick = () => { if (!avail) goAvailable(); };
     F.$('#d-off', el).onclick = () => { if (avail) goBusy(); };
     F.$('#d-edit', el).onclick = () => editModal(u);
