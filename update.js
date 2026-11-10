@@ -89,8 +89,15 @@
     cv.addEventListener('pointerup', function () { ptr = null; });
     cv.addEventListener('pointerleave', function () { ptr = null; });
     var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, t = 0;
-    var cx = W / 2, cy = H / 2, R = 52, hex = [];
-    for (var k = 0; k <= 6; k++) { var a = -Math.PI / 2 + k * Math.PI / 3; hex.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+    var cx = W / 2, cy = H / 2, K = 1.5, AL = 35 + Math.PI * 31 + 35;
+    /* القوس بإحداثيات اللوكو (100x100) → نقطة على الكانفس عند مسافة d من بدايته */
+    function ap(d) {
+      var x, y;
+      if (d <= 35) { x = 19; y = 86 - d; }
+      else if (d <= 35 + Math.PI * 31) { var a = Math.PI - (d - 35) / 31; x = 50 + 31 * Math.cos(a); y = 51 - 31 * Math.sin(a); }
+      else { x = 81; y = 51 + (d - 35 - Math.PI * 31); }
+      return [cx + (x - 50) * K, cy + (y - 53) * K];
+    }
     function frame() {
       t += .016; ctx.clearRect(0, 0, W, H);
       var p = getP();
@@ -106,14 +113,15 @@
       }
       nodes.forEach(function (n) { ctx.fillStyle = n.o ? '#FF6B2C' : 'rgba(255,255,255,.75)'; ctx.save(); ctx.translate(n.x, n.y); ctx.rotate(t + n.s); ctx.fillRect(-n.s, -n.s, n.s * 2, n.s * 2); ctx.restore(); });
       rings = rings.filter(function (r) { r.r += 2.6; r.a -= .025; if (r.a <= 0) return false; ctx.strokeStyle = 'rgba(255,138,61,' + r.a + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.3); ctx.stroke(); return true; });
-      /* السداسي: المسار الباهت كامل، والبرتقالي يمتلئ حسب النسبة */
-      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-      ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 6; ctx.beginPath(); hex.forEach(function (h, i) { i ? ctx.lineTo(h[0], h[1]) : ctx.moveTo(h[0], h[1]); }); ctx.stroke();
-      var tot = 6 * R, run = p * tot; ctx.strokeStyle = '#FF6B2C'; ctx.beginPath(); ctx.moveTo(hex[0][0], hex[0][1]);
-      for (var s = 0; s < 6 && run > 0; s++) { var f = Math.min(1, run / R); ctx.lineTo(hex[s][0] + (hex[s + 1][0] - hex[s][0]) * f, hex[s][1] + (hex[s + 1][1] - hex[s][1]) * f); run -= R; }
-      ctx.stroke();
-      ctx.save(); ctx.translate(cx, cy); ctx.rotate(reduce ? 0 : t * .6); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.beginPath();
-      for (var q = 0; q < 3; q++) { var aa = q * 2.094; ctx[q ? 'lineTo' : 'moveTo'](Math.cos(aa) * 26, Math.sin(aa) * 26); } ctx.closePath(); ctx.stroke(); ctx.restore();
+      /* القوس: المسار الباهت كامل، والبرتقالي يمتلئ حسب النسبة، والنقطة تطلع عليه */
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 12;
+      function trace(to) { ctx.beginPath(); for (var d = 0; d <= to; d += 2) { var q = ap(d); d ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } var e = ap(to); ctx.lineTo(e[0], e[1]); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(255,255,255,.16)'; trace(AL);
+      var cur = Math.max(0.01, p) * AL; ctx.strokeStyle = '#FF6B2C'; trace(cur);
+      ctx.strokeStyle = '#F5F5F0'; ctx.lineWidth = 7; ctx.beginPath();
+      var c1 = [cx + (35.5 - 50) * K, cy + (73 - 53) * K], c2 = [cx, cy + (57.5 - 53) * K], c3 = [cx + (64.5 - 50) * K, cy + (73 - 53) * K];
+      ctx.moveTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(c3[0], c3[1]); ctx.stroke();
+      var dp = ap(cur); ctx.fillStyle = '#F5F5F0'; ctx.shadowColor = 'rgba(255,107,44,.9)'; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(dp[0], dp[1], 6, 0, 6.3); ctx.fill(); ctx.shadowBlur = 0;
       raf = requestAnimationFrame(frame);
     }
     frame();

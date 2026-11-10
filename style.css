@@ -382,10 +382,8 @@ th { color: var(--muted); font-weight: 600; }
 .sp-logo { position: relative; width: 132px; height: 132px; display: grid; place-items: center; animation: sp-pop .6s cubic-bezier(.2, 1.3, .4, 1) both; }
 .sp-logo svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 24px rgba(255, 107, 44, .35)); }
 .sp-arch { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sp-draw .9s .25s cubic-bezier(.5, 0, .2, 1) forwards; }
-.sp-dot { transform-box: fill-box; transform-origin: center; opacity: 0; animation: sp-pop .4s 1s both; }
+.sp-dot { opacity: 0; filter: drop-shadow(0 0 5px rgba(255, 107, 44, .9)); }
 .sp-chev { opacity: 0; animation: sp-rise .5s 1.15s both; }
-.sp-pulse { position: absolute; inset: 14px; border-radius: 50%; border: 2px solid rgba(255, 107, 44, .6); opacity: 0; animation: sp-ring 2.2s 1.2s ease-out infinite; }
-.sp-pulse.r2 { animation-delay: 1.9s; }
 .sp-tag { color: #FF8A3D; font-size: 15px; font-weight: 600; letter-spacing: .3px; opacity: 0; animation: sp-up .6s 1.4s both; }
 .sp-tip { position: absolute; bottom: calc(46px + env(safe-area-inset-bottom)); left: 20px; right: 20px; max-width: 420px; margin-inline: auto; padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: #E8EAED; font-size: 15px; line-height: 1.7; opacity: 0; animation: sp-up .7s 2s both; }
 .sp-tip b { display: block; color: #FF8A3D; font-size: 12.5px; margin-bottom: 4px; }
