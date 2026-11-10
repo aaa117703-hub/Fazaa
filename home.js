@@ -136,7 +136,7 @@
     const keep = {};
     list.forEach((c) => {
       keep[c.id] = true;
-      const cls = c.status === 'available' ? 'green' : 'red';
+      const cls = (c.status === 'available' ? 'green' : 'red') + (c.tier === 'gold' || c.tier === 'diamond' ? ' big-' + c.tier : '');
       const pop = '<b>' + F.esc(c.name) + '</b><br>' + F.esc(c.type) + ' · ' + F.fmtDist(c.d);
       if (markers[c.id]) {
         F.markerSet(markers[c.id], c.lat, c.lng, cls, pop);
@@ -217,8 +217,14 @@
     const list = sorted();
     renderHero(list);
     if (F.request) F.request.banner(F.$('#h-active', el));
+    const feat = list.filter((c) => (c.tier === 'gold' || c.tier === 'diamond') && c.status === 'available')
+      .sort((a, b) => (b.tier === 'diamond') - (a.tier === 'diamond') || (a.d || 0) - (b.d || 0)).slice(0, 3);
+    const fid = {}; feat.forEach((c) => { fid[c.id] = 1; });
+    const featHtml = feat.length
+      ? '<section class="feat"><div class="feat-h">' + F.icon('gem') + ' سائقون مميزون<small>إعلان</small></div>' + feat.map(cardHtml).join('') + '</section>'
+      : '';
     F.$('#h-list', el).innerHTML = list.length
-      ? list.map(cardHtml).join('')
+      ? featHtml + list.filter((c) => !fid[c.id]).map(cardHtml).join('')
       : loading ? skeleton() : emptyHtml();
     renderMap(list);
   }

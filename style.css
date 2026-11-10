@@ -565,10 +565,7 @@ body { font-weight: 500; font-size: 15px; -webkit-font-smoothing: antialiased; t
 
 /* إطارات الاشتراك حول الصورة */
 .avatar { border: 3px solid transparent; }
-.avatar.tier-bronze, .tier-bronze { border-color: #CD7F32; }
-.avatar.tier-silver, .tier-silver { border-color: #C9D1DB; box-shadow: 0 0 0 2px rgba(201, 209, 219, .25); }
-.avatar.tier-gold, .tier-gold { border-color: #FFC21A; box-shadow: 0 0 12px rgba(255, 194, 26, .55); }
-.avatar.tier-diamond, .tier-diamond { border-color: #6EE7F9; box-shadow: 0 0 14px rgba(110, 231, 249, .65), 0 0 0 2px rgba(110, 231, 249, .25); }
+.avatar.tier-bronze, .tier-bronze { border-color: transparent; }
 .badge.tier-b-silver { background: rgba(201, 209, 219, .18); color: #C9D1DB; }
 .badge.tier-b-gold { background: rgba(255, 194, 26, .18); color: #FFC21A; }
 .badge.tier-b-diamond { background: rgba(110, 231, 249, .18); color: #6EE7F9; }
@@ -604,10 +601,6 @@ body { font-weight: 500; font-size: 15px; -webkit-font-smoothing: antialiased; t
 .tier-card .tier-ring { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 3px solid var(--tc); color: var(--tc); margin-bottom: 8px; }
 .tier-card.tier-gold { box-shadow: 0 0 0 1px #FFC21A55; }
 .tier-card.tier-diamond { box-shadow: 0 0 0 1px #6EE7F988; }
-.pf-ava.tier-bronze { box-shadow: 0 0 0 4px #CD7F32; }
-.pf-ava.tier-silver { box-shadow: 0 0 0 4px #C9D1DB; }
-.pf-ava.tier-gold { box-shadow: 0 0 0 4px #FFC21A, 0 0 14px #FFC21A88; }
-.pf-ava.tier-diamond { box-shadow: 0 0 0 4px #6EE7F9, 0 0 16px #6EE7F9aa; }
 #maint { position: fixed; inset: 0; z-index: 99999; background: var(--bg, #0b0f14); display: grid; place-items: center; text-align: center; padding: 24px; }
 .maint-in svg { width: 52px; height: 52px; }
 #announce { position: sticky; top: 0; z-index: 9000; background: #FFC21A; color: #111; text-align: center; font-weight: 700; padding: 8px 12px; font-size: 14px; }
@@ -877,3 +870,23 @@ button:active, .btn:active, button[data-nav]:active, .chip:active { transform: n
   .home-grid #map { position: relative !important; top: auto !important; height: 420px !important; min-height: 0 !important; margin-bottom: 14px; border-radius: 18px; }
   #h-list { max-height: none !important; overflow: visible !important; padding: 0 !important; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
 }
+
+/* ===== مميزات الباقات: دبابيس كبيرة + إعلان مميز + لوحة الأسبوع (بدل الإطار) ===== */
+.pf-ava.ver { box-shadow: 0 0 0 4px #22C55E, 0 0 14px rgba(34, 197, 94, .45); }
+.pin.green.big-gold, .pin.red.big-gold { width: 50px; height: 50px; border-color: #FFC21A; box-shadow: 0 0 0 4px rgba(255, 194, 26, .3), 0 6px 16px rgba(0, 0, 0, .5); }
+.pin.green.big-diamond, .pin.red.big-diamond { width: 58px; height: 58px; border-color: #6EE7F9; box-shadow: 0 0 0 5px rgba(110, 231, 249, .35), 0 0 18px rgba(110, 231, 249, .6), 0 6px 16px rgba(0, 0, 0, .5); }
+.pin.big-gold .ic { width: 24px; height: 24px; }
+.pin.big-diamond .ic { width: 28px; height: 28px; }
+.maplibregl-marker:has(.pin.big-gold) { z-index: 5; }
+.maplibregl-marker:has(.pin.big-diamond) { z-index: 6; }
+.feat { grid-column: 1 / -1; margin-bottom: 12px; padding: 12px; border-radius: 20px; background: linear-gradient(135deg, rgba(255, 107, 44, .13), rgba(255, 255, 255, .03)); border: 1px solid rgba(255, 138, 61, .35); }
+.feat-h { display: flex; align-items: center; gap: 6px; margin: 0 2px 10px; font-weight: 800; font-size: 14px; color: var(--accent); }
+.feat-h small { margin-inline-start: auto; font-weight: 600; font-size: 11.5px; color: var(--muted); }
+.feat .crane { margin-top: 8px; border-color: rgba(255, 138, 61, .4); }
+.feat .crane:first-of-type { margin-top: 0; }
+.wk { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+.wk div { padding: 12px; border-radius: 14px; background: var(--surface-2); text-align: center; }
+.wk b { display: block; font-size: 24px; font-weight: 800; color: var(--accent); }
+.wk span { font-size: 12.5px; color: var(--muted); }
+.lock-card { text-align: center; }
+.lock-card .wk b { filter: blur(5px); user-select: none; }

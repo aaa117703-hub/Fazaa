@@ -53,7 +53,7 @@
       const [nr, nc, cr] = await Promise.all([F.sb.count('requests', 'customer_id=eq.' + u.id), F.sb.count('calls', 'user_id=eq.' + u.id), F.sb.q('cranes', 'select=name,type,governorate,listed,tier,sub_expires_at&owner_id=eq.' + u.id + '&limit=1')]);
       const bs = F.$$('#p-stats b', el); if (bs[0]) { bs[0].textContent = nr; bs[1].textContent = nc; }
       const c = cr && cr[0], dv = F.$('#p-driver', el);
-      if (c) { const eff = c.tier !== 'bronze' && c.sub_expires_at && Date.parse(c.sub_expires_at) > Date.now() ? c.tier : 'bronze'; const av = F.$('#p-ava', el); if (av) av.className = 'pf-ava tier-' + eff; }
+      if (c) { const av = F.$('#p-ava', el); if (av) av.className = 'pf-ava' + (c.verified ? ' ver' : ''); }
       if (dv) {
         dv.innerHTML = c
           ? '<h2>' + F.icon('crane') + ' أنت سائق</h2><div class="row between"><div>' + F.esc(c.name) + '<div class="muted small">' + F.esc(c.type) + ' · ' + F.esc(c.governorate || '') + ' · ' + (c.listed ? 'ظاهر للزبائن' : 'قيد المراجعة') + '</div></div><a class="btn sm" href="#driver">لوحة السائق</a></div>'

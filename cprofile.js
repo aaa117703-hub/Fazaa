@@ -10,12 +10,13 @@
       try {
         const p = await F.sb.rpc('crane_profile', { p_id: id });
         if (!p) { m.close(); return F.toast('الملف غير متاح', 'err'); }
+        try { const k = 'v_' + id; if (!sessionStorage.getItem(k)) { sessionStorage.setItem(k, '1'); F.sb.rpc('track_crane_view', { p_id: id }).catch(() => {}); } } catch (e) { }
         const t = F.tierOf(p.tier);
         const avg = p.rating_avg != null ? +p.rating_avg : null;
         const since = p.since ? new Date(p.since).toLocaleDateString('ar-IQ', { year: 'numeric', month: 'long' }) : '';
         m.el.innerHTML =
           '<div class="cp">' +
-            '<div class="pf-ava big tier-' + p.tier + '">' + (p.avatar ? '<img src="' + F.esc(F.sb.avatarUrl(p.avatar)) + '" alt="">' : F.icon('crane')) + '</div>' +
+            '<div class="pf-ava big' + (p.verified ? ' ver' : '') + '">' + (p.avatar ? '<img src="' + F.esc(F.sb.avatarUrl(p.avatar)) + '" alt="">' : F.icon('crane')) + '</div>' +
             '<h2>' + F.esc(p.name) + '</h2>' +
             '<div class="cp-badges">' + (p.verified ? '<span class="badge green">موثق</span> ' : '') + '<span class="badge tier-b-' + p.tier + '">' + t.name + '</span></div>' +
             '<div class="muted">' + F.esc(p.type) + (p.governorate ? ' · ' + F.esc(p.governorate) : '') + '</div>' +
