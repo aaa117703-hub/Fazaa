@@ -58,8 +58,8 @@
       return '<h2 style="margin-top:0">دخول</h2>' +
         '<div class="field"><label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
         '<div class="field"><label for="a-pass">كلمة المرور</label><input id="a-pass" class="ltr" type="password" autocomplete="current-password"><div class="err" id="e-pass"></div></div>' +
+        '<div style="margin:-4px 0 10px;text-align:start"><button class="link-btn" type="button" id="a-to-forgot" style="background:none;border:0;padding:6px 0;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer">نسيت كلمة المرور؟</button></div>' +
         '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">دخول</button>' +
-        '<button class="btn ghost block mt-s" type="button" id="a-to-forgot">نسيت كلمة المرور؟</button>' +
         '<button class="btn secondary block mt-s" type="button" id="a-to-signup">حساب جديد</button>' +
         (F.PHONE_LOGIN ? '<button class="btn ghost block mt-s" type="button" id="a-to-phone">الدخول برقم الموبايل</button>' : '');
     }
