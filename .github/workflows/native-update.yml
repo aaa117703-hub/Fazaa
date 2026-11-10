@@ -30,4 +30,4 @@ jobs:
         run: npm ci
       - name: Publish update
         if: steps.tok.outputs.skip != '1'
-        run: npx eas-cli@latest update --channel production --environment production --message "${{ github.sha }}" --non-interactive
+        run: npx eas-cli@latest update --channel production --message "${{ github.sha }}" --non-interactive
