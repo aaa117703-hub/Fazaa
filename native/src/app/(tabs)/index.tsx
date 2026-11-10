@@ -11,6 +11,8 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { tap } from '@/lib/safe';
 import { C, R } from '@/lib/theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORY_KEY } from '@/lib/story-key';
 
 type Crane = {
   id: string; name: string; type: string; lat: number; lng: number; status: string;
@@ -46,6 +48,10 @@ export default function Home() {
       setPos(p); load(p);
     } catch { setPos(BAGHDAD); load(BAGHDAD); }
   }, [load]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORY_KEY).then((v) => { if (!v) router.push('/story'); }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     Location.getForegroundPermissionsAsync().then((p) => { if (p.status === 'granted') locate(); else { setPos(BAGHDAD); load(BAGHDAD); } });

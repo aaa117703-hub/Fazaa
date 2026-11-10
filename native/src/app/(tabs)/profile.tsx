@@ -35,6 +35,7 @@ export default function Profile() {
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }}>
       <T style={{ fontSize: 26, fontWeight: '800' }}>حسابي</T>
+      <Btn label="شاهد جولة سند جايك" kind="secondary" onPress={() => router.push('/story')} />
       {session ? (
         <>
           <Card style={{ gap: 4 }}>

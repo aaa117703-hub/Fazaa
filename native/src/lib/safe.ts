@@ -12,3 +12,5 @@ export function warn() {
   if (!ok) return;
   try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {}); } catch { /* ignore */ }
 }
+
+export const safe = <T,>(f: () => T, d: T): T => { try { return f(); } catch { return d; } };
