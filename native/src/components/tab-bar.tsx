@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T } from '@/components/ui';
+import { tap } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -49,7 +49,7 @@ export function TabBar({ state, navigation }: any) {
         icon={m.icon}
         active={state.index === i}
         onPress={() => {
-          Haptics.selectionAsync().catch(() => {});
+          tap();
           const ev = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
           if (state.index !== i && !ev.defaultPrevented) navigation.navigate(r.name);
         }}
