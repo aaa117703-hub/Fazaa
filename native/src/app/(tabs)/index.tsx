@@ -145,7 +145,7 @@ export default function Home() {
       data={list}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}
-      refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => pos && load(pos)} />}
+      refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => { if (pos) load(pos); }} />}
       ListEmptyComponent={loading ? <ActivityIndicator color={C.accent} style={{ marginTop: 24 }} /> : (
         <View style={{ alignItems: 'center', gap: 10, marginTop: 20 }}>
           <Muted style={{ textAlign: 'center' }}>{err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : filtered ? 'ما كو كرينات تطابق الفلتر.' : 'ما كو كرينات مسجّلة قريبة منك هسه.'}</Muted>
