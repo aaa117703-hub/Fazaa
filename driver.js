@@ -118,8 +118,11 @@
   /* ---------- نماذج ---------- */
   const typeOptions = (sel) => F.TYPES.map((t) => '<option' + (t === sel ? ' selected' : '') + '>' + t + '</option>').join('');
 
+  let cranePk = null;
   function formHtml(c, u) {
+    cranePk = F.picker({ id: 'd-cm', data: F.CRANE_MAKES, makeLabel: 'شركة الكرين', modelLabel: 'موديل الكرين', value: c ? { make: c.crane_make, model: c.crane_model } : {} });
     return (
+      cranePk.html +
       '<div class="field"><label>اسم الكرين الظاهر للزبائن</label>' +
         '<input id="d-name" value="' + F.esc(c ? c.name : 'كرين ' + F.firstName(u.name)) + '" maxlength="40"><div class="err" id="de-name"></div></div>' +
       '<div class="field"><label>نوع الكرين</label><select id="d-type">' + typeOptions(c ? c.type : '') + '</select></div>' +
@@ -135,11 +138,12 @@
     const type = F.$('#d-type', root).value;
     const ph = F.cleanPhone(F.$('#d-phone', root).value);
     const gov = F.$('#d-gov', root).value;
-    let ok = true;
+    const cm = cranePk.get(root);
+    let ok = !!cm.ok;
     F.$('#de-gov', root).textContent = gov ? '' : (ok = false, 'اختر المحافظة.');
     F.$('#de-name', root).textContent = name.length >= 3 ? '' : (ok = false, 'اكتب اسم للكرين.');
     F.$('#de-phone', root).textContent = F.validPhone(ph) ? '' : (ok = false, 'الرقم لازم 11 رقم ويبدأ بـ 07.');
-    return ok ? { name: name, type: type, phone: ph, governorate: gov } : null;
+    return ok ? { name: name, type: type, phone: ph, governorate: gov, crane_make: cm.make, crane_model: cm.model } : null;
   }
 
   function loginCard() {
@@ -157,6 +161,7 @@
         '<label class="check"><input type="checkbox" id="d-agree"><span>أفهم إن موقعي يتحدّث فقط وأنا «متاح» والتطبيق مفتوح، وإن اسم الكرين ورقمي يظهرون للزبائن.</span></label>' +
         '<div class="err" id="de-agree" style="margin:-8px 0 10px"></div><div class="err" id="de-form"></div>' +
         '<button class="btn big block" type="submit">سجّل كرينك</button></form>';
+    cranePk.wire(el);
     F.$('#d-form', el).onsubmit = async (e) => {
       e.preventDefault();
       const v = readForm(el), agree = F.$('#d-agree', el).checked;
@@ -172,7 +177,7 @@
       }
       try {
         const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation',
-          body: { owner_id: uid(), name: v.name, type: v.type, governorate: v.governorate, lat: l.lat, lng: l.lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false } });
+          body: { owner_id: uid(), name: v.name, type: v.type, crane_make: v.crane_make, crane_model: v.crane_model, governorate: v.governorate, lat: l.lat, lng: l.lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false } });
         await F.sb.q('crane_contacts', '', { method: 'POST', body: { crane_id: r[0].id, phone: v.phone } });
         F.toast('تم التسجيل. بانتظار موافقة الإدارة.', 'ok');
         await refresh();
@@ -328,13 +333,14 @@
   function editModal(u) {
     const m = F.modal('<h2>تعديل بيانات الكرين</h2><form id="de-form" novalidate>' + formHtml(crane, u) +
       '<div class="row"><button class="btn grow" type="submit">حفظ</button><button class="btn secondary" type="button" id="de-cancel">إلغاء</button></div></form>');
+    cranePk.wire(m.el);
     F.$('#de-cancel', m.el).onclick = m.close;
     F.$('#de-form', m.el).onsubmit = async (e) => {
       e.preventDefault();
       const v = readForm(m.el);
       if (!v) return;
       try {
-        await F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'PATCH', body: { name: v.name, type: v.type, governorate: v.governorate } });
+        await F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'PATCH', body: { name: v.name, type: v.type, crane_make: v.crane_make, crane_model: v.crane_model, governorate: v.governorate } });
         await F.sb.q('crane_contacts', 'crane_id=eq.' + crane.id, { method: 'PATCH', body: { phone: v.phone } });
         m.close(); F.toast('تم الحفظ', 'ok'); refresh();
       } catch (ex) { F.toast(F.errMsg(ex), 'err'); }

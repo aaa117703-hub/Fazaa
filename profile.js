@@ -102,25 +102,27 @@
   }
 
   function editModal(u) {
+    const carPk = F.picker({ id: 'pe-car', data: F.CARS, makeLabel: 'شركة سيارتك', modelLabel: 'نوع السيارة', year: true, value: F.parseCar(u.car) });
     const m = F.modal(
       '<h2>تعديل بياناتي</h2><form id="pe-form" novalidate>' +
       '<div class="field"><label>الاسم الثلاثي</label><input id="pe-name" value="' + F.esc(u.name) + '"><div class="err" id="pe-en"></div></div>' +
       '<div class="field"><label>رقم الهاتف</label><input id="pe-phone" class="ltr" inputmode="tel" maxlength="16" value="' + F.esc(u.phone) + '"><div class="err" id="pe-ep"></div></div>' +
       '<div class="field"><label>المحافظة</label><select id="pe-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option' + (g.name === u.gov ? ' selected' : '') + '>' + g.name + '</option>').join('') + '</select><div class="err" id="pe-eg"></div></div>' +
-      '<div class="field"><label>نوع السيارة</label><input id="pe-car" value="' + F.esc(u.car) + '"><div class="err" id="pe-ec"></div></div>' +
+      carPk.html +
       '<div class="row"><button class="btn grow" type="submit">حفظ</button><button class="btn secondary" type="button" id="pe-cancel">إلغاء</button></div></form>');
+    carPk.wire(m.el);
     F.$('#pe-cancel', m.el).onclick = m.close;
     F.$('#pe-form', m.el).onsubmit = async (e) => {
       e.preventDefault();
       const name = F.$('#pe-name', m.el).value.trim().replace(/\s+/g, ' ');
       const phone = F.cleanPhone(F.$('#pe-phone', m.el).value);
-      const car = F.$('#pe-car', m.el).value.trim();
+      const cv = carPk.get(m.el), car = cv.text;
       const gov = F.$('#pe-gov', m.el).value;
       let ok = true;
       F.$('#pe-eg', m.el).textContent = gov ? '' : (ok = false, 'اختر المحافظة.');
       F.$('#pe-en', m.el).textContent = name.split(' ').length >= 3 ? '' : (ok = false, 'اكتب الاسم الثلاثي.');
       F.$('#pe-ep', m.el).textContent = F.validPhone(phone) ? '' : (ok = false, 'الرقم لازم 11 رقم ويبدأ بـ 07.');
-      F.$('#pe-ec', m.el).textContent = car.length >= 2 ? '' : (ok = false, 'اكتب نوع السيارة.');
+      if (!cv.ok) ok = false;
       if (!ok) return;
       try { await F.sb.saveProfile({ full_name: name, phone: phone, car: car, governorate: gov }); m.close(); F.toast('تم الحفظ', 'ok'); render(); }
       catch (ex) { F.toast(F.errMsg(ex), 'err'); }
