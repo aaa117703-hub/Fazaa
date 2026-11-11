@@ -1,0 +1,33 @@
+name: Native OTA update
+# ينشر تحديث داخلي (EAS Update) للتطبيق الحقيقي عند دمج تغييرات JS/الصور بـ main.
+# يحتاج سرّ EXPO_TOKEN بإعدادات المستودع (Settings > Secrets > Actions). بدونه ينتهي بسلام بدون نشر.
+on:
+  push:
+    branches: [main]
+    paths: ['native/src/**', 'native/assets/**', 'native/app.json', '.github/workflows/native-update.yml']
+  workflow_dispatch:
+jobs:
+  ota:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check token
+        id: tok
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then echo "no EXPO_TOKEN: skipping"; echo "skip=1" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-node@v4
+        if: steps.tok.outputs.skip != '1'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - if: steps.tok.outputs.skip != '1'
+        run: npm ci
+      - name: Publish update
+        if: steps.tok.outputs.skip != '1'
+        run: npx eas-cli@latest update --channel production --message "${{ github.sha }}" --non-interactive
