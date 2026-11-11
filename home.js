@@ -298,7 +298,6 @@
   function init() {
     el = F.$('#v-home');
     el.innerHTML = TEMPLATE;
-    if (F.story) F.story.mountHome(el);
     ready = true;
 
     if (F.hasMap()) {
