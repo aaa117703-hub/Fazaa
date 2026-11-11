@@ -20,6 +20,7 @@
             '<h2>' + F.esc(p.name) + '</h2>' +
             '<div class="cp-badges">' + (p.verified ? '<span class="badge green">موثق</span> ' : '') + '<span class="badge tier-b-' + p.tier + '">' + t.name + '</span></div>' +
             '<div class="muted">' + F.esc(p.type) + (p.governorate ? ' · ' + F.esc(p.governorate) : '') + '</div>' +
+            (p.crane_make ? '<div class="muted small">' + F.icon('crane') + ' ' + F.esc([p.crane_make === 'غير مذكور' ? '' : p.crane_make, p.crane_model].filter(Boolean).join(' ')) + '</div>' : '') +
             '<div class="cp-stats">' +
               '<div><b class="stars">' + (avg != null ? '★ ' + avg.toFixed(1) : '—') + '</b><span>' + (p.rating_count ? p.rating_count + ' تقييم' : 'بدون تقييم') + '</span></div>' +
               '<div><b>' + (p.jobs || 0) + '</b><span>طلب منتهي</span></div>' +

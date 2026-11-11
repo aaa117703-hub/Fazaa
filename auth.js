@@ -95,7 +95,7 @@
       '<div class="field"><label for="a-name">الاسم الثلاثي</label><input id="a-name" autocomplete="name" placeholder="مثال: علي حسين كاظم"><div class="err" id="e-name"></div></div>' +
       '<div class="field"><label for="a-gov">المحافظة اللي تسكنها</label><select id="a-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') + '</select><div class="err" id="e-gov"></div></div>' +
       '<div class="field"><label for="a-ph2">رقم الهاتف (اختياري)</label><input id="a-ph2" class="ltr" inputmode="tel" placeholder="07701234567" maxlength="16" value="' + F.esc(phone || '') + '"><div class="err" id="e-phone"></div></div>' +
-      '<div class="field"><label for="a-car">نوع السيارة</label><input id="a-car" placeholder="مثال: كيا سيراتو 2018"><div class="err" id="e-car"></div></div>' +
+      (carPk = F.picker({ id: 'a-car', data: F.CARS, makeLabel: 'شركة سيارتك', modelLabel: 'نوع السيارة', year: true })).html +
       '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">ابدأ</button>';
   }
 
@@ -124,6 +124,7 @@
     F.toast('هلا ' + (u && u.name ? F.firstName(u.name) : '') + '، أهلاً بيك بسند جايك' + (F.isRealAdmin() ? ' (مدير)' : ''), 'ok');
   }
 
+  let carPk = null;
   F.auth = {
     // يعرض شاشة الدخول (ويخفي التطبيق)
     // مستخدم مسجّل بدون اسم (قطع الخطوة الأخيرة سابقاً)
@@ -137,6 +138,7 @@
       root.innerHTML = '<div class="auth-box">' + hero() + '<form class="card" id="auth-form" novalidate>' + formHtml() + '</form>' +
         '<p class="muted small center mt">رقمك يظهر فقط للسائق اللي يقبل طلبك.</p>' +
         (step !== 'profile' ? '<button type="button" class="btn ghost block mt" id="a-skip">تصفح بدون حساب</button>' : '') + '</div>';
+      if (step === 'profile' && carPk) carPk.wire(root);
       const sk = F.$('#a-skip'); if (sk) sk.onclick = () => { root.hidden = true; F.showApp(); };
       F.$('#auth-form').onsubmit = (e) => { e.preventDefault(); F.auth.submit(); };
       const on = (id, fn) => { const n = F.$('#' + id); if (n) n.onclick = fn; };
@@ -202,8 +204,10 @@
           return done();
         }
         // step === 'profile'
-        const name = F.$('#a-name').value.trim().replace(/\s+/g, ' '), car = F.$('#a-car').value.trim(), gov = F.$('#a-gov').value;
-        const ok = errAt('e-name', name.split(' ').length >= 3 ? '' : 'اكتب الاسم الثلاثي (ثلاث كلمات).') & errAt('e-gov', gov ? '' : 'اختر محافظتك.') & errAt('e-car', car.length >= 2 ? '' : 'اكتب نوع السيارة.');
+        const name = F.$('#a-name').value.trim().replace(/\s+/g, ' '), gov = F.$('#a-gov').value;
+        const ok = errAt('e-name', name.split(' ').length >= 3 ? '' : 'اكتب الاسم الثلاثي (ثلاث كلمات).') & errAt('e-gov', gov ? '' : 'اختر محافظتك.');
+        const cv = carPk.get(F.$('#auth')); const car = cv.text;
+        if (!cv.ok) return;
         if (!ok) return;
         const ph2 = F.cleanPhone(F.$('#a-ph2').value);
         if (ph2 && !F.validPhone(ph2)) { errAt('e-phone', 'الرقم لازم 11 رقم ويبدأ بـ 07.'); return; }
