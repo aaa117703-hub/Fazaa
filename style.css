@@ -913,8 +913,7 @@ html.is-en .gd-steps li { padding: 11px 0 11px 44px; }
 }
 
 /* ===== مساعد الأعطال (ذكاء اصطناعي) ===== */
-.quick .ai-btn { background: linear-gradient(135deg, var(--accent), #ff8a3d); color: #fff; border: 0; flex-basis: 100%; }
-@media (max-width: 600px) { .quick .ai-btn { grid-column: 1 / -1; } }
+.ai-btn { background: linear-gradient(135deg, var(--accent), #ff8a3d); color: #fff; border: 0; }
 .ai-veh { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px 0 8px; }
 .ai-veh::-webkit-scrollbar, .ai-quick::-webkit-scrollbar { display: none; }
 .ai-veh .chip, .ai-quick .chip { flex: 0 0 auto; white-space: nowrap; }
@@ -933,3 +932,8 @@ html.is-en .gd-steps li { padding: 11px 0 11px 44px; }
 .ai-form input { flex: 1; min-width: 0; }
 .ai-foot { display: flex; gap: 8px; margin-top: 10px; }
 .ai-foot .btn { flex: 1; }
+
+@media (max-width: 600px) {
+  .locbar { flex-wrap: wrap; }
+  .locbar .state { order: 5; flex: 1 0 100%; }
+}

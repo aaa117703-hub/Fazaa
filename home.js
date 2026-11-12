@@ -8,6 +8,7 @@
 
   const TEMPLATE =
     '<div class="locbar">' +
+      '<button class="btn sm ai-btn" id="h-ai">' + F.icon('shield') + ' مساعد ذكي</button>' +
       '<div class="state" id="h-locstate"></div>' +
       '<button class="btn sm secondary" id="h-gps">' + F.icon('gps') + ' موقعي</button>' +
       '<button class="btn sm secondary" id="h-manual">' + F.icon('cursor') + ' يدوي</button>' +
@@ -15,7 +16,6 @@
     '<div id="h-active"></div>' +
     '<div id="h-hero"></div>' +
     '<div class="row wrap quick">' +
-      '<button class="btn grow ai-btn" id="h-ai">' + F.icon('shield') + ' اسأل مساعد الأعطال (ذكاء اصطناعي)</button>' +
       '<button class="btn danger grow" id="h-sos">' + F.icon('alert') + ' طوارئ SOS</button>' +
       '<button class="btn secondary grow" id="h-guide">' + F.icon('shield') + ' شنو أسوي؟</button>' +
       '<button class="btn secondary grow" id="h-share">' + F.icon('share') + ' أرسل موقعي</button>' +
