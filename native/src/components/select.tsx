@@ -7,14 +7,16 @@ import { tap } from '@/lib/safe';
 import { C, R } from '@/lib/theme';
 
 // قائمة اختيار منبثقة (بدل select الموقع)
-export function Select({ label, value, options, onChange, allLabel }: { label: string; value: string; options: string[]; onChange: (v: string) => void; allLabel?: string }) {
+export function Select({ label, value, options, onChange, allLabel, full, disabled }: { label: string; value: string; options: string[]; onChange: (v: string) => void; allLabel?: string; full?: boolean; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const items = allLabel ? [''].concat(options) : options;
   return (
     <>
-      <Pressable onPress={() => { tap(); setOpen(true); }} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: R.pill, backgroundColor: value ? C.accent : C.surface2 }}>
-        <T style={{ fontWeight: '700', color: value ? '#fff' : C.muted }}>{value || allLabel || label} ▾</T>
+      <Pressable disabled={disabled} onPress={() => { tap(); setOpen(true); }} style={full
+        ? { paddingHorizontal: 14, paddingVertical: 13, borderRadius: R.md, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, opacity: disabled ? 0.5 : 1 }
+        : { paddingHorizontal: 14, paddingVertical: 8, borderRadius: R.pill, backgroundColor: value ? C.accent : C.surface2 }}>
+        <T style={{ fontWeight: '700', color: full ? (value ? C.text : C.muted) : value ? '#fff' : C.muted }}>{value || allLabel || label} ▾</T>
       </Pressable>
       <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} onPress={() => setOpen(false)} />

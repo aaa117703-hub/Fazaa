@@ -4,7 +4,7 @@ name: Native iOS IPA
 on:
   workflow_dispatch:
   push:
-    branches: ['native-ios-build', 'native-ipa-fix', 'native-full']
+    branches: ['native-ios-build', 'native-ipa-fix', 'native-full', 'native-full2']
     paths: ['.github/workflows/native-ios.yml', 'native/ios.trigger']
 permissions:
   contents: write

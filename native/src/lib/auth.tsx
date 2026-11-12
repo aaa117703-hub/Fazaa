@@ -11,10 +11,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
+    let done = false;
+    const finish = () => { if (!done) { done = true; setReady(true); } };
+    const timer = setTimeout(finish, 3500); // لا ننتظر الشبكة أكثر من هذا
+    supabase.auth.getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch(() => {})
+      .finally(() => { clearTimeout(timer); finish(); });
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => data.subscription.unsubscribe();
   }, []);

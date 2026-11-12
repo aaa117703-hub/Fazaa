@@ -7,7 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, Badge } from '@/components/crane-card';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { askBlock } from '@/lib/blocks';
 import { contact } from '@/lib/contact';
+import { report } from '@/lib/report';
 import { tierOf } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
@@ -60,6 +62,10 @@ export default function CraneProfile() {
           ))}
         </View>
       )}
+      <View style={[rtl.row, { gap: 8, alignSelf: 'stretch' }]}>
+        <Btn label="إبلاغ" kind="secondary" small onPress={() => (session ? report({ craneId: p.id }) : go())} style={{ flex: 1 }} />
+        <Btn label="حظر" kind="secondary" small onPress={() => (session ? askBlock(p.id, p.name, () => router.back()) : go())} style={{ flex: 1 }} />
+      </View>
       <Btn label="إغلاق" kind="ghost" onPress={() => router.back()} style={{ alignSelf: 'stretch' }} />
     </ScrollView>
   );
