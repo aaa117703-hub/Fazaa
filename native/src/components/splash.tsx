@@ -32,16 +32,25 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
   const out = useRef(new Animated.Value(1)).current;
   const [tip] = useState(randomTip);
   const [finished, setFinished] = useState(false);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
   const size = Math.min(width * 0.46, 190);
   const wordW = Math.min(width * 0.8, 380);
 
   useEffect(() => {
     Animated.timing(t, { toValue: 1, duration: DUR, easing: Easing.linear, useNativeDriver: false }).start(() => setFinished(true));
   }, [t]);
+  // حماية نهائية: مهما صار، السبلاش يختفي ويترك اللمس بعد 8 ثواني
+  useEffect(() => {
+    const id = setTimeout(() => doneRef.current(), DUR + 3000);
+    return () => clearTimeout(id);
+  }, []);
   useEffect(() => {
     if (!finished || !ready) return;
-    Animated.timing(out, { toValue: 0, duration: 350, useNativeDriver: true }).start(() => onDone());
-  }, [finished, ready, out, onDone]);
+    Animated.timing(out, { toValue: 0, duration: 350, useNativeDriver: true }).start(() => doneRef.current());
+    const id = setTimeout(() => doneRef.current(), 700); // إن ما اشتغل الكولباك
+    return () => clearTimeout(id);
+  }, [finished, ready, out]);
 
   // t بين 0 و1 => ثواني = t*5
   const k = (a: number, b: number, from: number, to: number) => t.interpolate({ inputRange: [a / 5, b / 5], outputRange: [from, to], extrapolate: 'clamp' });
