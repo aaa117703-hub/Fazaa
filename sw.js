@@ -42,6 +42,7 @@ const SHELL_FILES = [
   './profile.js',
   './settings.js',
   './guide.js',
+  './assist.js',
   './admin.js',
   './native.js',
   './app.js',
