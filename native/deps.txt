@@ -1,2 +1,3 @@
 @expo/vector-icons
 expo-updates
+react-native-svg

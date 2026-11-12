@@ -2,7 +2,7 @@ name: Native deps
 # يثبّت الحزم المذكورة في native/deps.txt بإصدارات متوافقة مع Expo ويحدّث package.json والـ lock
 on:
   push:
-    branches: ['native-app']
+    branches: ['native-app', 'native-full']
     paths: ['native/deps.txt']
 permissions:
   contents: write
@@ -24,4 +24,4 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add package.json package-lock.json
-          git diff --cached --quiet || (git commit -m "Native deps: $(tr '\n' ' ' < deps.txt) [skip ci]" && git pull --rebase origin native-app && git push origin HEAD:native-app)
+          git diff --cached --quiet || (git commit -m "Native deps: $(tr '\n' ' ' < deps.txt) [skip ci]" && git pull --rebase origin ${{ github.ref_name }} && git push origin HEAD:${{ github.ref_name }})
