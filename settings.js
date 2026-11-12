@@ -84,6 +84,7 @@
         '</ul>' +
         '<div class="row wrap mt">' +
           '<button class="btn secondary" id="s-priv">' + F.icon('doc') + ' سياسة الخصوصية</button>' +
+        '<button class="btn secondary" id="s-terms">' + F.icon('doc') + ' شروط الاستخدام</button>' +
           '<button class="btn secondary" id="s-guide">' + F.icon('shield') + ' دليل «سيارتي تعطلت»</button>' +
         '</div>' +
       '</div>';
@@ -103,6 +104,7 @@
     F.$('#s-demo', el).onchange = (e) => F.saveSettings({ hideDemo: e.target.checked });
     F.$('#s-offline', el).onclick = () => { location.hash = '#offline'; };
     F.$('#s-priv', el).onclick = F.showPrivacy;
+    F.$('#s-terms', el).onclick = F.showTerms;
     F.$('#s-guide', el).onclick = () => F.guide.show();
     const inst = F.$('#s-install', el);
     if (inst) inst.onclick = async () => {

@@ -5,21 +5,24 @@
   const ISSUE = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
 
   let el, watchId = null, beat = null, poller = null, lastPush = 0;
+  let fleet = [], adding = false, selId = (function () { try { return localStorage.getItem('sanad_crane_sel'); } catch (e) { return null; } })();
   let crane = null, docs = [], pushOn = false, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
 
   const uid = () => F.sb.uid();
 
   async function loadAll() {
-    const rows = await F.sb.q('cranes', 'select=*&owner_id=eq.' + uid() + '&limit=1');
-    crane = rows && rows[0] || null;
+    const rows = await F.sb.q('cranes', 'select=*&owner_id=eq.' + uid() + '&order=created_at.asc&limit=10');
+    fleet = rows || [];
+    crane = fleet.find((x) => x.id === selId) || fleet[0] || null;
     if (!crane) { incoming = []; jobs = []; return; }
     const id = crane.id;
+    const ids = fleet.map((x) => x.id).join(',');
     const [ct, callsRaw, rs, tg, jb, dc] = await Promise.all([
       F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + id),
       F.sb.q('calls', 'select=created_at&crane_id=eq.' + id + '&order=created_at.desc&limit=500'),
       F.sb.q('crane_rating_summary', 'select=rating_avg,rating_count&crane_id=eq.' + id),
-      F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)&crane_id=eq.' + id + '&status=eq.sent&order=sent_at.desc&limit=20'),
-      F.sb.q('requests', 'select=*&accepted_crane_id=eq.' + id + '&status=eq.accepted&order=accepted_at.desc'),
+      F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)&crane_id=in.(' + ids + ')&status=eq.sent&order=sent_at.desc&limit=20'),
+      F.sb.q('requests', 'select=*&accepted_crane_id=in.(' + ids + ')&status=eq.accepted&order=accepted_at.desc'),
       F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&order=created_at.desc')
     ]);
     docs = dc || [];
@@ -154,14 +157,15 @@
 
   function renderRegister(u) {
     el.innerHTML =
-      '<h1>' + F.icon('crane') + ' كن سائق كرين</h1>' +
-      '<p class="lead">سجّل كرينك. بعد مراجعة الإدارة يظهر للزبائن ويوصلك الطلبات.</p>' +
+      '<h1>' + F.icon('crane') + (adding ? ' أضف كرين آخر' : ' كن سائق كرين') + '</h1>' +
+      '<p class="lead">' + (adding ? 'يُضاف لحسابك (حساب شركة). بعد مراجعة الإدارة يظهر للزبائن.' : 'سجّل كرينك. بعد مراجعة الإدارة يظهر للزبائن ويوصلك الطلبات.') + '</p>' +
       '<form class="card" id="d-form" novalidate>' + formHtml(null, u) +
         '<div class="promo">' + F.icon('gift') + ' أول 20 سائق: 3 أشهر مجاناً بدون أي التزام.</div>' +
         '<label class="check"><input type="checkbox" id="d-agree"><span>أفهم إن موقعي يتحدّث فقط وأنا «متاح» والتطبيق مفتوح، وإن اسم الكرين ورقمي يظهرون للزبائن.</span></label>' +
         '<div class="err" id="de-agree" style="margin:-8px 0 10px"></div><div class="err" id="de-form"></div>' +
-        '<button class="btn big block" type="submit">سجّل كرينك</button></form>';
+        '<button class="btn big block" type="submit">سجّل كرينك</button>' + (adding ? '<button class="btn secondary block mt-s" type="button" id="d-addx">إلغاء</button>' : '') + '</form>';
     cranePk.wire(el);
+    const ax = F.$('#d-addx', el); if (ax) ax.onclick = () => { adding = false; render(); };
     F.$('#d-form', el).onsubmit = async (e) => {
       e.preventDefault();
       const v = readForm(el), agree = F.$('#d-agree', el).checked;
@@ -179,6 +183,8 @@
         const r = await F.sb.q('cranes', '', { method: 'POST', prefer: 'return=representation',
           body: { owner_id: uid(), name: v.name, type: v.type, crane_make: v.crane_make, crane_model: v.crane_model, governorate: v.governorate, lat: l.lat, lng: l.lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false } });
         await F.sb.q('crane_contacts', '', { method: 'POST', body: { crane_id: r[0].id, phone: v.phone } });
+        selId = r[0].id; try { localStorage.setItem('sanad_crane_sel', selId); } catch (e2) { /* */ }
+        adding = false;
         F.toast('تم التسجيل. بانتظار موافقة الإدارة.', 'ok');
         await refresh();
       } catch (ex) { F.$('#de-form', el).textContent = F.errMsg(ex); }
@@ -206,7 +212,9 @@
         '<div class="row wrap mt-s">' +
           (p && p.phone ? '<a class="btn sm green" href="tel:' + F.esc(p.phone) + '">' + F.icon('phone') + ' اتصل</a>' : '') +
           '<button class="btn sm secondary" data-go="' + r.lat + ',' + r.lng + '">' + F.icon('cursor') + ' مسار لموقع الزبون</button>' +
-          '<button class="btn sm" data-done="' + r.id + '">تم الإنجاز</button></div></li>';
+          (r.arrived_at ? '<span class="badge green">وصلت ✓</span>' : '<button class="btn sm green" data-arr="' + r.id + '">وصلت للزبون</button>') +
+          '<button class="btn sm" data-done="' + r.id + '">تم الإنجاز</button>' +
+          '<button class="btn sm ghost" data-repc="' + r.id + '|' + r.customer_id + '">إبلاغ عن الزبون</button></div></li>';
     }).join('') + '</ul></div>';
   }
 
@@ -282,6 +290,8 @@
     el.innerHTML =
       '<h1>' + F.icon('crane') + ' وضع السائق</h1>' +
       '<p class="lead">' + F.esc(c.name) + ' · ' + F.esc(c.type) + (c.governorate ? ' · ' + F.esc(c.governorate) : '') + (c.verified ? ' <span class="badge green">موثق</span>' : '') + '</p>' +
+      '<div class="card fleet"><div class="row between"><h2 style="margin:0">' + (fleet.length > 1 ? 'كرينات حسابك (' + fleet.length + ')' : 'حساب شركة؟') + '</h2>' + (fleet.length < 10 ? '<button class="btn sm secondary" id="d-add">+ أضف كرين آخر</button>' : '') + '</div>' +
+        (fleet.length > 1 ? '<div class="fleet-chips">' + fleet.map((x) => '<button class="chip' + (x.id === c.id ? ' on' : '') + '" data-sel="' + x.id + '">' + F.esc(x.name) + '</button>').join('') + '</div><p class="muted small mt-s">الطلبات الواردة تصلك لكل كراناتك. الحالة والموقع والوثائق تخص الكرين المحدد.</p>' : '<p class="muted small mt-s">عندك أكثر من كرين؟ أضفهم تحت حساب واحد.</p>') + '</div>' +
       (!c.listed ? '<div class="warn">تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</div>' : '') +
       '<div class="card"><h2>حالتك الحين</h2><div class="status-switch">' +
         '<button id="d-on" class="' + (avail ? 'on-green' : '') + '">' + F.icon('check-circle') + 'متاح</button>' +
@@ -306,6 +316,8 @@
         ? '<div class="card lock-card"><h2>إحصائيات الأسبوع</h2>' + grid(['٠٠', '٠٠', '٠٠', '٠٠']) + '<p class="muted small mt-s">شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالباقة الفضية وأعلى.</p><a class="btn sm mt-s" href="#packages">شوف الباقات</a></div>'
         : '<div class="card"><h2>إحصائيات آخر 7 أيام</h2>' + grid([w.views, w.calls, w.requests, w.accepted]) + '</div>';
     }).catch(() => {});
+    const addb = F.$('#d-add', el); if (addb) addb.onclick = () => { adding = true; render(); };
+    F.$$('[data-sel]', el).forEach((b) => { b.onclick = async () => { selId = b.dataset.sel; try { localStorage.setItem('sanad_crane_sel', selId); } catch (e2) { /* */ } stopWatch(); await refresh(); }; });
     F.$('#d-on', el).onclick = () => { if (!avail) goAvailable(); };
     F.$('#d-off', el).onclick = () => { if (avail) goBusy(); };
     F.$('#d-edit', el).onclick = () => editModal(u);
@@ -313,7 +325,7 @@
       const m = F.modal('<h2>حذف تسجيلك كسائق؟</h2><p class="muted">راح يختفي كرينك من القائمة والخريطة.</p><div class="row mt"><button class="btn danger grow" id="rm-yes">نعم، احذف</button><button class="btn secondary grow" id="rm-no">لا</button></div>');
       F.$('#rm-no', m.el).onclick = m.close;
       F.$('#rm-yes', m.el).onclick = async () => {
-        try { await F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'DELETE' }); stopWatch(); crane = null; m.close(); F.toast('تم حذف تسجيلك'); render(); }
+        try { await F.sb.q('cranes', 'id=eq.' + crane.id, { method: 'DELETE' }); stopWatch(); m.close(); F.toast('تم حذف تسجيلك'); selId = null; await refresh(); }
         catch (e) { F.toast(F.errMsg(e), 'err'); }
       };
     };
@@ -325,6 +337,7 @@
       if (fn === 'accept_request') fastUntil = Date.now() + 2 * 3600000;
       if (fn === 'complete_request') fastUntil = 0;
       if (fn === 'accept_request') F.sb.fn('notify', { kind: 'accepted', request_id: id }).catch(() => {});
+      if (fn === 'mark_arrived') F.sb.fn('notify', { kind: 'arrived', request_id: id }).catch(() => {});
       if (okMsg) F.toast(okMsg, 'ok'); await refresh();
     }
     catch (e) { F.toast(F.errMsg(e), 'err'); await refresh(); }
@@ -352,7 +365,7 @@
     if (F.isGuest()) return loginCard();
     const u = F.user();
     if (!u) return;
-    if (crane) renderDash(u); else renderRegister(u);
+    if (adding || !crane) renderRegister(u); else renderDash(u);
   }
 
   F.driver = {
@@ -369,6 +382,8 @@
         }
         else if ((b = g('data-dec'))) act('decline_request', b.dataset.dec);
         else if ((b = g('data-done'))) act('complete_request', b.dataset.done, 'تم إنجاز الطلب');
+        else if ((b = g('data-arr'))) act('mark_arrived', b.dataset.arr, 'تم إشعار الزبون بوصولك');
+        else if ((b = g('data-repc'))) { const [rid, uid2] = b.dataset.repc.split('|'); F.request.report(null, { userId: uid2, requestId: rid }); }
         else if ((b = g('data-up'))) pickDoc(b.dataset.up);
         else if ((b = g('data-push'))) {
           (b.dataset.push === 'on' ? F.push.enable() : F.push.disable())
@@ -390,6 +405,6 @@
       startWatch();
       startPoll();
     },
-    stop: function () { stopWatch(); stopPoll(); crane = null; known = {}; }
+    stop: function () { stopWatch(); stopPoll(); crane = null; fleet = []; adding = false; known = {}; }
   };
 })();

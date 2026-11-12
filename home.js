@@ -52,7 +52,7 @@
 
   function sorted() {
     const me = F.loc();
-    let arr = items.filter((c) => !(F.getSettings().hideDemo && c.demo)).map((c) => Object.assign({ d: F.dist(me, c) }, c));
+    let arr = items.filter((c) => !(F.getSettings().hideDemo && c.demo) && !(F.blocks && F.blocks.has(c.id))).map((c) => Object.assign({ d: F.dist(me, c) }, c));
     if (state.onlyAvail) arr = arr.filter((c) => c.status === 'available');
     if (state.type) arr = arr.filter((c) => c.type === state.type);
     if (state.gov) arr = arr.filter((c) => (c.gov || F.govOf(c.lat, c.lng)) === state.gov);
@@ -340,6 +340,7 @@
     F.$('#h-gps', el).onclick = () => locateGPS(false);
     F.$('#h-guide', el).onclick = () => F.guide.show();
     F.$('#h-ai', el).onclick = () => F.assist.show();
+    if (F.blocks) F.blocks.load().then(() => { if (ready) refresh(); }).catch(() => {});
     F.$('#h-sos', el).onclick = () => F.guide.sos();
     F.$('#h-share', el).onclick = () => F.guide.shareLocation();
     F.$('#h-offline', el).onclick = () => { location.hash = '#offline'; };

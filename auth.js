@@ -14,6 +14,21 @@
     );
   };
 
+  F.termsText = function () {
+    return (
+      '<p><b>الخدمة:</b> سند جايك منصّة وسيطة تربطك بسائقي الكرين. السائقون مستقلون، والسعر والخدمة يتفق عليهم معك مباشرة.</p>' +
+      '<p><b>مسؤوليتك:</b> بيانات صحيحة، وما طلبات وهمية، والاتفاق على السعر قبل التحميل.</p>' +
+      '<p><b>السائق:</b> معلومات صحيحة، وحالة «مشغول» إذا ما تكدر، وتعامل محترم. الإدارة توقف أي حساب مخالف.</p>' +
+      '<p><b>المساعد الذكي:</b> نصائح عامة فقط وما يغني عن الميكانيكي.</p>' +
+      '<p><b>إخلاء مسؤولية:</b> ما نضمن توفر سائق دائماً، ولا نتحمل أضرار أو خلافات أثناء الخدمة.</p>' +
+      '<p class="muted small">النص الكامل: <a href="terms.html" target="_blank" rel="noopener">terms.html</a></p>'
+    );
+  };
+  F.showTerms = function () {
+    const m = F.modal('<h2>شروط الاستخدام</h2>' + F.termsText() + '<button class="btn block mt" id="tm-ok">تمام</button>');
+    F.$('#tm-ok', m.el).onclick = m.close;
+  };
+
   F.showPrivacy = function () {
     const m = F.modal('<h2>سياسة الخصوصية</h2>' + F.privacyText() +
       '<button class="btn block mt" id="pv-ok">تمام</button>');
@@ -70,7 +85,7 @@
         '<div class="field"><label for="a-pass">كلمة المرور (8 أحرف أو أكثر)</label><input id="a-pass" class="ltr" type="password" autocomplete="new-password"><div class="err" id="e-pass"></div></div>' +
         '<div class="field"><label for="a-gov">المحافظة</label><select id="a-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option>' + g.name + '</option>').join('') + '</select><div class="err" id="e-gov"></div></div>' +
         '<div class="field"><label for="a-phone">رقم الهاتف (اختياري)</label><input id="a-phone" class="ltr" inputmode="tel" autocomplete="tel" placeholder="07701234567" maxlength="16"><div class="err" id="e-phone"></div></div>' +
-        '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a>.</span></label>' +
+        '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a> و<a href="#" id="a-terms">شروط الاستخدام</a>.</span></label>' +
         '<div class="err" id="e-consent" style="margin:-8px 0 10px"></div><div class="err" id="e-form" style="margin-bottom:8px"></div>' +
         '<button class="btn big block" type="submit" id="a-go">إنشاء الحساب</button>' +
         '<button class="btn ghost block mt-s" type="button" id="a-to-login">عندي حساب</button>';
@@ -78,7 +93,7 @@
     if (step === 'phone') {
       return '<h2 style="margin-top:0">أدخل رقم موبايلك</h2><p class="muted small">راح نرسل لك رمز تحقق من 6 أرقام عبر واتساب، وإذا ما وصل نرسله SMS.</p>' +
         '<div class="field"><label for="a-phone">رقم الهاتف</label><input id="a-phone" class="ltr" inputmode="tel" autocomplete="tel" placeholder="07701234567" maxlength="16" value="' + F.esc(phone) + '"><div class="err" id="e-phone"></div></div>' +
-        '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a>.</span></label>' +
+        '<label class="check"><input type="checkbox" id="a-consent"><span>أوافق على استخدام موقعي ورقمي لعرض أقرب كرين، وقرأت <a href="#" id="a-priv">سياسة الخصوصية</a> و<a href="#" id="a-terms">شروط الاستخدام</a>.</span></label>' +
         '<div class="err" id="e-consent" style="margin:-8px 0 10px"></div><div class="err" id="e-form" style="margin-bottom:8px"></div>' +
         '<button class="btn big block" type="submit" id="a-go">أرسل الرمز</button>' +
         '<button class="btn ghost block mt-s" type="button" id="a-to-login">الدخول بالإيميل</button>';
@@ -143,6 +158,7 @@
       F.$('#auth-form').onsubmit = (e) => { e.preventDefault(); F.auth.submit(); };
       const on = (id, fn) => { const n = F.$('#' + id); if (n) n.onclick = fn; };
       const pv = F.$('#a-priv'); if (pv) pv.onclick = (e) => { e.preventDefault(); F.showPrivacy(); };
+      const tv = F.$('#a-terms'); if (tv) tv.onclick = (e) => { e.preventDefault(); F.showTerms(); };
       on('a-to-signup', () => { mode = 'signup'; F.auth.render(); });
       on('a-to-login', () => { mode = 'login'; step = 'phone'; sentTo = ''; F.auth.render(); });
       on('a-to-forgot', () => { mode = 'forgot'; sentTo = ''; F.auth.render(); });

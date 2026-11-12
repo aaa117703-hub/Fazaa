@@ -27,9 +27,12 @@
               (since ? '<div><b style="font-size:13px">' + since + '</b><span>انضم</span></div>' : '') +
             '</div>' +
             (p.reviews && p.reviews.length ? '<div class="cp-rev"><h3>آراء الزبائن</h3>' + p.reviews.map((r) => '<div class="rv"><span class="stars">' + star(r.stars) + '</span><p>' + F.esc(r.comment) + '</p></div>').join('') + '</div>' : '') +
+            '<div class="row mt"><button class="btn secondary sm grow" id="cp-rep">' + F.icon('alert') + ' إبلاغ</button><button class="btn secondary sm grow" id="cp-blk">حظر</button></div>' +
             '<button class="btn block mt" id="cp-x">إغلاق</button>' +
           '</div>';
         F.$('#cp-x', m.el).onclick = m.close;
+        F.$('#cp-rep', m.el).onclick = () => { m.close(); F.request.report(id); };
+        F.$('#cp-blk', m.el).onclick = () => { m.close(); F.blocks.ask(id, p.name); };
       } catch (e) { m.close(); F.toast(F.errMsg(e), 'err'); }
     }
   };
