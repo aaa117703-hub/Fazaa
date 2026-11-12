@@ -28,7 +28,8 @@ export default function Assist() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const scroll = useRef<ScrollView>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scroll = useRef<any>(null);
 
   async function send(q: string) {
     q = q.trim();
