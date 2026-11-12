@@ -37,7 +37,7 @@
         '<button class="btn secondary" id="p-priv">' + F.icon('doc') + ' سياسة الخصوصية</button>' +
         '<button class="btn secondary" id="p-terms">' + F.icon('doc') + ' شروط الاستخدام</button>' +
         '<button class="btn secondary" id="p-export">' + F.icon('download') + ' تنزيل بياناتي</button>' +
-        '<button class="btn danger" id="p-delete">' + F.icon('trash') + ' حذف حسابي وكل بياناتي</button></div></div>' +
+        '<button class="btn danger" id="p-delete" style="margin-top:26px">' + F.icon('trash') + ' حذف حسابي وكل بياناتي</button></div></div>' +
       '<div class="row wrap mt"><button class="btn ghost" id="p-settings">' + F.icon('sliders') + ' الإعدادات</button>' +
         '<button class="btn ghost" id="p-logout">تسجيل خروج</button>' +
         '' + '</div>' +

@@ -51,7 +51,7 @@
   function set(v) {
     on = !!v; save(on);
     if (box) box.hidden = !on;
-    if (on) start(); else stop();
+    if (on) { start(); try { if (!localStorage.getItem('sanad_speedo_hint')) { localStorage.setItem('sanad_speedo_hint', '1'); F.toast('العداد يظهر بزاوية الخريطة ويقيس سرعتك بالكم/س من GPS الجهاز.'); } } catch (e) { /* */ } } else stop();
     const b = F.$('#h-speed'); if (b) b.classList.toggle('on', on);
   }
 

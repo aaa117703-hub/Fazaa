@@ -30,7 +30,7 @@
     if (a && a.id) return track(a.id, a.targets);
     const m = F.modal(
       '<h2>' + F.icon('alert') + ' سيارتي تعطلت</h2>' +
-      '<p class="muted small">راح نرسل طلبك لأقرب 3 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.</p>' +
+      '<p class="muted small">راح نرسل طلبك لأقرب 3 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك. السعر تتفق عليه مباشرة مع السائق قبل ما يتحرك.</p>' +
       '<form id="rq-form" novalidate>' +
         '<div class="field"><label>شنو المشكلة؟</label><select id="rq-issue">' +
           ISSUES.map((i) => '<option value="' + i[0] + '">' + i[1] + '</option>').join('') + '</select></div>' +
