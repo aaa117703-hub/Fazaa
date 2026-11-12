@@ -114,14 +114,16 @@
     const m = F.modal(
       '<h2>' + F.icon('shield') + ' سيارتي تعطلت — شنو أسوي؟</h2>' +
       '<p class="muted small">إذا كو خطر فوري أو إصابات، اتصل بجهات الطوارئ أول شي.</p>' +
-      '<ol class="gd-steps">' +
-        STEPS.map((s) => '<li><strong>' + s[0] + '</strong><p>' + s[1] + '</p></li>').join('') +
+      '<ol class="gd-steps" id="gd-list">' +
+        STEPS.map((s, i) => '<li' + (i > 2 ? ' class="gd-more" hidden' : '') + '><strong>' + s[0] + '</strong><p>' + s[1] + '</p></li>').join('') +
       '</ol>' +
+      '<button class="btn secondary block" id="gd-more">باقي الخطوات (' + (STEPS.length - 3) + ')</button>' +
       '<div class="stack mt">' +
         '<button class="btn big block" id="gd-share">' + F.icon('share') + ' أرسل موقعي</button>' +
         '<button class="btn secondary block" id="gd-close">إغلاق</button>' +
       '</div>'
     );
+    F.$('#gd-more', m.el).onclick = (e) => { F.$$('.gd-more', m.el).forEach((x) => { x.hidden = false; }); e.currentTarget.remove(); };
     F.$('#gd-close', m.el).onclick = m.close;
     F.$('#gd-share', m.el).onclick = () => { m.close(); shareLocation(); };
   }

@@ -194,10 +194,10 @@
     return l;
   };
   F.locLabel = function (l) {
-    if (l.source === 'gps') return 'موقعك الحالي (GPS) · ' + F.ago(l.at);
+    if (l.source === 'gps') return 'موقعك: من الجهاز · ' + F.ago(l.at);
     if (l.source === 'manual') return 'موقع حدّدته يدوياً';
-    if (l.source === 'ip') return 'موقع تقريبي — اضغط «موقعي» للدقة';
-    return 'موقعك غير محدد — فعّل GPS أو اختر محافظتك';
+    if (l.source === 'ip') return 'موقع تقريبي — اضغط «حدّد موقعي» للدقة';
+    return 'موقعك غير محدد — اضغط «حدّد موقعي» أو «اختر يدوياً»';
   };
 
   // GPS بشكل Promise
