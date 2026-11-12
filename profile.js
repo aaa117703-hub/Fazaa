@@ -29,10 +29,13 @@
         '<button class="btn sm secondary" id="p-edit">تعديل</button></div></div>' +
       '<div class="card"><div class="stats" id="p-stats"><div class="stat"><b>—</b><span>طلباتي</span></div><div class="stat"><b>—</b><span>اتصالاتي</span></div><div class="stat"><b>' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-IQ-u-nu-latn', { month: 'short', year: 'numeric' }) : '—') + '</b><span>تاريخ الانضمام</span></div></div></div>' +
       '<div class="card" id="p-driver"></div>' +
+      '<div class="card"><h2>طلباتي السابقة</h2><div id="p-reqs" class="muted small">جاري التحميل…</div></div>' +
+      '<div class="card" id="p-blocked" hidden><h2>المحظورون</h2><div id="p-blk"></div></div>' +
       '<div class="card"><h2>سجل اتصالاتي بالكرينات</h2><div id="p-calls" class="muted small">جاري التحميل…</div></div>' +
       '<div class="card"><h2>بياناتي وخصوصيتي</h2><div class="stack">' +
         '<button class="btn green" id="p-support">' + F.icon('share') + ' تواصل مع الدعم (واتساب)</button>' +
         '<button class="btn secondary" id="p-priv">' + F.icon('doc') + ' سياسة الخصوصية</button>' +
+        '<button class="btn secondary" id="p-terms">' + F.icon('doc') + ' شروط الاستخدام</button>' +
         '<button class="btn secondary" id="p-export">' + F.icon('download') + ' تنزيل بياناتي</button>' +
         '<button class="btn danger" id="p-delete">' + F.icon('trash') + ' حذف حسابي وكل بياناتي</button></div></div>' +
       '<div class="row wrap mt"><button class="btn ghost" id="p-settings">' + F.icon('sliders') + ' الإعدادات</button>' +
@@ -42,9 +45,23 @@
 
     F.$('#p-edit', el).onclick = () => editModal(u);
     F.$('#p-priv', el).onclick = F.showPrivacy;
+    F.$('#p-terms', el).onclick = F.showTerms;
     F.$('#p-support', el).onclick = () => F.contact.support();
     F.$('#p-export', el).onclick = exportMine;
     F.$('#p-delete', el).onclick = deleteMine;
+    const ST = { open: 'قيد البحث', accepted: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي', expired: 'منتهي' };
+    const ISS = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
+    F.sb.q('requests', 'select=number,issue,status,created_at&order=created_at.desc&limit=10').then((rows) => {
+      const box = F.$('#p-reqs', el); if (!box) return;
+      box.innerHTML = rows.length ? '<ul class="list">' + rows.map((x) => '<li><span><b>#' + (x.number || '') + '</b> ' + (ISS[x.issue] || '') + '</span><span class="muted small">' + (ST[x.status] || x.status) + ' · ' + F.ago(Date.parse(x.created_at)) + '</span></li>').join('') + '</ul>' : 'ما عندك طلبات بعد.';
+    }).catch(() => { const b = F.$('#p-reqs', el); if (b) b.textContent = 'تعذّر التحميل.'; });
+    const drawBlk = () => {
+      const l = F.blocks ? F.blocks.list() : [], card = F.$('#p-blocked', el); if (!card) return;
+      card.hidden = !l.length;
+      F.$('#p-blk', el).innerHTML = l.map((b) => '<div class="row between" style="margin:6px 0"><span class="muted small">كرين محظور</span><button class="btn sm secondary" data-unb="' + b[0] + '">فك الحظر</button></div>').join('');
+    };
+    if (F.blocks) F.blocks.load().then(drawBlk);
+    el.addEventListener('click', async (e) => { const u = e.target.closest('[data-unb]'); if (u) { await F.blocks.remove(u.dataset.unb); drawBlk(); F.toast('تم فك الحظر', 'ok'); } });
     F.$('#p-logout', el).onclick = async () => { if (F.driver) F.driver.stop(); await F.sb.signOut(); location.hash = ''; location.reload(); };
     F.$('#p-ava', el).onclick = pickAvatar;
     F.$('#p-settings', el).onclick = () => { location.hash = '#settings'; };

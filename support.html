@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>الدعم الفني | سند جايك</title>
+<meta name="robots" content="index,follow">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<style>
+:root{--bg:#101214;--card:#1A1D21;--text:#F5F5F0;--muted:#B7BDC6;--accent:#FF6B2C;--line:#2C3036}
+@media (prefers-color-scheme:light){:root{--bg:#F6F4EF;--card:#fff;--text:#1B1E22;--muted:#4A525B;--line:#E2DED6}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.9 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}header img{width:48px;height:48px;border-radius:12px}header b{font-size:20px;color:var(--accent)}
+h1{font-size:26px;margin:10px 0 4px}h2{font-size:18px;margin:26px 0 4px;color:var(--accent)}
+p,li{color:var(--text);margin:6px 0}.m{color:var(--muted);font-size:14px}ul{padding-inline-start:22px}
+a{color:var(--accent)}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+.btn{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;font-weight:700}
+nav{margin-top:30px;display:flex;gap:16px;flex-wrap:wrap;font-size:14px}
+</style>
+</head>
+<body><main>
+<header><img src="logo.svg" alt=""><b>سند جايك</b></header>
+<h1>الدعم الفني</h1><p class="m">آخر تحديث: تشرين الثاني 2026</p>
+<p>تحتاج مساعدة بسند جايك؟ نحن نرد عليك بأقرب وقت.</p>
+<div class="card"><p><b>الدعم الفني عبر واتساب</b></p><p class="m" id="sp-t">جاري تحميل رقم الدعم…</p><p><a class="btn" id="sp-wa" href="#" style="display:none">راسلنا واتساب</a></p></div>
+<h2>أسئلة شائعة</h2>
+<p><b>شلون أحذف حسابي؟</b> من التطبيق: حسابي ← حذف حسابي. يُحذف كل شي فوراً.</p>
+<p><b>شلون أسجّل ككرين؟</b> من تبويب «سائق» وسجّل بياناتك وارفع وثائقك، وتتم مراجعتها.</p>
+<p><b>سائق ما رد عليّ؟</b> جرّب كرين ثاني أو أرسل «طلب» لأقرب 3 كرينات، وتكدر تبلّغ عنه من التطبيق.</p>
+<p><b>أريد أبلّغ عن مشكلة أو سائق؟</b> من شاشة الطلب اضغط «إبلاغ عن مشكلة» أو راسل الدعم.</p>
+<script>
+(function(){var API='https://hwlpzlfimplzkdleaclw.supabase.co',K='sb_publishable_8MXXYiGMYODBil-jcNuwWg_fwrowc_a';
+fetch(API+'/rest/v1/app_settings?select=value&key=eq.support',{headers:{apikey:K,Authorization:'Bearer '+K}}).then(function(r){return r.json()}).then(function(d){
+var p=d&&d[0]&&d[0].value&&d[0].value.phone,t=document.getElementById('sp-t'),a=document.getElementById('sp-wa');
+if(!p){t.textContent='الدعم غير متوفر حالياً. جرّب لاحقاً.';return}
+t.textContent='رقم الدعم: '+p;a.href='https://wa.me/964'+String(p).replace(/^0/,'')+'?text='+encodeURIComponent('مرحباً، أحتاج مساعدة بتطبيق سند جايك');a.style.display='inline-block';
+}).catch(function(){document.getElementById('sp-t').textContent='تعذّر تحميل رقم الدعم.'})})();
+</script>
+<nav><a href="/">الرئيسية</a><a href="privacy.html">الخصوصية</a><a href="terms.html">الشروط</a><a href="support.html">الدعم</a></nav>
+</main></body></html>

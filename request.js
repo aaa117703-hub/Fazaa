@@ -82,6 +82,7 @@
     return cr && cr[0] ? Object.assign({}, cr[0], { phone: ct && ct[0] ? ct[0].phone : '' }) : null;
   }
 
+  let prevArr = null;
   async function poll() {
     const a = getActive();
     if (!a || busy) return;
@@ -95,6 +96,8 @@
         cur.targets = a.targets;
         if (r.status === 'accepted' || r.status === 'completed') cur.crane = await craneInfo(r);
         if (r.status === 'accepted') { try { cur.track = await F.sb.rpc('track_request', { p_request_id: r.id }); } catch (e) { cur.track = null; } }
+        if (cur.arrived_at && prevArr === false) { F.toast('وصل الكرين!', 'ok'); F.native && F.native.notify('وصل الكرين', 'السائق وصل لموقعك.', './#home', 'arr-' + r.id); }
+        prevArr = !!cur.arrived_at;
         if (was && was !== r.status && r.status === 'accepted') { F.toast('كرين قبل طلبك!', 'ok'); F.native && F.native.notify('انقبل طلبك', ((cur.crane && cur.crane.name) || 'كرين') + ' بالطريق إليك', './#home', 'acc-' + r.id); }
         if (was && was !== r.status && r.status === 'completed') { F.native && F.native.notify('انتهى الطلب', 'سلامتك! قيّم الخدمة حتى نحسّن.', './#home', 'done-' + r.id); }
         if (['cancelled', 'expired'].includes(r.status) && !(mod && mod.open)) setActive(null);
@@ -167,12 +170,13 @@
       return head + '<div class="hero" style="margin-top:10px"><h2>' + F.icon('check-circle') + ' انقبل طلبك</h2>' +
         '<div class="name">' + F.esc(c ? c.name : 'كرين') + (c && c.verified ? ' <span class="badge green">موثق</span>' : '') + '</div>' +
         '<div class="sub">' + F.esc(c ? c.type : '') + ' — اتصل وتفاهم على السعر ووقت الوصول.</div>' +
+        (r.arrived_at ? '<div class="badge green" style="margin:8px 0;font-size:14px">' + F.icon('check-circle') + ' وصل الكرين</div>' : '') +
         '<div id="rq-map" class="rq-map"></div><div class="eta" id="rq-eta"></div>' +
         (c && c.phone ? '<a class="btn big block green" id="rq-tel" href="tel:' + F.esc(c.phone) + '">' + F.icon('phone') + ' اتصل بالسائق</a>' +
           '<div class="row" style="margin-top:8px"><a class="btn secondary grow" id="rq-wa" href="' + F.esc(F.contact.waLink(c.phone)) + '" target="_blank" rel="noopener">' + F.icon('share') + ' واتساب + موقعي</a>' +
           '<button class="btn secondary grow" id="rq-copy">نسخ الرقم</button></div>' +
           '<div class="muted small center" style="margin-top:8px;direction:ltr">' + F.esc(c.phone) + '</div>' : '') + '</div>' +
-        '<div class="stack mt"><button class="btn secondary block" id="rq-report">' + F.icon('alert') + ' إبلاغ عن مشكلة</button><button class="btn secondary block" id="rq-hide">إخفاء</button></div>';
+        '<div class="stack mt"><button class="btn secondary block" id="rq-report">' + F.icon('alert') + ' إبلاغ عن مشكلة</button><button class="btn secondary block" id="rq-block">حظر هذا السائق</button><button class="btn secondary block" id="rq-hide">إخفاء</button></div>';
     }
     if (r.status === 'completed') {
       return head + '<div class="hero" style="margin-top:10px"><h2>' + F.icon('check-circle') + ' انتهى الطلب</h2>' +
@@ -203,6 +207,7 @@
     on('rq-again', () => { setActive(null); cur = null; mod.m.close(); start(); });
     on('rq-skip', () => { setActive(null); cur = null; mod.m.close(); if (F.home) F.home.refresh(); });
     on('rq-report', () => report(cur.accepted_crane_id));
+    on('rq-block', () => F.blocks.ask(cur.accepted_crane_id, cur.crane && cur.crane.name));
     on('rq-tel', () => F.contact.remember(cur.accepted_crane_id, cur.crane && cur.crane.name));
     on('rq-wa', () => F.contact.remember(cur.accepted_crane_id, cur.crane && cur.crane.name));
     on('rq-copy', () => F.contact.copy(cur.crane.phone));
@@ -238,10 +243,11 @@
 
   /* ---------- إبلاغ ---------- */
   const REASONS = [['no_answer', 'ما رد'], ['wrong_price', 'سعر مختلف'], ['behavior', 'سوء تعامل'], ['fake', 'معلومات مزيفة'], ['other', 'سبب ثاني']];
-  function report(craneId) {
+  function report(craneId, opts) {
+    opts = opts || {};
     if (F.isGuest()) return F.requireLogin('لازم حساب حتى تبلّغ.');
     const m = F.modal(
-      '<h2>إبلاغ عن كرين</h2><form id="rp-form"><div class="field"><label>السبب</label><select id="rp-r">' +
+      '<h2>' + (opts.userId ? 'إبلاغ عن زبون' : 'إبلاغ عن كرين') + '</h2><form id="rp-form"><div class="field"><label>السبب</label><select id="rp-r">' +
       REASONS.map((r) => '<option value="' + r[0] + '">' + r[1] + '</option>').join('') + '</select></div>' +
       '<div class="field"><label>تفاصيل (اختياري)</label><input id="rp-d" maxlength="200"></div><div class="err" id="rp-e"></div>' +
       '<div class="row"><button class="btn grow" type="submit">إرسال</button><button class="btn secondary" type="button" id="rp-no">إلغاء</button></div></form>'
@@ -250,7 +256,7 @@
     F.$('#rp-form', m.el).onsubmit = async (e) => {
       e.preventDefault();
       try {
-        await F.sb.q('reports', '', { method: 'POST', body: { reporter_id: F.sb.uid(), crane_id: craneId, reason: F.$('#rp-r', m.el).value, details: F.$('#rp-d', m.el).value.trim() || null, status: 'new' } });
+        await F.sb.q('reports', '', { method: 'POST', body: { reporter_id: F.sb.uid(), crane_id: craneId || null, reported_user_id: opts.userId || null, request_id: opts.requestId || null, reason: F.$('#rp-r', m.el).value, details: F.$('#rp-d', m.el).value.trim() || null, status: 'new' } });
         m.close(); F.toast('وصل بلاغك للإدارة', 'ok');
       } catch (ex) { F.$('#rp-e', m.el).textContent = F.errMsg(ex); }
     };
@@ -268,6 +274,37 @@
     if (!timer) { startTimer(); poll(); }
   }
   function stopTimerIfIdle() { if (!(mod && mod.open)) stopTimer(); }
+
+  /* ---------- الحظر ---------- */
+  const blocked = new Map(); // crane_id -> blocked_user_id
+  F.blocks = {
+    has: (id) => blocked.has(id),
+    list: () => Array.from(blocked.entries()),
+    async load() {
+      if (F.isGuest()) { blocked.clear(); return; }
+      try { (await F.sb.q('user_blocks', 'select=blocked_user_id,crane_id')).forEach((b) => { if (b.crane_id) blocked.set(b.crane_id, b.blocked_user_id); }); } catch (e) { /* */ }
+    },
+    ask(craneId, name) {
+      if (F.isGuest()) return F.requireLogin('لازم حساب حتى تحظر.');
+      const m = F.modal('<h2>حظر ' + F.esc(name || 'السائق') + '؟</h2><p class="muted">ما راح يظهر لك بالقائمة، وما راح توصله طلباتك. تكدر ترجع تفك الحظر من «حسابي».</p>' +
+        '<div class="row mt"><button class="btn danger grow" id="bk-y">نعم، احظر</button><button class="btn secondary grow" id="bk-n">إلغاء</button></div>');
+      F.$('#bk-n', m.el).onclick = m.close;
+      F.$('#bk-y', m.el).onclick = async () => {
+        try {
+          const o = await F.sb.q('cranes', 'select=owner_id&id=eq.' + craneId);
+          const owner = o && o[0] && o[0].owner_id;
+          if (!owner) throw new Error('تعذّر الحظر');
+          await F.sb.q('user_blocks', '', { method: 'POST', body: { blocker_id: F.sb.uid(), blocked_user_id: owner, crane_id: craneId } });
+          blocked.set(craneId, owner); m.close(); F.toast('تم الحظر', 'ok'); if (F.home && F.home.refresh) F.home.refresh();
+        } catch (e) { m.close(); F.toast(F.errMsg(e), 'err'); }
+      };
+    },
+    async remove(craneId) {
+      const owner = blocked.get(craneId); if (!owner) return;
+      await F.sb.q('user_blocks', 'blocked_user_id=eq.' + owner, { method: 'DELETE' });
+      blocked.delete(craneId); if (F.home && F.home.refresh) F.home.refresh();
+    }
+  };
 
   F.request = { start: start, banner: banner, report: report, active: getActive, reset: () => { setActive(null); cur = null; stopTimer(); } };
 })();

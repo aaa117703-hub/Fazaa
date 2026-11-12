@@ -933,3 +933,5 @@ html.is-en .gd-steps li { padding: 11px 0 11px 44px; }
 .ai-form input { flex: 1; min-width: 0; }
 .ai-foot { display: flex; gap: 8px; margin-top: 10px; }
 .ai-foot .btn { flex: 1; }
+
+.fleet-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
