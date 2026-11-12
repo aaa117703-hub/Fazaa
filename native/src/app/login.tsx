@@ -4,6 +4,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Btn, Muted, T } from '@/components/ui';
+import { SITE } from '@/lib/site';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
@@ -24,7 +25,7 @@ const input = {
 
 export default function Login() {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<'in' | 'up'>('in');
+  const [mode, setMode] = useState<'in' | 'up' | 'forgot'>('in');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
@@ -35,6 +36,13 @@ export default function Login() {
   async function submit() {
     setErr(''); setInfo('');
     if (!email.includes('@')) return setErr('اكتب إيميل صحيح.');
+    if (mode === 'forgot') {
+      setBusy(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: SITE + '/' });
+      setBusy(false);
+      if (error) return setErr('تعذّر الإرسال. تأكد من الإيميل وجرّب بعد قليل.');
+      return setInfo('إذا الإيميل مسجّل، أرسلنا لك رابط لتغيير كلمة المرور. افتحه من الإيميل.');
+    }
     if (pass.length < 8) return setErr('كلمة المرور لازم تكون 8 أحرف أو أكثر.');
     setBusy(true);
     try {
@@ -71,10 +79,13 @@ export default function Login() {
         </View>
         {mode === 'up' && <TextInput value={name} onChangeText={setName} placeholder="الاسم" placeholderTextColor={C.muted} style={input} />}
         <TextInput value={email} onChangeText={setEmail} placeholder="الإيميل" placeholderTextColor={C.muted} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={[input, { writingDirection: 'ltr' }]} />
-        <TextInput value={pass} onChangeText={setPass} placeholder="كلمة المرور (8 أحرف أو أكثر)" placeholderTextColor={C.muted} secureTextEntry autoCapitalize="none" style={input} />
+        {mode !== 'forgot' && <TextInput value={pass} onChangeText={setPass} placeholder="كلمة المرور (8 أحرف أو أكثر)" placeholderTextColor={C.muted} secureTextEntry autoCapitalize="none" style={input} />}
+        {mode === 'in' && <Pressable onPress={() => { setMode('forgot'); setErr(''); setInfo(''); }}><T style={{ color: C.accent, textAlign: 'right' }}>نسيت كلمة المرور؟</T></Pressable>}
+        {mode === 'forgot' && <><Muted>اكتب إيميلك وراح نرسل لك رابط لتغيير كلمة المرور.</Muted><Pressable onPress={() => { setMode('in'); setErr(''); setInfo(''); }}><T style={{ color: C.accent, textAlign: 'right' }}>رجوع لتسجيل الدخول</T></Pressable></>}
         {!!err && <T style={{ color: C.danger }}>{err}</T>}
         {!!info && <T style={{ color: C.ok }}>{info}</T>}
-        {busy ? <ActivityIndicator color={C.accent} /> : <Btn label={mode === 'in' ? 'دخول' : 'إنشاء الحساب'} onPress={submit} />}
+        {busy ? <ActivityIndicator color={C.accent} /> : <Btn label={mode === 'in' ? 'دخول' : mode === 'forgot' ? 'أرسل الرابط' : 'إنشاء الحساب'} onPress={submit} />}
+        <Muted style={{ textAlign: 'center', fontSize: 12 }}>بالتسجيل أنت توافق على الشروط وسياسة الخصوصية (من «حسابي»).</Muted>
         <Btn label="تصفح بدون حساب" kind="ghost" onPress={() => router.back()} />
       </ScrollView>
     </KeyboardAvoidingView>

@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
 import { Select } from '@/components/select';
+import { useBlocks } from '@/lib/blocks';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { contact } from '@/lib/contact';
@@ -30,7 +31,8 @@ export default function Home() {
   const [type, setType] = useState('');
   const [gov, setGov] = useState('');
   const [hasReq, setHasReq] = useState(false);
-  useFocusEffect(useCallback(() => { AsyncStorage.getItem('sanad_active_req').then((v) => setHasReq(!!v)).catch(() => {}); }, []));
+  const { blocks, reload: reloadBlocks } = useBlocks();
+  useFocusEffect(useCallback(() => { reloadBlocks(); AsyncStorage.getItem('sanad_active_req').then((v) => setHasReq(!!v)).catch(() => {}); }, []));
 
   const load = useCallback(async (p: Pos) => {
     setLoading(true); setErr(false);
@@ -63,13 +65,13 @@ export default function Home() {
 
   const list = useMemo(() => {
     const me = pos ?? BAGHDAD;
-    let a = cranes.map((c) => ({ c, d: distKm(me, c) }));
+    let a = cranes.filter((c) => !blocks[c.id]).map((c) => ({ c, d: distKm(me, c) }));
     if (onlyFree) a = a.filter((x) => x.c.status === 'available');
     if (type) a = a.filter((x) => x.c.type === type);
     if (gov) a = a.filter((x) => x.c.governorate === gov);
     a.sort((x, y) => ((x.c.status === 'available' ? 0 : 1) - (y.c.status === 'available' ? 0 : 1)) || x.d - y.d);
     return a;
-  }, [cranes, pos, onlyFree, type, gov]);
+  }, [cranes, pos, onlyFree, type, gov, blocks]);
 
   const go = () => router.push('/login');
   const call = (c: Crane, how: 'tel' | 'wa') => contact(c, how, src === 'default' ? null : pos, !!session, go);
@@ -86,10 +88,13 @@ export default function Home() {
     <View style={{ gap: 12 }}>
       <View style={[rtl.row, { gap: 8 }]}>
         <T style={{ fontSize: 26, fontWeight: '800', color: C.accent, flex: 1 }}>سند جايك</T>
-        <Btn label="موقعي" kind="secondary" small onPress={useGps} />
-        <Select label="اختر محافظتك" value="" allLabel="يدوي" options={GOVS.map((g) => g.name)} onChange={chooseGov} />
       </View>
-      <Muted>{src === 'gps' ? 'موقعك: من الـ GPS' : src === 'manual' ? 'موقعك: يدوي (حسب المحافظة)' : 'موقعك غير محدد — فعّل الـ GPS أو اختر محافظتك.'}</Muted>
+      <Muted>{src === 'gps' ? 'موقعك: من الجهاز' : src === 'manual' ? 'موقعك: يدوي (حسب المحافظة)' : 'موقعك غير محدد — اضغط «حدّد موقعي» أو «اختر يدوياً».'}</Muted>
+      <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
+        <Btn label="مساعد ذكي" small onPress={() => router.push('/assist')} />
+        <Btn label="حدّد موقعي" kind="secondary" small onPress={useGps} />
+        <Select label="اختر محافظتك" value="" allLabel="اختر يدوياً" options={GOVS.map((g) => g.name)} onChange={chooseGov} />
+      </View>
 
       {hasReq && !!session && <Btn label="طلبك الحالي — اضغط للتفاصيل" kind="secondary" onPress={() => router.push('/request')} />}
       <Card style={{ backgroundColor: 'rgba(255,107,44,0.12)', borderColor: 'rgba(255,107,44,0.35)', gap: 8 }}>

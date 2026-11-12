@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ScrollView, View } from 'react-native';
+import { Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Muted, T, rtl } from '@/components/ui';
@@ -26,7 +26,7 @@ export default function Packages() {
               <Ionicons name="diamond" size={20} color={p.color} />
             </View>
             <T style={{ fontSize: 19, fontWeight: '800', flex: 1 }}>{p.name}</T>
-            <T style={{ fontSize: 20, fontWeight: '800', color: C.accent2 }}>{p.price ? p.price.toLocaleString('en-US') + ' د.ع/شهر' : 'مجاناً'}</T>
+            <T style={{ fontSize: 20, fontWeight: '800', color: C.accent2 }}>{Platform.OS === 'ios' ? (p.price ? '' : 'مجاناً') : p.price ? p.price.toLocaleString('en-US') + ' د.ع/شهر' : 'مجاناً'}</T>
           </View>
           {p.features.map((f) => (
             <View key={f} style={[rtl.row, { gap: 8 }]}>
@@ -36,7 +36,7 @@ export default function Packages() {
           ))}
         </Card>
       ))}
-      <Muted>لا يوجد دفع إلكتروني حالياً. الاشتراك يُفعّل من الإدارة بعد التواصل معك.</Muted>
+      <Muted>{Platform.OS === 'ios' ? 'مزايا الباقات تُفعّل من الإدارة. للتفاصيل تواصل مع الدعم من «حسابي».' : 'لا يوجد دفع إلكتروني حالياً. الاشتراك يُفعّل من الإدارة بعد التواصل معك.'}</Muted>
     </ScrollView>
   );
 }

@@ -8,16 +8,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Select } from '@/components/select';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
+import { askBlock } from '@/lib/blocks';
 import { distKm } from '@/lib/data';
+import { report } from '@/lib/report';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
 export const AK = 'sanad_active_req';
 const ISSUES: [string, string][] = [['tow', 'عطل كامل — أحتاج سحب'], ['battery', 'بطارية'], ['tire', 'إطار'], ['fuel', 'وقود'], ['locked', 'مفاتيح داخل السيارة'], ['accident', 'حادث'], ['other', 'شي ثاني']];
 const issueName = (k: string) => (ISSUES.find((i) => i[0] === k) ?? [0, k])[1];
-const REASONS: [string, string][] = [['no_answer', 'ما رد'], ['wrong_price', 'سعر مختلف'], ['behavior', 'سوء تعامل'], ['fake', 'معلومات مزيفة'], ['other', 'سبب ثاني']];
 
-type Req = { id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null };
+type Req = { arrived_at?: string | null; id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null };
 type Info = { id: string; name: string; type: string; verified: boolean; phone: string };
 type Trk = { lat: number | null; lng: number | null } | null;
 
@@ -73,6 +74,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
   const [crane, setCrane] = useState<Info | null>(null);
   const [trk, setTrk] = useState<Trk>(null);
   const prev = useRef('');
+  const prevArr = useRef<boolean | null>(null);
   const poll = useCallback(async () => {
     const { data } = await supabase.from('requests').select('*').eq('id', a.id).maybeSingle();
     if (!data) { onReset(); return; }
@@ -86,6 +88,8 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
     }
     if (q.status === 'accepted') { const t = await supabase.rpc('track_request', { p_request_id: q.id }); setTrk((t.data as Trk) ?? null); }
     if (prev.current && prev.current !== q.status && q.status === 'accepted') Alert.alert('كرين قبل طلبك!', 'اتصل بالسائق وتفاهم على السعر.');
+    if (q.arrived_at && prevArr.current === false) Alert.alert('وصل الكرين!', 'السائق وصل لموقعك.');
+    prevArr.current = !!q.arrived_at;
     prev.current = q.status;
     setR(q);
   }, [a.id, onReset]);
@@ -125,6 +129,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
           <T style={{ fontWeight: '800', fontSize: 17 }}>انقبل طلبك</T>
           <T style={{ fontSize: 20, fontWeight: '800', color: C.accent }}>{crane?.name ?? 'كرين'}{crane?.verified ? ' ✓' : ''}</T>
           <Muted>{crane?.type} — اتصل وتفاهم على السعر ووقت الوصول.</Muted>
+          {!!r.arrived_at && <View style={{ alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: R.pill, backgroundColor: C.ok + '29' }}><T style={{ color: C.ok, fontWeight: '800' }}>وصل الكرين ✓</T></View>}
           {has ? (
             <>
               <View style={{ height: 200, borderRadius: R.md, overflow: 'hidden' }}>
@@ -147,7 +152,8 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
             </>
           )}
         </Card>
-        <Btn label="إبلاغ عن مشكلة" kind="secondary" onPress={() => report(r.accepted_crane_id)} />
+        <Btn label="إبلاغ عن مشكلة" kind="secondary" onPress={() => report({ craneId: r.accepted_crane_id, requestId: r.id })} />
+        <Btn label="حظر هذا السائق" kind="secondary" onPress={() => r.accepted_crane_id && askBlock(r.accepted_crane_id, crane?.name ?? 'السائق')} />
         <Btn label="إخفاء" kind="secondary" onPress={() => router.back()} />
       </>
     );
@@ -177,18 +183,4 @@ function Rate({ r, crane, onDone }: { r: Req; crane: Info | null; onDone: () => 
       <Btn label="تخطّي" kind="secondary" onPress={() => { onDone(); router.back(); }} />
     </Card>
   );
-}
-
-async function report(craneId: string | null) {
-  Alert.alert('إبلاغ عن كرين', 'اختر السبب', [
-    ...REASONS.map(([k, l]) => ({
-      text: l,
-      onPress: async () => {
-        const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from('reports').insert({ reporter_id: u.user?.id, crane_id: craneId, reason: k, status: 'new' });
-        Alert.alert(error ? 'تعذّر' : 'تم', error ? 'تعذّر إرسال البلاغ.' : 'وصل بلاغك للإدارة.');
-      },
-    })),
-    { text: 'إلغاء', style: 'cancel' as const },
-  ]);
 }
