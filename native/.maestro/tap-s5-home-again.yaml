@@ -1,0 +1,6 @@
+appId: com.sanadjaik.app
+---
+- tapOn: "الرئيسية"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: s5-home-again
