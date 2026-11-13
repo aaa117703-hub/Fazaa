@@ -1,8 +1,9 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
+import { dial } from '@/lib/contact';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CarPicker, carOk, CarVal } from '@/components/car-picker';
@@ -241,8 +242,8 @@ export default function Driver() {
               <T style={{ fontWeight: '800' }}>{p?.full_name ?? 'زبون'} · {ISSUE[r.issue] ?? ''}</T>
               {!!p?.car && <Muted>{p.car}</Muted>}
               <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
-                {!!p?.phone && <Btn small label="اتصل" style={{ backgroundColor: C.ok }} onPress={async () => { const ok = await Linking.canOpenURL('tel:' + p.phone).catch(() => false); if (ok) Linking.openURL('tel:' + p.phone); else Alert.alert(p.full_name ?? 'الزبون', 'الرقم: ' + p.phone); }} />}
-                <Btn small kind="secondary" label="مسار لموقع الزبون" onPress={() => Linking.openURL('http://maps.apple.com/?daddr=' + r.lat + ',' + r.lng).catch(() => {})} />
+                {!!p?.phone && <Btn small label="اتصل" style={{ backgroundColor: C.ok }} onPress={() => dial(p.full_name ?? 'الزبون', p.phone)} />}
+                <Btn small kind="secondary" label="مسار لموقع الزبون" onPress={() => router.push({ pathname: '/route', params: { lat: String(r.lat), lng: String(r.lng), name: p?.full_name ?? 'الزبون' } })} />
                 {r.arrived_at ? <T style={{ color: C.ok, fontWeight: '800' }}>وصلت ✓</T> : <Btn small label="وصلت للزبون" style={{ backgroundColor: C.ok }} onPress={() => act('mark_arrived', r.id, 'تم إشعار الزبون بوصولك')} />}
                 <Btn small label="تم الإنجاز" onPress={() => act('complete_request', r.id, 'تم إنجاز الطلب')} />
                 <Btn small kind="ghost" label="إبلاغ عن الزبون" onPress={() => report({ userId: r.customer_id, requestId: r.id })} />
