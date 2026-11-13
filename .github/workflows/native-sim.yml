@@ -28,7 +28,7 @@ jobs:
         run: |
           WS=$(ls -d *.xcworkspace | head -1); SCHEME="${WS%.xcworkspace}"
           xcodebuild -workspace "$WS" -scheme "$SCHEME" -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -n 15
+            -derivedDataPath build ONLY_ACTIVE_ARCH=YES ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build | tail -n 15
       - name: Boot iPad simulator
         run: |
           UDID=$(xcrun simctl list devices available -j | python3 -c "
@@ -44,23 +44,34 @@ jobs:
         run: |
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+      - name: Direct screenshots
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          xcrun simctl launch "$UDID" com.sanadjaik.app || true
+          sleep 4;  xcrun simctl io "$UDID" screenshot out/a1-4s.png || true
+          sleep 10; xcrun simctl io "$UDID" screenshot out/a2-14s.png || true
+          sleep 8;  xcrun simctl io "$UDID" screenshot out/a3-22s.png || true
       - name: Run taps
         continue-on-error: true
+        timeout-minutes: 14
         run: |
           mkdir -p out
           export MAESTRO_CLI_NO_ANALYTICS=1
           for f in launch tap-s2-profile tap-s3-packages tap-s4-driver tap-s5-home-again; do
             echo "=== $f ==="
-            maestro --udid "$UDID" test --debug-output out/dbg-$f .maestro/$f.yaml 2>&1 | tail -n 25
-            maestro --udid "$UDID" hierarchy 2>&1 | head -c 6000 > out/hier-$f.json || true
+            timeout 150 maestro --udid "$UDID" test --debug-output out/dbg-$f .maestro/$f.yaml 2>&1 | tail -n 25
+            timeout 60 maestro --udid "$UDID" hierarchy 2>&1 | head -c 6000 > out/hier-$f.json || true
           done
           mv *.png out/ 2>/dev/null || true
           xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "sanadjaik" OR process CONTAINS "Sanad" OR senderImagePath CONTAINS "sanad"' 2>/dev/null | tail -n 150 > out/applog.txt || true
+          xcrun simctl io "$UDID" screenshot out/final-sim.png || true
           ls -la out
       - name: Publish results
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cd out && git init -q && git checkout -q -b sim-results && git add -A
+          mkdir -p out && cd out && git init -q && git checkout -q -b sim-results && git add -A
           git -c user.name=ci -c user.email=ci@x commit -qm "sim results run ${{ github.run_number }}"
           git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" sim-results
