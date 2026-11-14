@@ -100,16 +100,16 @@
     const box = F.$('#h-hero', el);
     if (!best) {
       box.innerHTML =
-        '<div class="hero"><h2>سيارتي تعطلت</h2>' +
+        '<div class="hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>' + F.icon('crane') + '</b></div><h2>سيارتي تعطلت</h2>' +
         '<div class="sub" style="margin:0 0 10px">' + (loading ? 'جاري البحث عن الكرينات…' : loadErr ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : 'ما لكينا كرين متاح هسه' +
         (state.onlyAvail || state.type ? ' بهذا الفلتر' : '') + '. شوف القائمة وجرّب تتصل.') + '</div>' +
         '<button class="btn big block" data-req="1">' + F.icon('alert') + ' أرسل طلب لأقرب كرينات</button></div>';
       return;
     }
     box.innerHTML =
-      '<div class="hero"><h2>' + F.icon('alert') + ' سيارتي تعطلت — أقرب كرين متاح</h2>' +
+      '<div class="hero"><div class="radar" aria-hidden="true"><i></i><i></i><i></i><b>' + F.icon('crane') + '</b></div><h2>' + F.icon('alert') + ' سيارتي تعطلت — أقرب كرين متاح</h2>' +
       '<div class="name">' + F.esc(best.name) + '</div>' +
-      '<div class="sub">' + F.esc(best.type) + ' · ' + F.fmtDist(best.d) + ' عنك · ' + status(best).txt + '</div>' +
+      '<div class="sub">' + F.esc(best.type) + ' · <b class="cnt" data-d="' + (best.d || 0) + '">' + F.fmtDist(best.d) + '</b> عنك · ' + status(best).txt + '</div>' +
       '<button class="btn big block" data-req="1">' + F.icon('alert') + ' أرسل طلب لأقرب 3 كرينات</button>' +
       '<button class="btn block green" style="margin-top:8px" data-call="' + F.esc(best.id) + '">' + F.icon('phone') + ' أو اتصل مباشرة بأقرب كرين</button></div>';
   }
@@ -139,7 +139,7 @@
     const keep = {};
     list.forEach((c) => {
       keep[c.id] = true;
-      const cls = (c.status === 'available' ? 'green' : 'red') + (c.tier === 'gold' || c.tier === 'diamond' ? ' big-' + c.tier : '');
+      const cls = (c.status === 'available' ? 'green av' : 'red') + (c.tier === 'gold' || c.tier === 'diamond' ? ' big-' + c.tier : '');
       const pop = '<b>' + F.esc(c.name) + '</b><br>' + F.esc(c.type) + ' · ' + F.fmtDist(c.d);
       if (markers[c.id]) {
         F.markerSet(markers[c.id], c.lat, c.lng, cls, pop);
@@ -214,6 +214,7 @@
     map.fitBounds(b, { padding: 50, maxZoom: l.source === 'default' ? 9 : l.source === 'ip' ? 11 : 15, duration: 700 });
   }
 
+  let entered = false;
   function refresh() {
     if (!ready) return;
     F.$('#h-locstate', el).textContent = F.locLabel(F.loc());
@@ -224,12 +225,21 @@
       .sort((a, b) => (b.tier === 'diamond') - (a.tier === 'diamond') || (a.d || 0) - (b.d || 0)).slice(0, 3);
     const fid = {}; feat.forEach((c) => { fid[c.id] = 1; });
     const featHtml = feat.length
-      ? '<section class="feat"><div class="feat-h">' + F.icon('gem') + ' سائقون مميزون<small>إعلان</small></div>' + feat.map(cardHtml).join('') + '</section>'
+      ? '<section class="feat"><div class="feat-h">' + F.icon('gem') + ' الموصى بهم<small>إعلان</small></div>' + feat.map(cardHtml).join('') + '</section>'
       : '';
     F.$('#h-list', el).innerHTML = list.length
       ? featHtml + list.filter((c) => !fid[c.id]).map(cardHtml).join('')
       : loading ? skeleton() : emptyHtml();
     renderMap(list);
+    if (list.length && !entered) {
+      entered = true;
+      const lst = F.$('#h-list', el); if (lst) { lst.classList.add('stag'); setTimeout(() => lst.classList.remove('stag'), 1800); }
+      F.$$('.cnt[data-d]', el).forEach((n) => {
+        const d = Number(n.dataset.d) || 0, t0 = performance.now();
+        const step = (t) => { const k = Math.min(1, (t - t0) / 900), e = 1 - Math.pow(1 - k, 3); n.textContent = F.fmtDist(d * e); if (k < 1 && n.isConnected) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      });
+    }
   }
 
   async function load() {

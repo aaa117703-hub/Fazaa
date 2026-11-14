@@ -37,14 +37,14 @@
 
   // درجات الاشتراك: أولوية وصول الطلبات + نطاق أوسع + ظهور مميز + إحصائيات. الدفع يدوي: السائق يحوّل والمدير يفعّل.
   F.TIERS = [
-    { id: 'bronze', name: 'برونزي', price: 0, unit: 'مجاناً', color: '#CD7F32',
-      features: [{ t: 'الظهور بالقائمة والخريطة' }, { t: 'اتصال مباشر من الزبائن' }, { t: 'ملف شخصي وتقييم بالنجوم' }, { t: 'استلام الطلبات ضمن 40 كم' }] },
-    { id: 'silver', name: 'فضي', price: 10000, unit: 'دينار / شهر', color: '#C9D1DB',
-      features: [{ t: 'كل مميزات البرونزي' }, { t: 'يصلك الطلب قبل غيرك' }, { t: 'استلام الطلبات ضمن 50 كم' }, { t: 'لوحة إحصائيات أسبوعية' }] },
-    { id: 'gold', name: 'ذهبي', price: 25000, unit: 'دينار / شهر', color: '#FFC21A',
-      features: [{ t: 'كل مميزات الفضي' }, { t: 'أولوية أعلى للطلبات ضمن 65 كم' }, { t: 'دبوس كبير ومميز على الخريطة' }, { t: 'إعلان مميز أعلى الصفحة الرئيسية' }] },
-    { id: 'diamond', name: 'ماسي', price: 50000, unit: 'دينار / شهر', color: '#6EE7F9',
-      features: [{ t: 'كل مميزات الذهبي' }, { t: 'أعلى أولوية للطلبات ضمن 80 كم' }, { t: 'أكبر دبوس على الخريطة' }, { t: 'أول إعلان مميز دائماً' }] }
+    { id: 'bronze', name: 'أساسي', tag: 'للبداية', price: 0, unit: 'مجاناً', color: '#8C949B', fleet: 1, radius: 40,
+      features: [{ t: 'الظهور بالقائمة والخريطة' }, { t: 'اتصال مباشر من الزبائن' }, { t: 'ملف شخصي وتقييم بالنجوم' }, { t: 'استلام الطلبات ضمن 40 كم' }, { t: 'كرين واحد بالحساب' }] },
+    { id: 'silver', name: 'فضي', tag: 'تصلك الطلبات أسرع', price: 10000, unit: 'دينار / شهر', color: '#D9DADC', fleet: 2, radius: 50,
+      features: [{ t: 'كل مميزات الأساسي' }, { t: 'يصلك الطلب قبل غيرك' }, { t: 'استلام الطلبات ضمن 50 كم' }, { t: 'لوحة إحصائيات أسبوعية' }, { t: 'حتى كرينين بالحساب' }] },
+    { id: 'gold', name: 'ذهبي', tag: 'ظهور مميز', price: 25000, unit: 'دينار / شهر', color: '#FFC93C', fleet: 5, radius: 65,
+      features: [{ t: 'كل مميزات الفضي' }, { t: 'أولوية أعلى للطلبات ضمن 65 كم' }, { t: 'دبوس كبير ومميز على الخريطة' }, { t: 'قسم «الموصى بهم» بالرئيسية' }, { t: 'حتى 5 كرينات بالحساب' }] },
+    { id: 'diamond', name: 'شركات', tag: 'لأصحاب الأساطيل', price: 50000, unit: 'دينار / شهر', color: '#5AA9FF', fleet: 10, radius: 80,
+      features: [{ t: 'كل مميزات الذهبي' }, { t: 'أعلى أولوية للطلبات ضمن 80 كم' }, { t: 'أكبر دبوس وأول ظهور بالموصى بهم' }, { t: 'إدارة أسطول حتى 10 كرينات' }, { t: 'دعم مباشر عبر واتساب' }] }
   ];
   F.tierOf = (id) => F.TIERS.find((t) => t.id === id) || F.TIERS[0];
   F.effTier = (c) => (c && c.tier && c.tier !== 'bronze' && c.sub_expires_at && Date.parse(c.sub_expires_at) > Date.now() ? c.tier : 'bronze');
@@ -70,13 +70,8 @@
   /* ---------- الإعدادات ---------- */
   const DEFAULT_SETTINGS = { theme: 'auto', reduceMotion: false, onlyAvail: false, hideDemo: false };
   F.getSettings = () => Object.assign({}, DEFAULT_SETTINGS, F.get(F.K.settings, {}));
-  F.resolveTheme = function (pref) {
-    pref = pref || F.getSettings().theme;
-    if (pref === 'auto') {
-      return window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    }
-    return pref === 'light' ? 'light' : 'dark';
-  };
+  // التطبيق داكن فقط (هوية سند جايك الجديدة)
+  F.resolveTheme = function () { return 'dark'; };
   F.applySettings = function () {
     const s = F.getSettings();
     const root = document.documentElement;
@@ -85,7 +80,7 @@
     root.classList.toggle('reduce-motion', !!s.reduceMotion);
     root.setAttribute('data-nav', s.navPos === 'top' ? 'top' : 'bottom');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4F5F7' : '#101214');
+    if (meta) meta.setAttribute('content', '#14171A');
   };
   F.saveSettings = function (patch) {
     F.set(F.K.settings, Object.assign(F.getSettings(), patch));
@@ -341,7 +336,7 @@
       map.on('click', (e) => {
         chosen = { lat: e.lngLat.lat, lng: e.lngLat.lng };
         if (pin) pin.setLngLat(e.lngLat);
-        else pin = new maplibregl.Marker({ color: '#FF6B2C' }).setLngLat(e.lngLat).addTo(map);
+        else pin = new maplibregl.Marker({ color: '#FFC93C' }).setLngLat(e.lngLat).addTo(map);
         F.$('#pick-ok', m.el).disabled = false;
       });
       setTimeout(() => { try { map.resize(); } catch (e) {} }, 250);

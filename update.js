@@ -6,19 +6,19 @@
 
   var CSS = '' +
     '#upd{position:fixed;inset:0;z-index:9500;display:grid;place-items:center;padding:18px;background:rgba(6,8,10,.72);opacity:0;transition:opacity .25s}#upd.on{opacity:1}' +
-    '.upd-card{width:min(92vw,400px);max-height:92vh;overflow:auto;border-radius:24px;padding:20px 18px 16px;background:linear-gradient(160deg,#1d2126,#14171a);border:1px solid rgba(255,138,61,.35);box-shadow:0 30px 70px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04) inset;color:#fff;font-family:"Noto Kufi Arabic","Tajawal",sans-serif;text-align:start;transform:translateY(14px) scale(.97);transition:transform .3s cubic-bezier(.2,1.2,.4,1)}#upd.on .upd-card{transform:none}' +
-    '.upd-badge{display:inline-block;padding:4px 12px;border-radius:99px;background:rgba(255,107,44,.16);color:#FF9A55;font-size:12.5px;font-weight:700}' +
+    '.upd-card{width:min(92vw,400px);max-height:92vh;overflow:auto;border-radius:24px;padding:20px 18px 16px;background:linear-gradient(160deg,#1d2126,#14171a);border:1px solid rgba(255,214,102,.35);box-shadow:0 30px 70px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.04) inset;color:#fff;font-family:"IBM Plex Sans Arabic","Tajawal",sans-serif;text-align:start;transform:translateY(14px) scale(.97);transition:transform .3s cubic-bezier(.2,1.2,.4,1)}#upd.on .upd-card{transform:none}' +
+    '.upd-badge{display:inline-block;padding:4px 12px;border-radius:99px;background:rgba(255,201,60,.16);color:#FFD666;font-size:12.5px;font-weight:700}' +
     '.upd-card h3{margin:10px 0 12px;font-size:19px;font-weight:700}' +
-    '.upd-new{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.05);margin-bottom:12px}.upd-new b{display:block;color:#FF9A55;font-size:13px;margin-bottom:6px}' +
-    '.upd-new ul{margin:0;padding:0;list-style:none}.upd-new li{position:relative;padding-inline-start:18px;font-size:14.5px;line-height:1.9}.upd-new li::before{content:"";position:absolute;inset-inline-start:2px;top:.85em;width:7px;height:7px;background:#FF6B2C;transform:rotate(45deg)}' +
-    '.upd-tip{display:flex;gap:12px;align-items:center;width:100%;text-align:start;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,138,61,.3);border-inline-start:4px solid #FF6B2C;background:linear-gradient(135deg,rgba(255,107,44,.14),rgba(255,255,255,.03));color:#fff;font:inherit;cursor:pointer;margin-bottom:14px}' +
-    '.upd-tip svg{flex:none;width:26px;height:26px;color:#FF8A3D}.upd-tip span{display:block;font-size:14.5px;line-height:1.8;font-weight:600}.upd-tip small{display:block;margin-top:2px;color:#9AA3AF;font-size:11.5px;font-weight:500}.upd-tip.sw span{animation:upd-sw .35s ease}' +
+    '.upd-new{padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.05);margin-bottom:12px}.upd-new b{display:block;color:#FFD666;font-size:13px;margin-bottom:6px}' +
+    '.upd-new ul{margin:0;padding:0;list-style:none}.upd-new li{position:relative;padding-inline-start:18px;font-size:14.5px;line-height:1.9}.upd-new li::before{content:"";position:absolute;inset-inline-start:2px;top:.85em;width:7px;height:7px;background:#FFC93C;transform:rotate(45deg)}' +
+    '.upd-tip{display:flex;gap:12px;align-items:center;width:100%;text-align:start;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,214,102,.3);border-inline-start:4px solid #FFC93C;background:linear-gradient(135deg,rgba(255,201,60,.14),rgba(255,255,255,.03));color:#fff;font:inherit;cursor:pointer;margin-bottom:14px}' +
+    '.upd-tip svg{flex:none;width:26px;height:26px;color:#FFD666}.upd-tip span{display:block;font-size:14.5px;line-height:1.8;font-weight:600}.upd-tip small{display:block;margin-top:2px;color:#9AA3AF;font-size:11.5px;font-weight:500}.upd-tip.sw span{animation:upd-sw .35s ease}' +
     '@keyframes upd-sw{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}' +
     '.upd-btns{display:flex;gap:10px}.upd-btns button{flex:1;height:50px;border-radius:15px;border:0;font:inherit;font-size:16px;font-weight:700;cursor:pointer}' +
-    '.upd-go{background:linear-gradient(135deg,#FF8A3D,#F0541C);color:#fff;box-shadow:0 10px 22px -8px rgba(255,107,44,.7)}.upd-later{flex:.6!important;background:rgba(255,255,255,.07);color:#C9CED6}' +
+    '.upd-go{background:linear-gradient(135deg,#FFD666,#F0541C);color:#fff;box-shadow:0 10px 22px -8px rgba(255,201,60,.7)}.upd-later{flex:.6!important;background:rgba(255,255,255,.07);color:#C9CED6}' +
     '.upd-b{text-align:center}.upd-cv{display:block;width:100%;height:230px;border-radius:18px;background:#101316;touch-action:none}' +
-    '.upd-pct{margin:12px 0 8px;font-family:"Changa",sans-serif;font-size:44px;font-weight:800;line-height:1;direction:ltr}.upd-pct small{font-size:22px;color:#FF9A55;margin-inline-start:2px}' +
-    '.upd-bar{height:10px;border-radius:9px;background:rgba(255,255,255,.09);overflow:hidden;direction:ltr}.upd-bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#FF6B2C,#FFB36B)}' +
+    '.upd-pct{margin:12px 0 8px;font-family:"IBM Plex Sans Arabic",sans-serif;font-size:44px;font-weight:800;line-height:1;direction:ltr}.upd-pct small{font-size:22px;color:#FFD666;margin-inline-start:2px}' +
+    '.upd-bar{height:10px;border-radius:9px;background:rgba(255,255,255,.09);overflow:hidden;direction:ltr}.upd-bar i{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#FFC93C,#FFB36B)}' +
     '.upd-msg{margin-top:10px;font-size:13.5px;color:#9AA3AF}';
 
   var reg = null, nw = null, ready = false, opened = false, started = false, real = 0, reloading = false, inited = false;
@@ -109,19 +109,19 @@
       });
       for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
         var d = Math.hypot(nodes[i].x - nodes[j].x, nodes[i].y - nodes[j].y);
-        if (d < 85) { ctx.strokeStyle = 'rgba(255,138,61,' + (1 - d / 85) * .35 + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke(); }
+        if (d < 85) { ctx.strokeStyle = 'rgba(255,214,102,' + (1 - d / 85) * .35 + ')'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y); ctx.stroke(); }
       }
-      nodes.forEach(function (n) { ctx.fillStyle = n.o ? '#FF6B2C' : 'rgba(255,255,255,.75)'; ctx.save(); ctx.translate(n.x, n.y); ctx.rotate(t + n.s); ctx.fillRect(-n.s, -n.s, n.s * 2, n.s * 2); ctx.restore(); });
-      rings = rings.filter(function (r) { r.r += 2.6; r.a -= .025; if (r.a <= 0) return false; ctx.strokeStyle = 'rgba(255,138,61,' + r.a + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.3); ctx.stroke(); return true; });
+      nodes.forEach(function (n) { ctx.fillStyle = n.o ? '#FFC93C' : 'rgba(255,255,255,.75)'; ctx.save(); ctx.translate(n.x, n.y); ctx.rotate(t + n.s); ctx.fillRect(-n.s, -n.s, n.s * 2, n.s * 2); ctx.restore(); });
+      rings = rings.filter(function (r) { r.r += 2.6; r.a -= .025; if (r.a <= 0) return false; ctx.strokeStyle = 'rgba(255,214,102,' + r.a + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, 6.3); ctx.stroke(); return true; });
       /* القوس: المسار الباهت كامل، والبرتقالي يمتلئ حسب النسبة، والنقطة تطلع عليه */
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 12;
       function trace(to) { ctx.beginPath(); for (var d = 0; d <= to; d += 2) { var q = ap(d); d ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } var e = ap(to); ctx.lineTo(e[0], e[1]); ctx.stroke(); }
       ctx.strokeStyle = 'rgba(255,255,255,.16)'; trace(AL);
-      var cur = Math.max(0.01, p) * AL; ctx.strokeStyle = '#FF6B2C'; trace(cur);
+      var cur = Math.max(0.01, p) * AL; ctx.strokeStyle = '#FFC93C'; trace(cur);
       ctx.strokeStyle = '#F5F5F0'; ctx.lineWidth = 7; ctx.beginPath();
       var c1 = [cx + (35.5 - 50) * K, cy + (73 - 53) * K], c2 = [cx, cy + (57.5 - 53) * K], c3 = [cx + (64.5 - 50) * K, cy + (73 - 53) * K];
       ctx.moveTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(c3[0], c3[1]); ctx.stroke();
-      var dp = ap(cur); ctx.fillStyle = '#F5F5F0'; ctx.shadowColor = 'rgba(255,107,44,.9)'; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(dp[0], dp[1], 6, 0, 6.3); ctx.fill(); ctx.shadowBlur = 0;
+      var dp = ap(cur); ctx.fillStyle = '#F5F5F0'; ctx.shadowColor = 'rgba(255,201,60,.9)'; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(dp[0], dp[1], 6, 0, 6.3); ctx.fill(); ctx.shadowBlur = 0;
       raf = requestAnimationFrame(frame);
     }
     frame();

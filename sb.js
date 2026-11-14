@@ -172,6 +172,11 @@
     recovery = false;
     return r.data;
   }
+  // تغيير الإيميل: Supabase يرسل رسالة تأكيد للإيميل الجديد، والتغيير ما يتم إلا بعد الضغط على الرابط
+  async function updateEmail(email) {
+    const r = await call('/auth/v1/user?redirect_to=' + encodeURIComponent(location.origin + '/'), { method: 'PUT', body: { email: email } });
+    return r.data;
+  }
   // رابط الاستعادة يرجّع للموقع مع #access_token=...&type=recovery
   function recoveryFromHash() {
     const h = location.hash || '';
@@ -221,7 +226,7 @@
     if (!sess || F.viewAs() === 'visitor') return null;
     const u = sess.user || {};
     const p = profile || {};
-    return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', avatar: p.avatar_path || '', car: p.car || '', gov: p.governorate || '', createdAt: p.created_at || '' };
+    return { id: u.id, email: u.email, name: p.full_name || (u.user_metadata && u.user_metadata.full_name) || '', phone: p.phone || '', avatar: p.avatar_path || '', car: p.car || '', carKg: p.car_weight_kg || null, carLen: p.car_length_m ? +p.car_length_m : null, gov: p.governorate || '', createdAt: p.created_at || '' };
   };
 
   // استدعاء Edge Function (بدون انتظار فشلها)
@@ -245,7 +250,7 @@
     return API + '/storage/v1' + r.data.signedURL;
   }
 
-  F.sb = { forgotPassword: forgotPassword, updatePassword: updatePassword, isRecovery: () => recovery, avatarUrl: function (p, v) { return p ? API + '/storage/v1/object/public/avatars/' + p + (v ? '?v=' + v : '') : ''; }, fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
+  F.sb = { updateEmail: updateEmail, forgotPassword: forgotPassword, updatePassword: updatePassword, isRecovery: () => recovery, avatarUrl: function (p, v) { return p ? API + '/storage/v1/object/public/avatars/' + p + (v ? '?v=' + v : '') : ''; }, fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
 
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {

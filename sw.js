@@ -30,6 +30,7 @@ const SHELL_FILES = [
   './tips.js',
   './update.js',
   './vehicles.js',
+  './carspecs.js',
   './iraqmap.js',
   './shops.js',
   './traffic.js',

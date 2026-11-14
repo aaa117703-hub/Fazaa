@@ -202,6 +202,14 @@
     const m = F.modal('<h2>بيانات السائق</h2>' + f('in-owner', 'اسم مالك السيارة', c.owner_name) + f('in-model', 'نوع السيارة', c.vehicle_model) + f('in-plate', 'رقم السيارة', c.plate) +
       '<div class="row mt"><button class="btn grow" id="in-ok">حفظ</button><button class="btn secondary" id="in-x">رجوع</button></div>');
     F.$('#in-x', m.el).onclick = m.close;
+    // ما أدخله السائق بقسم الوثائق: يُعبّأ تلقائياً إذا حقول الإدارة فارغة، والمدير يراجعه ويعتمده
+    F.sb.q('crane_identity', 'select=doc_name,doc_plate&crane_id=eq.' + c.id).then((r) => {
+      const d = r && r[0]; if (!d) return;
+      const o = F.$('#in-owner', m.el), p = F.$('#in-plate', m.el);
+      if (o && !o.value && d.doc_name) o.value = d.doc_name;
+      if (p && !p.value && d.doc_plate) p.value = d.doc_plate;
+      const h = F.$('h2', m.el); if (h) h.insertAdjacentHTML('afterend', '<p class="muted small">بيانات السائق من قسم الوثائق: ' + F.esc(d.doc_name || '—') + ' · ' + F.esc(d.doc_plate || '—') + '</p>');
+    }).catch(() => {});
     F.$('#in-ok', m.el).onclick = () => {
       const v = (i) => F.$(i, m.el).value.trim() || null;
       m.close(); patch(c.id, { owner_name: v('#in-owner'), vehicle_model: v('#in-model'), plate: v('#in-plate') });

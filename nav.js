@@ -258,7 +258,7 @@
     const rel = bearing(here, target) - (heading != null ? heading : 0);
     panel.innerHTML = '<div class="card nav-card">' + banner +
       '<div class="row between"><div><b>' + F.esc(target.name) + '</b><div class="muted small">' + fmtKm(remain) + ' · ' + fmtMin(eta) + (route.approx ? ' (تقريبي)' : '') + '</div></div>' +
-        '<div class="nav-compass" title="اتجاه الكرين"><svg viewBox="0 0 24 24" style="transform:rotate(' + Math.round(rel) + 'deg)"><path d="M12 2.5 19 21l-7-4-7 4z" fill="var(--orange,#FF6B2C)"/></svg></div></div>' +
+        '<div class="nav-compass" title="اتجاه الكرين"><svg viewBox="0 0 24 24" style="transform:rotate(' + Math.round(rel) + 'deg)"><path d="M12 2.5 19 21l-7-4-7 4z" fill="var(--orange,#FFC93C)"/></svg></div></div>' +
       '<div class="row wrap mt-s">' +
         '<button class="btn sm ' + (following ? 'green' : '') + '" data-n="follow">' + (following ? 'إيقاف التوجيه' : 'ابدأ التوجيه') + '</button>' +
         '<button class="btn sm secondary" data-n="voice">' + (voice ? '🔊 الصوت شغّال' : '🔇 الصوت') + '</button>' +
