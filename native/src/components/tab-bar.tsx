@@ -36,8 +36,11 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function TabBar({ state, navigation }: any) {
+export function TabBar(props: any) {
+  const { state } = props;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const insets = useSafeAreaInsets();
+  if (!(globalThis as any).__tbLogged) { (globalThis as any).__tbLogged = 1; evt('tabbar props:', Object.keys(props).join(',')); }
   const routes: { key: string; name: string }[] = state.routes;
   const cells: React.ReactNode[] = [];
   routes.forEach((r, i) => {
@@ -52,8 +55,10 @@ export function TabBar({ state, navigation }: any) {
         onPress={() => {
           evt('tab:', m.label);
           tap();
-          const ev = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
-          if (state.index !== i && !ev.defaultPrevented) navigation.navigate(r.name);
+          // التنقل عبر expo-router مباشرة (بعض إصدارات React Navigation ما تمرّر navigation لشريط مخصص)
+          if (state.index === i) return;
+          try { router.navigate((r.name === 'index' ? '/' : '/' + r.name) as never); }
+          catch (e) { evt('tab nav failed', e); props.navigation?.navigate?.(r.name); }
         }}
       />,
     );
