@@ -6,7 +6,7 @@
 
   let el, watchId = null, beat = null, poller = null, lastPush = 0;
   let fleet = [], adding = false, selId = (function () { try { return localStorage.getItem('sanad_crane_sel'); } catch (e) { return null; } })();
-  let crane = null, docs = [], pushOn = false, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
+  let crane = null, docs = [], ident = null, draft = {}, pushOn = false, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
 
   const uid = () => F.sb.uid();
 
@@ -17,15 +17,17 @@
     if (!crane) { incoming = []; jobs = []; return; }
     const id = crane.id;
     const ids = fleet.map((x) => x.id).join(',');
-    const [ct, callsRaw, rs, tg, jb, dc] = await Promise.all([
+    const [ct, callsRaw, rs, tg, jb, dc, idn] = await Promise.all([
       F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + id),
       F.sb.q('calls', 'select=created_at&crane_id=eq.' + id + '&order=created_at.desc&limit=500'),
       F.sb.q('crane_rating_summary', 'select=rating_avg,rating_count&crane_id=eq.' + id),
       F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)&crane_id=in.(' + ids + ')&status=eq.sent&order=sent_at.desc&limit=20'),
       F.sb.q('requests', 'select=*&accepted_crane_id=in.(' + ids + ')&status=eq.accepted&order=accepted_at.desc'),
-      F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&order=created_at.desc')
+      F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&order=created_at.desc'),
+      F.sb.q('crane_identity', 'select=doc_name,doc_plate&crane_id=eq.' + id).catch(() => [])
     ]);
     docs = dc || [];
+    ident = idn && idn[0] || null;
     pushOn = F.push ? await F.push.enabled() : false;
     phone = ct && ct[0] ? ct[0].phone : '';
     const calls = callsRaw || [];
@@ -37,7 +39,7 @@
     jobs = [];
     for (const r of (jb || [])) {
       let p = null;
-      try { const x = await F.sb.q('profiles', 'select=full_name,phone,car&id=eq.' + r.customer_id); p = x && x[0]; } catch (e) {}
+      try { const x = await F.sb.q('profiles', 'select=full_name,phone,car,car_weight_kg,car_length_m&id=eq.' + r.customer_id); p = x && x[0]; } catch (e) {}
       jobs.push({ r: r, p: p });
     }
   }
@@ -54,7 +56,8 @@
         }
       });
       if (F.native) F.native.badge(incoming.length);
-      if (el && !el.hidden) render();
+      const typing = silent && el && el.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+      if (el && !el.hidden && !typing) render();
     } catch (e) { if (!silent) F.toast(F.errMsg(e), 'err'); }
     busy = false;
   }
@@ -203,12 +206,19 @@
       }).join('') + '</ul>' : '<div class="muted small">' + (crane.status === 'available' ? 'ما كو طلبات هسه. التحديث تلقائي.' : 'حوّل «متاح» حتى توصلك الطلبات.') + '</div>') + '</div>';
   }
 
+  // وزن وطول سيارة الزبون: القيمة المصحّحة منه، وإلا تقدير من القاعدة
+  function jobSpec(p) {
+    if (p.car_weight_kg || p.car_length_m) return F.carSpecText(p.car_weight_kg, p.car_length_m ? +p.car_length_m : null, false);
+    const pc = F.parseCar(p.car), sp = F.carSpec(pc.make, pc.model);
+    return sp ? F.carSpecText(sp.kg, sp.m, true) : '';
+  }
+
   function jobsHtml() {
     if (!jobs.length) return '';
     return '<div class="card"><h2>طلبات مقبولة</h2><ul class="list">' + jobs.map((j) => {
       const r = j.r, p = j.p;
       return '<li style="display:block"><b>' + F.esc(p && p.full_name || 'زبون') + '</b> · ' + (ISSUE[r.issue] || '') +
-        (p && p.car ? '<div class="muted small">' + F.icon('car') + ' ' + F.esc(p.car) + '</div>' : '') +
+        (p && p.car ? '<div class="job-car">' + F.icon('car') + ' <b>' + F.esc(p.car) + '</b>' + (jobSpec(p) ? '<span>' + jobSpec(p) + '</span>' : '') + '</div>' : '') +
         '<div class="row wrap mt-s">' +
           (p && p.phone ? '<a class="btn sm green" href="tel:' + F.esc(p.phone) + '">' + F.icon('phone') + ' اتصل</a>' : '') +
           '<button class="btn sm secondary" data-go="' + r.lat + ',' + r.lng + '">' + F.icon('cursor') + ' مسار لموقع الزبون</button>' +
@@ -233,11 +243,35 @@
       (mine && mine.status === 'rejected' && mine.note ? '<span class="muted small">السبب: ' + F.esc(mine.note) + '</span>' : '') +
       (!mine || mine.status === 'rejected' ? '<button class="btn sm secondary" data-up="' + k[0] + '">' + F.icon('camera') + ' رفع</button>' : '') + '</div>';
   }
+  const DOC_ICON = { 'البطاقة الموحدة': 'user', 'سنوية السيارة': 'car', 'إجازة السوق (الرخصة)': 'doc' };
   function docsHtml() {
-    const done = docs.length, all = 6;
-    return '<div class="card"><h2>' + F.icon('shield') + ' وثائقك (' + done + '/' + all + ')</h2>' +
-      '<p class="muted small">ارفع صوراً واضحة لوجهي كل وثيقة. الإدارة تراجعها وتسجّل بياناتك بنفسها، وبعدها تظهر شارة «موثق». الصور خاصة ولا يراها غير المدير.</p>' +
-      GROUPS.map((g) => '<div class="doc-title">' + g[0] + '</div><div class="doc-grid">' + g[1].map(docSlot).join('') + '</div>').join('') + '</div>';
+    const all = 6, done = docs.filter((x, i, a) => a.findIndex((y) => y.kind === x.kind) === i).length;
+    const approved = docs.filter((x) => x.status === 'approved').length;
+    const hasId = ident && ident.doc_name && ident.doc_plate;
+    const state = crane.verified ? ['ok', 'موثّق', 'اسمك ورقم لوحتك ظاهرين للزبائن مع شارة «موثّق».']
+      : (done === all && hasId ? ['wait', 'قيد المراجعة', 'الإدارة تراجع وثائقك وبياناتك. غالباً خلال يوم.'] : ['todo', 'غير مكتمل', 'أكمل بياناتك وارفع الوثائق الست حتى تحصل على شارة «موثّق».']);
+    const pct = Math.round(((done + (hasId ? 2 : 0)) / (all + 2)) * 100);
+    return '<div class="card dv"><div class="dv-head"><div class="dv-ring" style="--p:' + pct + '"><span>' + pct + '%</span></div>' +
+      '<div><h2 style="margin:0">' + F.icon('shield') + ' التوثيق</h2><span class="dv-state ' + state[0] + '">' + state[1] + '</span></div></div>' +
+      '<p class="muted small">' + state[2] + ' الصور خاصة ولا يشوفها الزبائن.</p>' +
+      '<div class="dv-sec"><div class="dv-t"><i>1</i> بياناتك الرسمية</div>' +
+        '<div class="field"><label>الاسم الثلاثي (مثل البطاقة)</label><input id="dv-name" value="' + F.esc(draft.name != null ? draft.name : (ident && ident.doc_name || '')) + '" maxlength="100" placeholder="مثال: علي حسين محمد"></div>' +
+        '<div class="field"><label>رقم لوحة السيارة</label><input id="dv-plate" value="' + F.esc(draft.plate != null ? draft.plate : (ident && ident.doc_plate || '')) + '" maxlength="30" placeholder="مثال: بغداد 12345 أ"></div>' +
+        '<div class="err" id="dv-err"></div><button class="btn sm" data-saveid="1">حفظ البيانات</button></div>' +
+      '<div class="dv-sec"><div class="dv-t"><i>2</i> الوثائق (' + done + '/' + all + ')</div>' +
+      GROUPS.map((g) => '<div class="dv-grp"><div class="dv-gt">' + F.icon(DOC_ICON[g[0]] || 'doc') + ' ' + g[0] + '</div><div class="doc-grid">' + g[1].map(docSlot).join('') + '</div></div>').join('') + '</div></div>';
+  }
+
+  async function saveIdentity(el) {
+    const name = F.$('#dv-name', el).value.trim().replace(/\s+/g, ' '), plate = F.$('#dv-plate', el).value.trim();
+    const err = F.$('#dv-err', el);
+    if (name.split(' ').length < 3 || name.length < 5) { err.textContent = 'اكتب الاسم الثلاثي كامل.'; return; }
+    if (plate.length < 3) { err.textContent = 'اكتب رقم اللوحة.'; return; }
+    err.textContent = '';
+    try {
+      await F.sb.q('crane_identity', 'on_conflict=crane_id', { method: 'POST', body: { crane_id: crane.id, owner_id: uid(), doc_name: name, doc_plate: plate }, prefer: 'resolution=merge-duplicates,return=minimal' });
+      draft = {}; F.toast('تم حفظ بياناتك', 'ok'); await refresh();
+    } catch (e) { err.textContent = F.errMsg(e); }
   }
 
   function pushHtml() {
@@ -371,6 +405,7 @@
   F.driver = {
     init: function () {
       el = F.$('#v-driver');
+      el.addEventListener('input', (e) => { if (e.target.id === 'dv-name') draft.name = e.target.value; else if (e.target.id === 'dv-plate') draft.plate = e.target.value; });
       el.addEventListener('click', (e) => {
         const g = (a) => e.target.closest('[' + a + ']');
         let b;
@@ -385,6 +420,7 @@
         else if ((b = g('data-arr'))) act('mark_arrived', b.dataset.arr, 'تم إشعار الزبون بوصولك');
         else if ((b = g('data-repc'))) { const [rid, uid2] = b.dataset.repc.split('|'); F.request.report(null, { userId: uid2, requestId: rid }); }
         else if ((b = g('data-up'))) pickDoc(b.dataset.up);
+        else if ((b = g('data-saveid'))) saveIdentity(el);
         else if ((b = g('data-push'))) {
           (b.dataset.push === 'on' ? F.push.enable() : F.push.disable())
             .then(() => { F.toast(b.dataset.push === 'on' ? 'تم تفعيل الإشعارات' : 'تم إيقاف الإشعارات', 'ok'); refresh(); })

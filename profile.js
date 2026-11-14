@@ -4,6 +4,12 @@
   const F = window.F;
 
   let avaV = 0;
+  // سطر المواصفات: القيمة المصحّحة من المستخدم، وإلا التقدير من القاعدة
+  function carSpecLine(u) {
+    if (u.carKg || u.carLen) return F.carSpecText(u.carKg, u.carLen, false);
+    const pc = F.parseCar(u.car), sp = F.carSpec && F.carSpec(pc.make, pc.model);
+    return sp ? F.carSpecText(sp.kg, sp.m, true) : '';
+  }
   async function render() {
     const el = F.$('#v-profile');
     const u = F.user();
@@ -19,14 +25,20 @@
     el.innerHTML =
       '<h1>' + F.icon('user') + ' حسابي</h1>' +
       (F.isAdmin() ? '<div class="card admin-box"><h2>' + F.icon('lock') + ' لوحة المدير</h2><div class="stack"><a class="btn block" href="#admin-drivers">' + F.icon('wheel') + ' إدارة السواق</a><a class="btn block secondary" href="#admin-app">' + F.icon('sliders') + ' إدارة التطبيق</a></div></div>' : '') +
-      '<div class="card"><div class="row">' +
-        '<button class="pf-ava" id="p-ava" type="button" aria-label="تغيير الصورة">' + (u.avatar ? '<img src="' + F.esc(F.sb.avatarUrl(u.avatar, avaV)) + '" alt="">' : F.esc((u.name || '؟').trim().charAt(0))) + '<span class="pf-cam">' + F.icon('camera') + '</span></button>' +
-        '<div class="grow"><h2 style="margin:0">' + F.esc(u.name || 'بدون اسم') + (F.isRealAdmin() ? ' <span class="badge amber">مدير</span>' : '') + '</h2>' +
-        '<div class="muted small">' + F.icon('pin') + ' ' + F.esc(u.gov || 'المحافظة غير محددة') + '</div>' +
-        '<div class="muted small" style="direction:ltr;text-align:right">' + F.esc(u.phone) + '</div>' +
-        '<div class="muted small" style="direction:ltr;text-align:right">' + F.esc(u.email || '') + '</div>' +
-        '<div class="muted small">' + F.icon('car') + ' ' + F.esc(u.car) + '</div></div>' +
-        '<button class="btn sm secondary" id="p-edit">تعديل</button></div></div>' +
+      '<div class="pf-hero">' +
+        '<button class="pf-ava big" id="p-ava" type="button" aria-label="تغيير الصورة">' + (u.avatar ? '<img src="' + F.esc(F.sb.avatarUrl(u.avatar, avaV)) + '" alt="">' : F.esc((u.name || '؟').trim().charAt(0))) + '<span class="pf-cam">' + F.icon('camera') + '</span></button>' +
+        '<h2 class="pf-name">' + F.esc(u.name || 'بدون اسم') + (F.isRealAdmin() ? ' <span class="badge amber">مدير</span>' : '') + '</h2>' +
+        '<div class="pf-chips">' +
+          '<span class="pf-chip c-gov">' + F.icon('pin') + ' ' + F.esc(u.gov || 'المحافظة غير محددة') + '</span>' +
+          (u.car ? '<span class="pf-chip c-car">' + F.icon('car') + ' ' + F.esc(u.car) + '</span>' : '') +
+        '</div>' +
+        (carSpecLine(u) ? '<div class="pf-spec">' + carSpecLine(u) + '</div>' : '') +
+        '<div class="pf-lines">' +
+          '<div class="pf-line c-phone"><span class="k">رقم الهاتف</span><b dir="ltr">' + F.esc(u.phone || '—') + '</b></div>' +
+          '<div class="pf-line c-mail"><span class="k">الإيميل</span><b dir="ltr">' + F.esc(u.email || '—') + '</b></div>' +
+        '</div>' +
+        '<button class="btn block mt" id="p-edit">' + F.icon('pencil') + ' تعديل حسابي</button>' +
+      '</div>' +
       '<div class="card"><div class="stats" id="p-stats"><div class="stat"><b>—</b><span>طلباتي</span></div><div class="stat"><b>—</b><span>اتصالاتي</span></div><div class="stat"><b>' + (u.createdAt ? new Date(u.createdAt).toLocaleDateString('ar-IQ-u-nu-latn', { month: 'short', year: 'numeric' }) : '—') + '</b><span>تاريخ الانضمام</span></div></div></div>' +
       '<div class="card" id="p-driver"></div>' +
       '<div class="card"><h2>طلباتي السابقة</h2><div id="p-reqs" class="muted small">جاري التحميل…</div></div>' +
@@ -123,12 +135,41 @@
     const m = F.modal(
       '<h2>تعديل بياناتي</h2><form id="pe-form" novalidate>' +
       '<div class="field"><label>الاسم الثلاثي</label><input id="pe-name" value="' + F.esc(u.name) + '"><div class="err" id="pe-en"></div></div>' +
-      '<div class="field"><label>رقم الهاتف</label><input id="pe-phone" class="ltr" inputmode="tel" maxlength="16" value="' + F.esc(u.phone) + '"><div class="err" id="pe-ep"></div></div>' +
+      '<div class="field"><label>رقم الهاتف</label><input id="pe-phone" class="ltr" inputmode="tel" maxlength="16" value="' + F.esc(u.phone) + '"><div class="err" id="pe-ep"></div>' +
+        '<div class="muted small mt-s">تغيير الرقم سيحتاج رمز تحقق عبر واتساب (يُفعَّل قريباً).</div></div>' +
+      '<div class="field"><label>الإيميل</label><div class="row"><input id="pe-mail" class="ltr grow" type="email" value="' + F.esc(u.email || '') + '"><button class="btn secondary sm" type="button" id="pe-mail-go">تغيير</button></div><div class="err" id="pe-em2"></div>' +
+        '<div class="muted small mt-s">نرسل رسالة تأكيد للإيميل الجديد، ويتغيّر بعد ضغط الرابط.</div></div>' +
       '<div class="field"><label>المحافظة</label><select id="pe-gov"><option value="">اختر المحافظة</option>' + F.GOVS.map((g) => '<option' + (g.name === u.gov ? ' selected' : '') + '>' + g.name + '</option>').join('') + '</select><div class="err" id="pe-eg"></div></div>' +
       carPk.html +
+      '<div class="spec-box"><div class="spec-h">' + F.icon('car') + ' مواصفات السيارة التقريبية <small>تساعد سائق الكرين يجهّز المعدة المناسبة</small></div>' +
+        '<div class="row"><div class="field grow"><label>الوزن (كغم)</label><input id="pe-kg" class="ltr" inputmode="numeric" maxlength="5" value="' + (u.carKg || '') + '"></div>' +
+        '<div class="field grow"><label>الطول (م)</label><input id="pe-len" class="ltr" inputmode="decimal" maxlength="4" value="' + (u.carLen || '') + '"></div></div>' +
+        '<div class="muted small" id="pe-spec-note"></div></div>' +
       '<div class="row"><button class="btn grow" type="submit">حفظ</button><button class="btn secondary" type="button" id="pe-cancel">إلغاء</button></div></form>');
     carPk.wire(m.el);
+    // اقتراح الوزن والطول عند اختيار السيارة (المستخدم يكدر يصحّحها)
+    let touched = !!(u.carKg || u.carLen);
+    const kgEl = F.$('#pe-kg', m.el), lenEl = F.$('#pe-len', m.el), note = F.$('#pe-spec-note', m.el);
+    kgEl.oninput = lenEl.oninput = () => { touched = true; note.textContent = ''; };
+    const suggest = () => {
+      if (touched) return;
+      const mk = F.$('#pe-car-make', m.el).value, md = F.$('#pe-car-model', m.el).value, fr = F.$('#pe-car-free', m.el).value.trim();
+      const sp = F.carSpec(mk, md === 'غير مذكور' ? fr : md);
+      kgEl.value = sp ? sp.kg : ''; lenEl.value = sp ? sp.m : '';
+      note.textContent = sp ? (sp.exact ? 'قيم تقريبية للموديل. عدّلها إذا تعرف الأرقام الدقيقة.' : 'تقدير عام للشركة. عدّله إذا تعرف الأرقام.') : '';
+    };
+    ['make', 'model'].forEach((k) => { const e = F.$('#pe-car-' + k, m.el); if (e) e.addEventListener('change', suggest); });
+    const fe = F.$('#pe-car-free', m.el); if (fe) fe.addEventListener('input', suggest);
+    suggest();
     F.$('#pe-cancel', m.el).onclick = m.close;
+    F.$('#pe-mail-go', m.el).onclick = async () => {
+      const em = F.$('#pe-mail', m.el).value.trim().toLowerCase(), er = F.$('#pe-em2', m.el);
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { er.textContent = 'اكتب إيميل صحيح.'; return; }
+      if (em === (u.email || '').toLowerCase()) { er.textContent = 'هذا هو إيميلك الحالي.'; return; }
+      er.textContent = '';
+      try { await F.sb.updateEmail(em); F.toast('أرسلنا رسالة تأكيد إلى ' + em + '. افتحها واضغط الرابط.', 'ok'); }
+      catch (ex) { er.textContent = F.errMsg(ex); }
+    };
     F.$('#pe-form', m.el).onsubmit = async (e) => {
       e.preventDefault();
       const name = F.$('#pe-name', m.el).value.trim().replace(/\s+/g, ' ');
@@ -140,8 +181,11 @@
       F.$('#pe-en', m.el).textContent = name.split(' ').length >= 3 ? '' : (ok = false, 'اكتب الاسم الثلاثي.');
       F.$('#pe-ep', m.el).textContent = F.validPhone(phone) ? '' : (ok = false, 'الرقم لازم 11 رقم ويبدأ بـ 07.');
       if (!cv.ok) ok = false;
+      const kg = parseInt(kgEl.value, 10), len = parseFloat(String(lenEl.value).replace(',', '.'));
+      if (kgEl.value && !(kg >= 300 && kg <= 60000)) { ok = false; F.toast('الوزن لازم بين 300 و 60000 كغم', 'err'); }
+      if (lenEl.value && !(len >= 1.5 && len <= 25)) { ok = false; F.toast('الطول لازم بين 1.5 و 25 م', 'err'); }
       if (!ok) return;
-      try { await F.sb.saveProfile({ full_name: name, phone: phone, car: car, governorate: gov }); m.close(); F.toast('تم الحفظ', 'ok'); render(); }
+      try { await F.sb.saveProfile({ full_name: name, phone: phone, car: car, governorate: gov, car_weight_kg: kgEl.value ? kg : null, car_length_m: lenEl.value ? Math.round(len * 10) / 10 : null }); m.close(); F.toast('تم الحفظ', 'ok'); render(); }
       catch (ex) { F.toast(F.errMsg(ex), 'err'); }
     };
   }
