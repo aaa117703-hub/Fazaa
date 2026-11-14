@@ -89,12 +89,12 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden && !F.isGuest()) setTimeout(followUp, 400); });
 
   // زر الدعم الفني (رقم الدعم يحدده المدير من إدارة التطبيق)
-  async function support() {
+  async function support(msg) {
     try {
       const st = await F.sb.q('app_settings', 'select=value&key=eq.support');
       const ph = st && st[0] && st[0].value && st[0].value.phone;
       if (!ph) return F.toast('الدعم الفني غير متوفر حالياً.');
-      window.open('https://wa.me/964' + String(ph).replace(/^0/, '') + '?text=' + encodeURIComponent('مرحباً، أحتاج مساعدة بتطبيق سند جايك'), '_blank', 'noopener');
+      window.open('https://wa.me/964' + String(ph).replace(/^0/, '') + '?text=' + encodeURIComponent(typeof msg === 'string' && msg ? msg : 'مرحباً، أحتاج مساعدة بتطبيق سند جايك'), '_blank', 'noopener');
     } catch (e) { F.toast(F.errMsg(e), 'err'); }
   }
 

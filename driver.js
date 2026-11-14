@@ -286,11 +286,11 @@
 
   function renderDash(u) {
     const c = crane, avail = c.status === 'available';
-    const pkg = F.tierOf(c.tier || 'bronze');
+    const pkg = F.tierOf(F.effTier(c));
     el.innerHTML =
       '<h1>' + F.icon('crane') + ' وضع السائق</h1>' +
       '<p class="lead">' + F.esc(c.name) + ' · ' + F.esc(c.type) + (c.governorate ? ' · ' + F.esc(c.governorate) : '') + (c.verified ? ' <span class="badge green">موثق</span>' : '') + '</p>' +
-      '<div class="card fleet"><div class="row between"><h2 style="margin:0">' + (fleet.length > 1 ? 'كرينات حسابك (' + fleet.length + ')' : 'حساب شركة؟') + '</h2>' + (fleet.length < 10 ? '<button class="btn sm secondary" id="d-add">+ أضف كرين آخر</button>' : '') + '</div>' +
+      '<div class="card fleet"><div class="row between"><h2 style="margin:0">' + (fleet.length > 1 ? 'كرينات حسابك (' + fleet.length + ')' : 'حساب شركة؟') + '</h2>' + (fleet.length < (pkg.fleet || 1) ? '<button class="btn sm secondary" id="d-add">+ أضف كرين آخر</button>' : '') + '</div>' +
         (fleet.length > 1 ? '<div class="fleet-chips">' + fleet.map((x) => '<button class="chip' + (x.id === c.id ? ' on' : '') + '" data-sel="' + x.id + '">' + F.esc(x.name) + '</button>').join('') + '</div><p class="muted small mt-s">الطلبات الواردة تصلك لكل كراناتك. الحالة والموقع والوثائق تخص الكرين المحدد.</p>' : '<p class="muted small mt-s">عندك أكثر من كرين؟ أضفهم تحت حساب واحد.</p>') + '</div>' +
       (!c.listed ? '<div class="warn">تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</div>' : '') +
       '<div class="card"><h2>حالتك الحين</h2><div class="status-switch">' +
@@ -305,7 +305,7 @@
         '<div class="stat"><b>' + (stats.rating != null ? '★ ' + stats.rating.toFixed(1) : '—') + '</b><span>التقييم' + (stats.count ? ' (' + stats.count + ')' : '') + '</span></div></div></div>' +
       '<div id="d-wk"></div>' +
       docsHtml() + pushHtml() +
-      '<div class="card"><h2>باقتك</h2><div class="row between"><b>' + F.esc(pkg.name) + '</b><a class="btn sm ghost" href="#packages">الباقات</a></div></div>' +
+      '<div class="card"><h2>عضويتك</h2><div class="row between"><b>' + F.esc(pkg.name) + '</b><a class="btn sm ghost" href="#packages">العضوية</a></div></div>' +
       '<div class="row wrap mt"><button class="btn secondary" id="d-edit">' + F.icon('pencil') + ' تعديل بياناتي</button>' +
         '<button class="btn danger" id="d-remove">حذف تسجيلي كسائق</button></div>';
 

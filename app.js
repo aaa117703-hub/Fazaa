@@ -7,7 +7,7 @@
   const NAV = [
     ['home', 'home', 'الرئيسية'],
     ['driver', 'wheel', 'سائق'],
-    ['packages', 'gem', 'الباقات'],
+    ['packages', 'gem', 'العضوية'],
     ['profile', 'user', 'حسابي']
   ];
   let ready = false, current = '';
