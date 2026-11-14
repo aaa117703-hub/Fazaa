@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
+import { dial } from '@/lib/contact';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
@@ -143,7 +144,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
           ) : <Muted>الموقع المباشر للسائق يظهر هنا لما يفتح تطبيقه.</Muted>}
           {!!crane?.phone && (
             <>
-              <Btn label="اتصل بالسائق" onPress={async () => { const can = await Linking.canOpenURL('tel:' + crane.phone).catch(() => false); if (can) Linking.openURL('tel:' + crane.phone); else Alert.alert(crane.name, 'رقم السائق: ' + crane.phone); }} />
+              <Btn label="اتصل بالسائق" onPress={() => dial(crane.name, crane.phone, wa)} />
               <View style={[rtl.row, { gap: 8 }]}>
                 <Btn label="واتساب + موقعي" kind="secondary" style={{ flex: 1 }} onPress={() => Linking.openURL(wa).catch(() => {})} />
                 <Btn label="مشاركة الرقم" kind="secondary" style={{ flex: 1 }} onPress={() => Share.share({ message: crane.phone }).catch(() => {})} />

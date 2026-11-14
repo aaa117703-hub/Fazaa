@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, Pressable, RefreshControl, Share, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Share, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -75,7 +75,7 @@ export default function Home() {
 
   const go = () => router.push('/login');
   const call = (c: Crane, how: 'tel' | 'wa') => contact(c, how, src === 'default' ? null : pos, !!session, go);
-  const route = (c: Crane) => Linking.openURL('http://maps.apple.com/?daddr=' + c.lat + ',' + c.lng).catch(() => {});
+  const route = (c: Crane) => router.push({ pathname: '/route', params: { lat: String(c.lat), lng: String(c.lng), name: c.name } });
   const best = list.find((x) => x.c.status === 'available');
   const filtered = onlyFree || !!type || !!gov;
   const request = () => (session ? router.push('/request') : go());

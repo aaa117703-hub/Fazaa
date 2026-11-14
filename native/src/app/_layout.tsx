@@ -33,6 +33,7 @@ function Shell() {
         <Stack.Screen name="guide" options={{ presentation: 'modal' }} />
         <Stack.Screen name="request" options={{ presentation: 'modal' }} />
         <Stack.Screen name="assist" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="route" options={{ presentation: 'modal' }} />
       </Stack>
       <UpdateGate />
       {splash && <Splash ready={ready} onDone={() => setSplash(false)} />}

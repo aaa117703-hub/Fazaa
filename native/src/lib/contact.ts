@@ -1,4 +1,4 @@
-import { Alert, Linking, Share } from 'react-native';
+import { Alert, Linking, Platform, Share } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
@@ -21,6 +21,19 @@ export type Pos = { latitude: number; longitude: number } | null;
 const message = (pos: Pos) =>
   'السلام عليكم، سيارتي تعطلت وأحتاج كرين.' + (pos ? '\nموقعي: https://maps.google.com/?q=' + pos.latitude.toFixed(6) + ',' + pos.longitude.toFixed(6) : '') + '\n(من تطبيق سند جايك)';
 
+const isPad = Platform.OS === 'ios' && !!(Platform as unknown as { isPad?: boolean }).isPad;
+
+/** اتصال مباشر: على الهاتف يفتح الاتصال فوراً. الايباد ما يتصل فنعرض الرقم مع واتساب ومشاركة. */
+export async function dial(name: string, phone: string, wa?: string) {
+  const showNumber = () => Alert.alert(name, 'الرقم: ' + phone, [
+    ...(wa ? [{ text: 'واتساب', onPress: () => { Linking.openURL(wa).catch(() => {}); } }] : []),
+    { text: 'مشاركة الرقم', onPress: () => { Share.share({ message: phone }).catch(() => {}); } },
+    { text: 'إغلاق', style: 'cancel' as const },
+  ]);
+  if (isPad) { showNumber(); return; }
+  try { await Linking.openURL('tel:' + phone.replace(/\s/g, '')); } catch { showNumber(); }
+}
+
 type C = { id: string; name: string; is_demo?: boolean };
 // how: 'tel' | 'wa'. إذا الجهاز ما يتصل (ايباد) نعرض الرقم مع واتساب.
 export async function contact(c: C, how: 'tel' | 'wa', pos: Pos, signedIn: boolean, goLogin: () => void) {
@@ -33,12 +46,6 @@ export async function contact(c: C, how: 'tel' | 'wa', pos: Pos, signedIn: boole
     if (u.user) supabase.from('calls').insert({ crane_id: c.id, user_id: u.user.id }).then(() => {}, () => {});
     const wa = 'https://wa.me/' + waNumber(phone) + '?text=' + encodeURIComponent(message(pos));
     if (how === 'wa') { await Linking.openURL(wa); return; }
-    const can = await Linking.canOpenURL('tel:' + phone).catch(() => false);
-    if (can) await Linking.openURL('tel:' + phone);
-    else Alert.alert(c.name, 'رقم السائق: ' + phone, [
-      { text: 'واتساب', onPress: () => Linking.openURL(wa).catch(() => {}) },
-      { text: 'مشاركة الرقم', onPress: () => Share.share({ message: phone }).catch(() => {}) },
-      { text: 'إغلاق', style: 'cancel' },
-    ]);
+    await dial(c.name, phone, wa);
   } catch { Alert.alert('خطأ', 'تعذّر جلب الرقم. جرّب مرة ثانية.'); }
 }

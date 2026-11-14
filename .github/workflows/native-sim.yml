@@ -1,0 +1,77 @@
+name: Native iOS Simulator test
+# يبني التطبيق لمحاكي ايباد ويضغط الأزرار فعلياً (Maestro) ويحفظ لقطات الشاشة بفرع sim-results.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['native-full2']
+    paths: ['native/sim.trigger', '.github/workflows/native-sim.yml']
+permissions:
+  contents: write
+jobs:
+  sim:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+      - run: npm ci
+      - run: npx expo prebuild --platform ios
+      - name: Build for simulator
+        working-directory: native/ios
+        run: |
+          WS=$(ls -d *.xcworkspace | head -1); SCHEME="${WS%.xcworkspace}"
+          xcodebuild -workspace "$WS" -scheme "$SCHEME" -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build ONLY_ACTIVE_ARCH=YES ARCHS=arm64 CODE_SIGNING_ALLOWED=NO build | tail -n 15
+      - name: Boot iPad simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)['devices']
+          c=[x for k,v in d.items() if 'iOS' in k for x in v if 'iPad' in x['name']]
+          print(c[0]['udid'])")
+          echo "UDID=$UDID" >> $GITHUB_ENV
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b
+          APP=$(ls -d ios/build/Build/Products/Release-iphonesimulator/*.app | head -1)
+          xcrun simctl install "$UDID" "$APP"
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+      - name: Direct screenshots
+        continue-on-error: true
+        run: |
+          mkdir -p out
+          xcrun simctl launch "$UDID" com.sanadjaik.app || true
+          sleep 4;  xcrun simctl io "$UDID" screenshot out/a1-4s.png || true
+          sleep 10; xcrun simctl io "$UDID" screenshot out/a2-14s.png || true
+          sleep 8;  xcrun simctl io "$UDID" screenshot out/a3-22s.png || true
+      - name: Run taps
+        continue-on-error: true
+        timeout-minutes: 14
+        run: |
+          mkdir -p out
+          export MAESTRO_CLI_NO_ANALYTICS=1
+          for f in launch tap-s2-profile tap-s3-packages tap-s4-driver tap-s5-home-again; do
+            echo "=== $f ==="
+            timeout 150 maestro --udid "$UDID" test --debug-output out/dbg-$f .maestro/$f.yaml 2>&1 | tail -n 25
+            timeout 60 maestro --udid "$UDID" hierarchy 2>&1 | head -c 6000 > out/hier-$f.json || true
+          done
+          mv *.png out/ 2>/dev/null || true
+          xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "sanadjaik" OR process CONTAINS "Sanad" OR senderImagePath CONTAINS "sanad"' 2>/dev/null | tail -n 150 > out/applog.txt || true
+          xcrun simctl io "$UDID" screenshot out/final-sim.png || true
+          ls -la out
+      - name: Publish results
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p out && cd out && git init -q && git checkout -q -b sim-results && git add -A
+          git -c user.name=ci -c user.email=ci@x commit -qm "sim results run ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" sim-results
