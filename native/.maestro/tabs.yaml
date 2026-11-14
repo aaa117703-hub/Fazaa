@@ -1,0 +1,27 @@
+appId: com.sanadjaik.app
+---
+- tapOn:
+    point: "39%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: t1-packages
+- tapOn:
+    point: "28%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: t2-profile
+- tapOn:
+    point: "61%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: t3-driver
+- tapOn:
+    point: "72%,96%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: t4-home
+- tapOn:
+    point: "15%,63%"
+- waitForAnimationToEnd:
+    timeout: 6000
+- takeScreenshot: t5-route
