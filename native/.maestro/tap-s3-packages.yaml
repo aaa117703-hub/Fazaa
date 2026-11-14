@@ -1,6 +1,0 @@
-appId: com.sanadjaik.app
----
-- tapOn: "الباقات"
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: s3-packages

@@ -24,7 +24,7 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
   const y = lift.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
   const orb = lift.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] });
   return (
-    <Pressable onPress={onPress} style={s.item} accessibilityRole="button" accessibilityLabel={label}>
+    <Pressable onPress={onPress} hitSlop={6} style={s.item} accessibilityRole="button" accessibilityLabel={label}>
       <Animated.View style={[s.orb, { opacity: lift, transform: [{ translateY: -17 }, { scale: orb }] }]} />
       <Animated.View style={{ transform: [{ translateY: y }] }}>
         <Ionicons name={icon} size={24} color={active ? '#fff' : tint ?? C.muted} />
@@ -62,14 +62,15 @@ export function TabBar({ state, navigation }: any) {
     }
   });
   return (
-    <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]} pointerEvents="box-none">
+    <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={s.bar}>{cells}</View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12, alignItems: 'center' },
+  // داخل التدفق (مو absolute) حتى تكون اللمسات داخل حدود الأب بالكامل على iOS
+  wrap: { paddingHorizontal: 12, paddingTop: 22, alignItems: 'center', backgroundColor: C.bg },
   bar: {
     flexDirection: 'row-reverse', width: '100%', maxWidth: 560, height: 66, borderRadius: 26, backgroundColor: 'rgba(24,27,31,0.97)',
     borderWidth: 1, borderColor: C.line, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12,
