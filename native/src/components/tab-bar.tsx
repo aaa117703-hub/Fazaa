@@ -5,6 +5,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T } from '@/components/ui';
+import { evt } from '@/lib/debuglog';
 import { tap } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
@@ -49,6 +50,7 @@ export function TabBar({ state, navigation }: any) {
         icon={m.icon}
         active={state.index === i}
         onPress={() => {
+          evt('tab:', m.label);
           tap();
           const ev = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
           if (state.index !== i && !ev.defaultPrevented) navigation.navigate(r.name);

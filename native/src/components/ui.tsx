@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, TextProps, TextStyle, View, ViewStyle } from 'react-native';
 
+import { evt } from '@/lib/debuglog';
 import { tap } from '@/lib/safe';
 import { C, R } from '@/lib/theme';
 
@@ -39,6 +40,7 @@ export function Btn({ label, onPress, kind = 'primary', disabled, style, textSty
     <Pressable
       disabled={disabled}
       onPress={() => {
+        evt('btn:', label);
         tap();
         onPress?.();
       }}
