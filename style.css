@@ -373,30 +373,6 @@ th { color: var(--muted); font-weight: 600; }
 }
 
 /* ---------- شاشة الافتتاح ---------- */
-#splash {
-  --accent: #FFC93C;
-  position: fixed; inset: 0; z-index: 9999; overflow: hidden; padding: 24px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-  background: #14171A; transition: opacity .55s ease;
-}
-#splash.out { opacity: 0; pointer-events: none; }
-.sp-glow { position: absolute; inset: -20%; background: radial-gradient(45% 35% at 50% 38%, rgba(255, 201, 60, .22), transparent 70%); opacity: 0; animation: sp-fade 1s .1s forwards; }
-.sp-logo { position: relative; width: 132px; height: 132px; display: grid; place-items: center; animation: sp-pop .6s cubic-bezier(.2, 1.3, .4, 1) both; }
-.sp-logo svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 24px rgba(255, 201, 60, .35)); }
-.sp-arch { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sp-draw .9s .25s cubic-bezier(.5, 0, .2, 1) forwards; }
-.sp-dot { opacity: 0; filter: drop-shadow(0 0 5px rgba(255, 201, 60, .9)); }
-.sp-chev { opacity: 0; animation: sp-rise .5s 1.15s both; }
-.sp-tag { color: #FFD666; font-size: 15px; font-weight: 600; letter-spacing: .3px; opacity: 0; animation: sp-up .6s 1.4s both; }
-.sp-tip { position: absolute; bottom: calc(46px + env(safe-area-inset-bottom)); left: 20px; right: 20px; max-width: 420px; margin-inline: auto; padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: #E8EAED; font-size: 15px; line-height: 1.7; opacity: 0; animation: sp-up .7s 2s both; }
-.sp-tip b { display: block; color: #FFD666; font-size: 12.5px; margin-bottom: 4px; }
-.sp-bar { position: absolute; bottom: 0; right: 0; height: 3px; width: 100%; background: linear-gradient(90deg, transparent, #FFC93C); transform-origin: right; transform: scaleX(0); animation: sp-bar 4.9s linear forwards; }
-@keyframes sp-fade { to { opacity: 1; } }
-@keyframes sp-draw { to { stroke-dashoffset: 0; } }
-@keyframes sp-ring { 0% { transform: scale(.9); opacity: .7; } 100% { transform: scale(2.1); opacity: 0; } }
-@keyframes sp-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: scale(1); } }
-@keyframes sp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes sp-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-@keyframes sp-bar { to { transform: scaleX(1); } }
 
 /* ---------- أزرار الشريط العلوي ---------- */
 .tb-actions { display: flex; align-items: center; gap: 6px; }
@@ -748,7 +724,6 @@ html.is-en .steps li::before { right: auto; left: 0; }
 html.is-en .steps .st::before { right: auto; left: -50%; }
 html.is-en .pf-cam { left: auto; right: -2px; }
 html.is-en th, html.is-en td, html.is-en .cp-rev { text-align: left; }
-html.is-en .sp-bar { right: auto; left: 0; transform-origin: left; }
 html.is-en input, html.is-en textarea { text-align: left; }
 
 /* ===== تجاوب: موبايل / آيباد / حاسبة ===== */
@@ -781,7 +756,6 @@ html.is-en input, html.is-en textarea { text-align: left; }
 }
 
 /* ===== افتتاحية: حروف Sanad Jaik تتجمع من أطراف الشاشة ===== */
-.sp-tag { animation-delay: 2.5s !important; }
 
 /* ===== الزر النشط: كرة برتقالية تنزلق وترتفع فوق الشريط (الباقي يبقى طبيعي) ===== */
 .nav-bottom { overflow: visible; }
@@ -837,32 +811,6 @@ button:active, .btn:active, button[data-nav]:active, .chip:active { transform: n
 }
 
 /* ===== شعار الدخول: SANAD JAIK بحروف كبيرة هندسية تُرسم بخط واحد ===== */
-.sp-word { width: min(86vw, 460px); height: auto; margin-top: 26px; overflow: visible; }
-.sp-l { stroke: #fff; stroke-dasharray: 1; stroke-dashoffset: 0; animation: sp-stroke .55s calc(1.05s + var(--i) * .09s) cubic-bezier(.6, 0, .2, 1) backwards; }
-.sp-l.o { stroke: #FFC93C; }
-.sp-rule { stroke: rgba(255, 255, 255, .22); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 0; animation: sp-stroke .9s 1s cubic-bezier(.6, 0, .2, 1) backwards; }
-.sp-rule.b { stroke: rgba(255, 201, 60, .55); animation-delay: 1.9s; }
-.sp-sq { fill: #FFC93C; stroke: none; animation: sp-fade .3s 1.9s backwards; }
-.sp-sq.r { animation-delay: 2.7s; }
-.sp-word { animation: sp-sheen 2.4s 2.2s ease-in-out 1; }
-@keyframes sp-stroke { from { stroke-dashoffset: 1; opacity: 0; } 10% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
-@keyframes sp-sheen { 50% { filter: drop-shadow(0 0 14px rgba(255, 201, 60, .55)); } }
-.sp-tag { margin-top: 14px; letter-spacing: .5px; }
-
-/* ===== بطاقة النصيحة: واضحة، بخط أكبر، بأيقونة وشريط برتقالي ===== */
-.sp-tip { display: flex; align-items: center; gap: 14px; padding: 16px 16px; border-radius: 20px; background: linear-gradient(135deg, rgba(255, 201, 60, .16), rgba(255, 255, 255, .05) 60%); border: 1px solid rgba(255, 214, 102, .35); border-inline-start: 4px solid #FFC93C; box-shadow: 0 14px 34px -14px rgba(255, 201, 60, .45); max-width: 440px; }
-.sp-tip-ic { flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: var(--btn-on-accent); background: linear-gradient(135deg, #FFD666, #E5AE1F); box-shadow: 0 8px 18px -6px rgba(255, 201, 60, .7); animation: sp-bulb 2.4s 2.4s ease-in-out infinite; }
-.sp-tip-ic svg { width: 26px; height: 26px; }
-.sp-tip-t { min-width: 0; text-align: start; }
-.sp-tip b { display: block; margin-bottom: 4px; font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif; font-size: 13.5px; font-weight: 700; letter-spacing: .3px; color: #FFD666; }
-.sp-tip span { display: block; font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif; font-size: 17.5px; font-weight: 600; line-height: 1.65; color: #fff; }
-@keyframes sp-bulb { 0%, 100% { box-shadow: 0 8px 18px -6px rgba(255, 201, 60, .7); } 50% { box-shadow: 0 0 0 7px rgba(255, 201, 60, .16), 0 8px 22px -4px rgba(255, 201, 60, .9); } }
-
-/* خط شاشة الدخول: Noto Kufi Arabic */
-.sp-tip b, .sp-tip span, .sp-tag { font-family: 'IBM Plex Sans Arabic', 'Tajawal', sans-serif; }
-.sp-tip span { font-size: 15.5px; font-weight: 600; line-height: 1.9; }
-.sp-tip b { font-size: 13px; font-weight: 700; }
-.sp-tag { font-size: 15px; font-weight: 600; }
 
 /* ===== الرئيسية: الخريطة فوق وتحتها قائمة أقرب الكرينات (بدون لوحتين جنب بعض) ===== */
 @media (min-width: 700px) {
@@ -952,3 +900,25 @@ html.is-en .gd-steps li { padding: 11px 0 11px 44px; }
   .steps .st { font-size: 12.5px; min-width: 0; }
 }
 .gd-steps li[hidden] { display: none; }
+
+
+/* ---------- شاشة الافتتاح v2: لون واحد + شعار متحرك (2.5 ثانية) ---------- */
+#splash {
+  position: fixed; inset: 0; z-index: 9999; overflow: hidden; padding: 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--bg); transition: opacity .4s ease;
+}
+#splash.out { opacity: 0; pointer-events: none; }
+.sp-logo { width: 128px; height: 128px; animation: sp-pop .7s cubic-bezier(.2, 1.3, .4, 1) both; }
+.sp-logo svg { width: 100%; height: 100%; overflow: visible; }
+.sp-arch { stroke-dasharray: 1; stroke-dashoffset: 1; animation: sp-draw 1s .15s cubic-bezier(.5, 0, .2, 1) forwards; }
+.sp-chev { opacity: 0; animation: sp-rise .45s .85s both; }
+.sp-dot { opacity: 0; }
+.sp-word { width: min(70vw, 340px); height: auto; margin-top: 26px; overflow: visible; opacity: 0; animation: sp-rise .6s 1.3s both; }
+.sp-word .sp-l { stroke: var(--silver); }
+.sp-word .sp-l.o { stroke: var(--accent); }
+.sp-word .sp-rule { display: none; }
+.sp-word .sp-sq { fill: var(--accent); stroke: none; }
+@keyframes sp-draw { to { stroke-dashoffset: 0; } }
+@keyframes sp-pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
+@keyframes sp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

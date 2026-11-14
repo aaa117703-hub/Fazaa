@@ -119,7 +119,7 @@
     let d = false;
     const go = () => { if (d) return; d = true; fn(); };
     document.addEventListener('splash-out', go, { once: true });
-    setTimeout(go, 5700);
+    setTimeout(go, 3000);
   }
   F.showApp = function () { afterSplash(showAppNow); };
   function showAppNow() {
