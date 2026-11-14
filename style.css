@@ -922,3 +922,36 @@ html.is-en .gd-steps li { padding: 11px 0 11px 44px; }
 @keyframes sp-draw { to { stroke-dashoffset: 0; } }
 @keyframes sp-pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: scale(1); } }
 @keyframes sp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+
+/* ---------- الرئيسية v2: حركة تلفت النظر ---------- */
+.hero { position: relative; overflow: hidden; }
+.hero::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 5px; background: repeating-linear-gradient(135deg, var(--accent) 0 10px, var(--surface-2) 10px 20px); background-size: 28px 100%; animation: haz 1.4s linear infinite; }
+@keyframes haz { to { background-position: 28px 0; } }
+.hero .radar { position: absolute; top: 22px; inset-inline-end: 16px; width: 54px; height: 54px; display: grid; place-items: center; color: var(--accent); }
+.hero .radar b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-2); border: 1px solid rgba(255, 201, 60, .5); position: relative; z-index: 1; }
+.hero .radar b .ic { width: 18px; height: 18px; }
+.hero .radar i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; animation: radar 2.6s ease-out infinite; }
+.hero .radar i:nth-child(2) { animation-delay: .85s; }
+.hero .radar i:nth-child(3) { animation-delay: 1.7s; }
+@keyframes radar { 0% { transform: scale(.55); opacity: .7; } 100% { transform: scale(1.5); opacity: 0; } }
+.hero h2, .hero .name, .hero .sub { padding-inline-end: 64px; }
+.quick #h-sos { animation: sos-breath 2.4s ease-in-out infinite; }
+@keyframes sos-breath { 0%, 100% { box-shadow: inset 0 0 0 1px rgba(240, 70, 60, .4), 0 0 0 0 rgba(240, 70, 60, .35); } 50% { box-shadow: inset 0 0 0 1px rgba(240, 70, 60, .7), 0 0 0 7px rgba(240, 70, 60, 0); } }
+.pin.green.av::after { content: ''; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--green); animation: pulse 2.2s ease-out infinite; }
+#h-list.stag > .card, #h-list.stag > .feat { animation: card-in .55s cubic-bezier(.22, 1, .36, 1) both; }
+#h-list.stag > :nth-child(2) { animation-delay: .07s; } #h-list.stag > :nth-child(3) { animation-delay: .14s; }
+#h-list.stag > :nth-child(4) { animation-delay: .21s; } #h-list.stag > :nth-child(5) { animation-delay: .28s; }
+#h-list.stag > :nth-child(n+6) { animation-delay: .34s; }
+@keyframes card-in { from { opacity: 0; transform: translateY(22px) scale(.97); } to { opacity: 1; transform: none; } }
+.feat { position: relative; overflow: hidden; border: 1px solid rgba(255, 201, 60, .45); }
+.feat::after { content: ''; position: absolute; top: 0; bottom: 0; width: 38%; left: -50%; background: linear-gradient(100deg, transparent, rgba(255, 201, 60, .12), transparent); animation: gloss 5s ease-in-out infinite; pointer-events: none; }
+@keyframes gloss { 0%, 55% { left: -50%; } 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { .hero::before, .hero .radar i, .quick #h-sos, .pin.green.av::after, .feat::after, #h-list.stag > * { animation: none !important; } }
+
+/* بطاقة الكرين على الهاتف: الأزرار تنزل تحت الاسم حتى ما يتكسّر النص */
+@media (max-width: 600px) {
+  .card.crane > .row { flex-wrap: wrap; }
+  .card.crane > .row > .stack { flex: 1 1 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .card.crane > .row > .stack > .row { margin: 0; }
+}
