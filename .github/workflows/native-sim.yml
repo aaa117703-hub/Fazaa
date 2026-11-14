@@ -60,8 +60,8 @@ jobs:
           export MAESTRO_CLI_NO_ANALYTICS=1
           for f in launch tap-s2-profile tap-s3-packages tap-s4-driver tap-s5-home-again; do
             echo "=== $f ==="
-            timeout 150 maestro --udid "$UDID" test --debug-output out/dbg-$f .maestro/$f.yaml 2>&1 | tail -n 25
-            timeout 60 maestro --udid "$UDID" hierarchy 2>&1 | head -c 6000 > out/hier-$f.json || true
+            perl -e 'alarm 150; exec @ARGV' maestro --udid "$UDID" test --debug-output out/dbg-$f .maestro/$f.yaml 2>&1 | tail -n 25
+            perl -e 'alarm 60; exec @ARGV' maestro --udid "$UDID" hierarchy 2>&1 | head -c 6000 > out/hier-$f.json || true
           done
           mv *.png out/ 2>/dev/null || true
           xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "sanadjaik" OR process CONTAINS "Sanad" OR senderImagePath CONTAINS "sanad"' 2>/dev/null | tail -n 150 > out/applog.txt || true
