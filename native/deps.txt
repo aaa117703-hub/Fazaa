@@ -3,3 +3,4 @@ expo-updates
 react-native-svg
 @expo-google-fonts/ibm-plex-sans-arabic
 expo-font
+# font
