@@ -139,7 +139,7 @@
         tm.addSource('rt', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[me.lng, me.lat], [cr.lng, cr.lat]] } } });
         tm.addLayer({ id: 'rt', type: 'line', source: 'rt', paint: { 'line-color': '#FFC21A', 'line-width': 4, 'line-dasharray': [1.5, 1.5] } });
       });
-      tMe = new maplibregl.Marker({ color: '#FF6B2C' }).setLngLat([me.lng, me.lat]).addTo(tm);
+      tMe = new maplibregl.Marker({ color: '#FFC93C' }).setLngLat([me.lng, me.lat]).addTo(tm);
       tCrane = new maplibregl.Marker({ color: '#FFC21A' }).setLngLat([cr.lng, cr.lat]).addTo(tm);
     }
     ph.replaceWith(tEl);

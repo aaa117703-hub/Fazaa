@@ -5,15 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>سند جايك | سندك بضغطة</title>
 <meta name="description" content="سند جايك — أقرب كرين وسطحة لسيارتك المتعطلة بضغطة واحدة. كل محافظات العراق.">
-<meta name="theme-color" content="#101214">
+<meta name="theme-color" content="#14171A">
 <script>
 /* تطبيق المظهر المحفوظ قبل الرسم حتى ما يومض */
 (function () {
   try {
     var s = JSON.parse(localStorage.getItem('sanad_settings') || '{}');
-    var t = s.theme || 'auto';
-    if (t === 'auto') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', 'dark');
     if (s.reduceMotion) document.documentElement.classList.add('reduce-motion');
   } catch (e) {}
 })();
@@ -25,7 +23,7 @@
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Changa:wght@500;600;700;800&family=Noto+Kufi+Arabic:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&family=Changa:wght@500;600;700;800&family=Noto+Kufi+Arabic:wght@500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -37,7 +35,7 @@
   <div class="sp-glow"></div>
   <div class="sp-logo">
     <svg viewBox="0 0 100 100" role="presentation">
-      <path class="sp-arch" pathLength="1" d="M19 86V51a31 31 0 0 1 62 0V86" fill="none" stroke="#FF6B2C" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+      <path class="sp-arch" pathLength="1" d="M19 86V51a31 31 0 0 1 62 0V86" fill="none" stroke="#FFC93C" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
       <path id="sp-trk" d="M19 86V51a31 31 0 0 1 62 0V86" fill="none" stroke="none"/>
       <circle class="sp-dot" cx="50" cy="67" r="5.2" fill="#F5F5F0"/>
       <path class="sp-chev" d="M35.5 73L50 57.5L64.5 73" fill="none" stroke="#F5F5F0" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>

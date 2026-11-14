@@ -70,13 +70,8 @@
   /* ---------- الإعدادات ---------- */
   const DEFAULT_SETTINGS = { theme: 'auto', reduceMotion: false, onlyAvail: false, hideDemo: false };
   F.getSettings = () => Object.assign({}, DEFAULT_SETTINGS, F.get(F.K.settings, {}));
-  F.resolveTheme = function (pref) {
-    pref = pref || F.getSettings().theme;
-    if (pref === 'auto') {
-      return window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-    }
-    return pref === 'light' ? 'light' : 'dark';
-  };
+  // التطبيق داكن فقط (هوية سند جايك الجديدة)
+  F.resolveTheme = function () { return 'dark'; };
   F.applySettings = function () {
     const s = F.getSettings();
     const root = document.documentElement;
@@ -85,7 +80,7 @@
     root.classList.toggle('reduce-motion', !!s.reduceMotion);
     root.setAttribute('data-nav', s.navPos === 'top' ? 'top' : 'bottom');
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'light' ? '#F4F5F7' : '#101214');
+    if (meta) meta.setAttribute('content', '#14171A');
   };
   F.saveSettings = function (patch) {
     F.set(F.K.settings, Object.assign(F.getSettings(), patch));
@@ -341,7 +336,7 @@
       map.on('click', (e) => {
         chosen = { lat: e.lngLat.lat, lng: e.lngLat.lng };
         if (pin) pin.setLngLat(e.lngLat);
-        else pin = new maplibregl.Marker({ color: '#FF6B2C' }).setLngLat(e.lngLat).addTo(map);
+        else pin = new maplibregl.Marker({ color: '#FFC93C' }).setLngLat(e.lngLat).addTo(map);
         F.$('#pick-ok', m.el).disabled = false;
       });
       setTimeout(() => { try { map.resize(); } catch (e) {} }, 250);
