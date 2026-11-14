@@ -2,7 +2,7 @@ name: Native check
 # فحص أنواع TypeScript + تجميع Metro للتطبيق الأصلي
 on:
   push:
-    branches: ['native-app']
+    branches: ['native-app','native-full2']
     paths: ['native/**', '.github/workflows/native-check.yml']
   pull_request:
     paths: ['native/**']
