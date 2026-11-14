@@ -1,0 +1,19 @@
+[0,0][1032,1376]  
+[356,522][676,828] Allow “سند جايك” to use your location?
+[386,544][646,587] Allow “سند جايك” to use your location?
+[386,594][646,632] نستخدم موقعك لعرض أقرب كرين لسيارتك وإرسال طلبك للسائقين القريبين.
+[643,522][673,636] Vertical scroll bar, 1 page
+[356,603][676,633] Horizontal scroll bar, 1 page
+[643,522][673,636] Vertical scroll bar, 1 page
+[356,603][676,633] Horizontal scroll bar, 1 page
+[372,652][660,700] Allow Once
+[372,708][660,756] Allow While Using App
+[372,764][660,812] Don’t Allow
+[643,636][673,828] Vertical scroll bar, 1 page
+[356,795][676,825] Horizontal scroll bar, 1 page
+[643,636][673,828] Vertical scroll bar, 1 page
+[356,795][676,825] Horizontal scroll bar, 1 page
+[25,7][80,24] 9:36 AM
+[90,7][161,24] Sat Nov 14
+[936,7][976,24] 100%
+[978,9][1006,22] 100% battery power
