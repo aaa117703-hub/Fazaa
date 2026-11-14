@@ -2,7 +2,7 @@ name: Native deps
 # يثبّت الحزم المذكورة في native/deps.txt بإصدارات متوافقة مع Expo ويحدّث package.json والـ lock
 on:
   push:
-    branches: ['native-app', 'native-full']
+    branches: ['native-app', 'native-full', 'native-v3']
     paths: ['native/deps.txt']
 permissions:
   contents: write
