@@ -5,6 +5,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T } from '@/components/ui';
+import { evt } from '@/lib/debuglog';
 import { tap } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
@@ -24,7 +25,7 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
   const y = lift.interpolate({ inputRange: [0, 1], outputRange: [0, -20] });
   const orb = lift.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] });
   return (
-    <Pressable onPress={onPress} style={s.item} accessibilityRole="button" accessibilityLabel={label}>
+    <Pressable onPress={onPress} hitSlop={6} style={s.item} accessibilityRole="button" accessibilityLabel={label}>
       <Animated.View style={[s.orb, { opacity: lift, transform: [{ translateY: -17 }, { scale: orb }] }]} />
       <Animated.View style={{ transform: [{ translateY: y }] }}>
         <Ionicons name={icon} size={24} color={active ? '#fff' : tint ?? C.muted} />
@@ -35,8 +36,11 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function TabBar({ state, navigation }: any) {
+export function TabBar(props: any) {
+  const { state } = props;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const insets = useSafeAreaInsets();
+  if (!(globalThis as any).__tbLogged) { (globalThis as any).__tbLogged = 1; evt('tabbar props:', Object.keys(props).join(',')); }
   const routes: { key: string; name: string }[] = state.routes;
   const cells: React.ReactNode[] = [];
   routes.forEach((r, i) => {
@@ -49,9 +53,12 @@ export function TabBar({ state, navigation }: any) {
         icon={m.icon}
         active={state.index === i}
         onPress={() => {
+          evt('tab:', m.label);
           tap();
-          const ev = navigation.emit({ type: 'tabPress', target: r.key, canPreventDefault: true });
-          if (state.index !== i && !ev.defaultPrevented) navigation.navigate(r.name);
+          // التنقل عبر expo-router مباشرة (بعض إصدارات React Navigation ما تمرّر navigation لشريط مخصص)
+          if (state.index === i) return;
+          try { router.navigate((r.name === 'index' ? '/' : '/' + r.name) as never); }
+          catch (e) { evt('tab nav failed', e); props.navigation?.navigate?.(r.name); }
         }}
       />,
     );
@@ -62,14 +69,15 @@ export function TabBar({ state, navigation }: any) {
     }
   });
   return (
-    <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]} pointerEvents="box-none">
+    <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={s.bar}>{cells}</View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12, alignItems: 'center' },
+  // داخل التدفق (مو absolute) حتى تكون اللمسات داخل حدود الأب بالكامل على iOS
+  wrap: { paddingHorizontal: 12, paddingTop: 22, alignItems: 'center', backgroundColor: C.bg },
   bar: {
     flexDirection: 'row-reverse', width: '100%', maxWidth: 560, height: 66, borderRadius: 26, backgroundColor: 'rgba(24,27,31,0.97)',
     borderWidth: 1, borderColor: C.line, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12,

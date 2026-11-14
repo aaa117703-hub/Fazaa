@@ -242,7 +242,7 @@ export default function Driver() {
               <T style={{ fontWeight: '800' }}>{p?.full_name ?? 'زبون'} · {ISSUE[r.issue] ?? ''}</T>
               {!!p?.car && <Muted>{p.car}</Muted>}
               <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
-                {!!p?.phone && <Btn small label="اتصل" style={{ backgroundColor: C.ok }} onPress={() => dial(p.full_name ?? 'الزبون', p.phone)} />}
+                {!!p?.phone && <Btn small label="اتصل" style={{ backgroundColor: C.ok }} onPress={() => dial(p.full_name ?? 'الزبون', p.phone ?? '')} />}
                 <Btn small kind="secondary" label="مسار لموقع الزبون" onPress={() => router.push({ pathname: '/route', params: { lat: String(r.lat), lng: String(r.lng), name: p?.full_name ?? 'الزبون' } })} />
                 {r.arrived_at ? <T style={{ color: C.ok, fontWeight: '800' }}>وصلت ✓</T> : <Btn small label="وصلت للزبون" style={{ backgroundColor: C.ok }} onPress={() => act('mark_arrived', r.id, 'تم إشعار الزبون بوصولك')} />}
                 <Btn small label="تم الإنجاز" onPress={() => act('complete_request', r.id, 'تم إنجاز الطلب')} />
