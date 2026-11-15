@@ -53,6 +53,13 @@
         toggle('s-motion', s.reduceMotion, 'تقليل الحركة', 'يوقّف الحركات والانتقالات المتحركة.') +
       '</div>' +
 
+      '<div class="card"><h2>حجم الخط والأزرار</h2>' +
+        '<p class="muted small">غيّر الحجم وراح يظهر لك نموذج بالضبط حتى تشوف النتيجة.</p>' +
+        '<div class="size-row"><span class="lbl">حجم الخط</span><button type="button" data-sz="font" data-d="-1" aria-label="تصغير الخط">−</button><span class="val" id="sz-font"></span><button type="button" data-sz="font" data-d="1" aria-label="تكبير الخط">+</button></div>' +
+        '<div class="size-row"><span class="lbl">حجم الأزرار</span><button type="button" data-sz="btn" data-d="-1" aria-label="تصغير الأزرار">−</button><span class="val" id="sz-btn"></span><button type="button" data-sz="btn" data-d="1" aria-label="تكبير الأزرار">+</button></div>' +
+        '<button class="btn secondary sm" type="button" id="sz-reset">إعادة للحجم العادي</button>' +
+      '</div>' +
+
       '<div class="card"><h2>اللغة</h2>' +
         seg('lang', s.lang || 'ar', [['ar', 'العربية'], ['en', 'English'], ['ckb', 'کوردی']]) +
         '<p class="muted small mt-s">الترجمة الكردية (سۆرانی) تجريبية وتحتاج مراجعة قبل الإطلاق.</p>' +
@@ -92,6 +99,7 @@
     F.$$('[data-seg="lang"] button', el).forEach((b) => {
       b.onclick = () => { F.saveSettings({ lang: b.dataset.v }); location.reload(); };
     });
+    sizeBlock(el);
     pushBlock(F.$('#s-push', el));
     F.$('#s-motion', el).onchange = (e) => F.saveSettings({ reduceMotion: e.target.checked });
     F.$('#s-avail', el).onchange = (e) => F.saveSettings({ onlyAvail: e.target.checked });
@@ -109,6 +117,39 @@
       render();
     };
     F.$('#s-update', el).onclick = updateApp;
+  }
+
+  // ===== حجم الخط والأزرار + نموذج المعاينة =====
+  let pvTimer = null;
+  function showPreview() {
+    let pv = F.$('#size-preview');
+    if (!pv) {
+      pv = document.createElement('div'); pv.id = 'size-preview'; pv.setAttribute('role', 'status');
+      pv.innerHTML = '<span class="pv-tag">نموذج الحجم</span><div class="pv-t">هذا شكل العنوان</div><div class="pv-s">وهذا شكل النص العادي بالتطبيق، حتى تشوف إذا مريح لعينك.</div>' +
+        '<div class="row"><button class="btn grow" type="button" tabindex="-1">زر رئيسي</button><button class="btn secondary" type="button" tabindex="-1">ثانوي</button></div>';
+      document.body.appendChild(pv);
+    }
+    void pv.offsetWidth; pv.classList.add('show');
+    clearTimeout(pvTimer);
+    pvTimer = setTimeout(() => pv.classList.remove('show'), 2800);
+  }
+  function sizeBlock(el) {
+    const draw = () => {
+      const s = F.getSettings(), fi = s.fontStep == null ? 1 : s.fontStep, bi = s.btnStep == null ? 1 : s.btnStep;
+      F.$('#sz-font', el).textContent = F.FONT_STEPS[fi][1];
+      F.$('#sz-btn', el).textContent = F.BTN_STEPS[bi][1];
+      F.$$('[data-sz="font"]', el).forEach((b) => { const n = fi + +b.dataset.d; b.disabled = n < 0 || n >= F.FONT_STEPS.length; });
+      F.$$('[data-sz="btn"]', el).forEach((b) => { const n = bi + +b.dataset.d; b.disabled = n < 0 || n >= F.BTN_STEPS.length; });
+    };
+    F.$$('[data-sz]', el).forEach((b) => {
+      b.onclick = () => {
+        const s = F.getSettings(), k = b.dataset.sz === 'font' ? 'fontStep' : 'btnStep', max = (k === 'fontStep' ? F.FONT_STEPS : F.BTN_STEPS).length - 1;
+        const cur = s[k] == null ? 1 : s[k], n = Math.min(max, Math.max(0, cur + +b.dataset.d));
+        F.saveSettings({ [k]: n }); draw(); showPreview();
+      };
+    });
+    F.$('#sz-reset', el).onclick = () => { F.saveSettings({ fontStep: 1, btnStep: 1 }); draw(); showPreview(); };
+    draw();
   }
 
   async function pushBlock(box) {

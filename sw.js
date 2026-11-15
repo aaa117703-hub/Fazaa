@@ -31,6 +31,7 @@ const SHELL_FILES = [
   './update.js',
   './vehicles.js',
   './carspecs.js',
+  './auth-art.svg',
   './iraqmap.js',
   './shops.js',
   './traffic.js',

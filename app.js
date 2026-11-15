@@ -190,6 +190,10 @@
     await F.sb.init();
     if (F.sb.isRecovery()) return F.auth.openReset();
     if (F.recoveryExpired) setTimeout(() => F.toast('رابط الاستعادة انتهت صلاحيته. اطلب رابط جديد من «نسيت كلمة المرور».', 'err'), 800);
+    // أول دخول: لغة ثم تسجيل الدخول
+    const ob = F.get('sanad_onb', '');
+    if (F.isGuest() && ob === '') return F.onboard.show();
+    if (F.isGuest() && ob === 'login') { F.set('sanad_onb', 'done'); return F.auth.open(); }
     // مسجّل بلا اسم: نكمّل بياناته. غير ذلك (زائر أو مسجّل) يدخل التطبيق مباشرة
     if (!F.isGuest() && !F.isRealAdmin() && !(F.user() && F.user().name)) F.auth.completeProfile();
     else F.showApp();

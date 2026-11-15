@@ -31,6 +31,8 @@
     refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
     download: '<path d="M12 4v11"/><path d="m7.5 10.8 4.5 4.5 4.5-4.5"/><path d="M4.5 19.5h15"/>',
     doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12.5h5M10 16.5h5"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7.5l8.5 6 8.5-6"/>',
+    arrow: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
     lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
     gift: '<rect x="3.5" y="8.5" width="17" height="4.5" rx="1"/><path d="M5 13v7h14v-7"/><path d="M12 8.5V20"/><path d="M12 8.5C9.5 8.5 8 7.4 8 6.1S9.4 4 12 8.5zM12 8.5c2.5 0 4-1.1 4-2.4S14.6 4 12 8.5z"/>',
     car: '<path d="m4 13.5 1.7-4.6a2 2 0 0 1 1.9-1.3h8.8a2 2 0 0 1 1.9 1.3l1.7 4.6"/><rect x="3" y="13.5" width="18" height="4.5" rx="1.5"/><path d="M6.5 18v1.8M17.5 18v1.8"/><path d="M7 15.7h.1M17 15.7h.1"/>',

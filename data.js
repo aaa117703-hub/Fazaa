@@ -72,9 +72,16 @@
   F.getSettings = () => Object.assign({}, DEFAULT_SETTINGS, F.get(F.K.settings, {}));
   // التطبيق داكن فقط (هوية سند جايك الجديدة)
   F.resolveTheme = function () { return 'dark'; };
+  // درجات حجم الخط والأزرار (الرقم = المضروب)
+  F.FONT_STEPS = [[0.88, 'صغير'], [1, 'عادي'], [1.14, 'كبير'], [1.3, 'كبير جداً'], [1.5, 'ضخم']];
+  F.BTN_STEPS = [[0.9, 'صغير'], [1, 'عادي'], [1.15, 'كبير'], [1.3, 'كبير جداً']];
   F.applySettings = function () {
     const s = F.getSettings();
     const root = document.documentElement;
+    const fi = Math.min(F.FONT_STEPS.length - 1, Math.max(0, s.fontStep == null ? 1 : s.fontStep));
+    const bi = Math.min(F.BTN_STEPS.length - 1, Math.max(0, s.btnStep == null ? 1 : s.btnStep));
+    root.style.setProperty('--fs', F.FONT_STEPS[fi][0]);
+    root.style.setProperty('--bs', F.BTN_STEPS[bi][0]);
     const theme = F.resolveTheme(s.theme);
     root.setAttribute('data-theme', theme);
     root.classList.toggle('reduce-motion', !!s.reduceMotion);

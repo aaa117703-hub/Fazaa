@@ -39,8 +39,7 @@
   let step = 'phone', mode = 'login', phone = '', channel = 'whatsapp', cooldown = 0, timer = null, busy = false;
 
   function hero() {
-    return '<div class="auth-hero"><img src="logo.svg" width="84" height="84" alt=""><h1>سند جايك</h1>' +
-      '<p>سندك بضغطة — أقرب كرين لسيارتك</p></div>';
+    return '<div class="auth-art"><img src="auth-art.svg" alt=""><div class="auth-hero"><img src="logo.svg" width="38" height="38" alt=""><h1>سند جايك</h1></div></div>';
   }
   let sentTo = '';
   const chName = (c) => (c === 'whatsapp' ? 'واتساب' : 'رسالة SMS');
@@ -70,12 +69,12 @@
         '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">حفظ ودخول</button>';
     }
     if (mode === 'login') {
-      return '<h2 style="margin-top:0">دخول</h2>' +
-        '<div class="field"><label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
-        '<div class="field"><label for="a-pass">كلمة المرور</label><input id="a-pass" class="ltr" type="password" autocomplete="current-password"><div class="err" id="e-pass"></div></div>' +
+      return '<h2 style="margin:0 0 2px;font-size:26px">أهلاً بعودتك</h2><p class="muted small" style="margin-bottom:16px">سجّل دخولك حتى تكمل.</p>' +
+        '<div class="field ico">' + F.icon('mail') + '<label for="a-email">الإيميل</label><input id="a-email" class="ltr" type="email" inputmode="email" autocomplete="email"><div class="err" id="e-email"></div></div>' +
+        '<div class="field ico">' + F.icon('lock') + '<label for="a-pass">كلمة المرور</label><input id="a-pass" class="ltr" type="password" autocomplete="current-password"><div class="err" id="e-pass"></div></div>' +
         '<div style="margin:-4px 0 10px;text-align:start"><button class="link-btn" type="button" id="a-to-forgot" style="background:none;border:0;padding:6px 0;color:var(--accent);font-weight:700;font-size:14px;cursor:pointer">نسيت كلمة المرور؟</button></div>' +
-        '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">دخول</button>' +
-        '<button class="btn secondary block mt-s" type="button" id="a-to-signup">حساب جديد</button>' +
+        '<div class="err" id="e-form" style="margin-bottom:8px"></div><button class="btn big block" type="submit" id="a-go">دخول ' + F.icon('arrow', 'arrow') + '</button>' +
+        '<p class="center muted small" style="margin:14px 0 0">ما عندك حساب؟ <button class="link-btn" type="button" id="a-to-signup" style="background:none;border:0;color:var(--accent);font-weight:800;cursor:pointer;font:inherit;font-weight:800">أنشئ حساب</button></p>' +
         (F.PHONE_LOGIN ? '<button class="btn ghost block mt-s" type="button" id="a-to-phone">الدخول برقم الموبايل</button>' : '');
     }
     if (mode === 'signup') {
@@ -138,6 +137,30 @@
     const u = F.user();
     F.toast('هلا ' + (u && u.name ? F.firstName(u.name) : '') + '، أهلاً بيك بسند جايك' + (F.isRealAdmin() ? ' (مدير)' : ''), 'ok');
   }
+
+  // ===== أول دخول: اختيار اللغة ثم شاشة تسجيل الدخول =====
+  const LANGS = [['ar', 'العربية', 'Arabic'], ['en', 'English', 'الإنجليزية'], ['ckb', 'کوردی', 'Kurdish']];
+  F.onboard = {
+    show: function () {
+      let pick = (F.getSettings().lang) || 'ar';
+      const root = document.createElement('div');
+      root.className = 'onb'; root.id = 'onb';
+      const draw = () => {
+        root.innerHTML = '<div class="auth-art"><img src="auth-art.svg" alt=""><div class="auth-hero"><img src="logo.svg" width="38" height="38" alt=""><h1>سند جايك</h1></div></div>' +
+          '<div class="onb-in"><div class="card onb-card"><h2>اختر لغتك</h2><p class="muted small">تكدر تغيّرها بعدين من الإعدادات.</p>' +
+          '<div class="lang-list">' + LANGS.map((l) => '<button type="button" class="lang-opt' + (l[0] === pick ? ' on' : '') + '" data-l="' + l[0] + '"><span class="dot-r"></span>' + l[1] + '<small>' + l[2] + '</small></button>').join('') + '</div>' +
+          '<button class="btn big block" type="button" id="onb-ok">تم ' + F.icon('arrow', 'arrow') + '</button></div></div>';
+        F.$$('.lang-opt', root).forEach((b) => { b.onclick = () => { pick = b.dataset.l; draw(); }; });
+        F.$('#onb-ok', root).onclick = () => {
+          F.set('sanad_onb', 'login');
+          if (pick !== ((F.getSettings().lang) || 'ar')) { F.saveSettings({ lang: pick }); location.reload(); return; }
+          F.set('sanad_onb', 'done'); root.remove(); F.auth.open();
+        };
+      };
+      draw();
+      document.body.appendChild(root);
+    }
+  };
 
   let carPk = null;
   F.auth = {
