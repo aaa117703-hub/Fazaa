@@ -19,6 +19,7 @@ function arErr(msg: string): string {
 }
 
 const input = {
+  fontFamily: 'IBMPlexSansArabic_400Regular',
   backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 13, fontSize: 16,
   textAlign: 'right' as const, borderWidth: 1, borderColor: C.line,
 };
@@ -73,7 +74,7 @@ export default function Login() {
         <View style={{ flexDirection: 'row-reverse', backgroundColor: C.surface2, borderRadius: R.md, padding: 4 }}>
           {(['in', 'up'] as const).map((k) => (
             <Pressable key={k} onPress={() => { setMode(k); setErr(''); }} style={{ flex: 1, paddingVertical: 10, borderRadius: R.sm, backgroundColor: mode === k ? C.accent : 'transparent' }}>
-              <T style={{ textAlign: 'center', fontWeight: '800', color: mode === k ? '#fff' : C.muted }}>{k === 'in' ? 'دخول' : 'حساب جديد'}</T>
+              <T style={{ textAlign: 'center', fontWeight: '800', color: mode === k ? C.onAccent : C.muted }}>{k === 'in' ? 'دخول' : 'حساب جديد'}</T>
             </Pressable>
           ))}
         </View>

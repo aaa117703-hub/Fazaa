@@ -3,7 +3,7 @@ import { Pressable, StyleProp, StyleSheet, Text, TextProps, TextStyle, View, Vie
 
 import { evt } from '@/lib/debuglog';
 import { tap } from '@/lib/safe';
-import { C, R } from '@/lib/theme';
+import { C, R, fontFor } from '@/lib/theme';
 
 // تخطيط عربي ثابت (من اليمين لليسار) بغضّ النظر عن لغة الجهاز.
 export const rtl = StyleSheet.create({
@@ -12,7 +12,8 @@ export const rtl = StyleSheet.create({
 });
 
 export function T({ style, ...p }: TextProps) {
-  return <Text {...p} style={[{ color: C.text, fontSize: 15 }, rtl.text, style]} />;
+  const f = StyleSheet.flatten(style) as TextStyle | undefined;
+  return <Text {...p} style={[{ color: C.text, fontSize: 15 }, rtl.text, style, { fontFamily: fontFor(f?.fontWeight), fontWeight: 'normal' }]} />;
 }
 
 export function Muted({ style, ...p }: TextProps) {
@@ -35,7 +36,8 @@ type BtnProps = {
 
 export function Btn({ label, onPress, kind = 'primary', disabled, style, textStyle, small }: BtnProps) {
   const bg = kind === 'primary' ? C.accent : kind === 'danger' ? C.danger : kind === 'secondary' ? C.surface2 : 'transparent';
-  const border = kind === 'ghost' ? C.accent : 'transparent';
+  const border = kind === 'ghost' ? C.accent : kind === 'secondary' ? C.line : 'transparent';
+  const fg = kind === 'primary' ? C.onAccent : kind === 'ghost' ? C.accent : '#fff';
   return (
     <Pressable
       disabled={disabled}
@@ -50,7 +52,7 @@ export function Btn({ label, onPress, kind = 'primary', disabled, style, textSty
         { backgroundColor: bg, borderColor: border, opacity: disabled ? 0.5 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
         style,
       ]}>
-      <T style={[{ color: kind === 'ghost' ? C.accent : '#fff', fontWeight: '800', textAlign: 'center' }, textStyle]}>{label}</T>
+      <T style={[{ color: fg, fontWeight: '700', textAlign: 'center' }, textStyle]}>{label}</T>
     </Pressable>
   );
 }

@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
 type P = {
-  id: string; name: string; type: string; governorate: string | null; crane_make: string | null; crane_model: string | null; verified: boolean; tier: string;
+  id: string; name: string; type: string; governorate: string | null; crane_make: string | null; crane_model: string | null; verified: boolean; tier: string; owner_name?: string | null; plate?: string | null;
   since: string; avatar: string | null; rating_avg: number | null; rating_count: number; jobs: number; reviews: { stars: number; comment: string; created_at: string }[];
 };
 
@@ -45,6 +45,13 @@ export default function CraneProfile() {
       <View style={[rtl.row, { gap: 8 }]}>{p.verified && <Badge txt="موثق" color={C.ok} />}<Badge txt={t.name} color={t.color} /></View>
       <Muted>{p.type}{p.governorate ? ' · ' + p.governorate : ''}</Muted>
       {!!p.crane_make && <Muted>🚛 {[p.crane_make === 'غير مذكور' ? '' : p.crane_make, p.crane_model].filter(Boolean).join(' ')}</Muted>}
+      {p.verified && (!!p.owner_name || !!p.plate) && (
+        <View style={{ alignSelf: 'stretch', gap: 8 }}>
+          {!!p.owner_name && <View style={[rtl.row, { justifyContent: 'space-between', padding: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line }]}><Muted style={{ fontSize: 12 }}>الاسم الثلاثي</Muted><T style={{ fontWeight: '700' }}>{p.owner_name}</T></View>}
+          {!!p.plate && <View style={[rtl.row, { justifyContent: 'space-between', padding: 12, borderRadius: 14, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line }]}><Muted style={{ fontSize: 12 }}>رقم اللوحة</Muted><T style={{ fontWeight: '700', color: C.accent }}>{p.plate}</T></View>}
+          <Muted style={{ textAlign: 'center', fontSize: 12 }}>🛡 بيانات موثّقة من الإدارة</Muted>
+        </View>
+      )}
       <View style={[rtl.row, { gap: 10, alignSelf: 'stretch' }]}>
         <Card style={{ flex: 1, alignItems: 'center' }}><T style={{ color: C.warn, fontWeight: '800', fontSize: 18 }}>{p.rating_avg != null ? '★ ' + Number(p.rating_avg).toFixed(1) : '—'}</T><Muted>{p.rating_count ? p.rating_count + ' تقييم' : 'بدون تقييم'}</Muted></Card>
         <Card style={{ flex: 1, alignItems: 'center' }}><T style={{ fontWeight: '800', fontSize: 18 }}>{p.jobs}</T><Muted>مشوار مكتمل</Muted></Card>

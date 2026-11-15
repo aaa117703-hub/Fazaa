@@ -25,7 +25,7 @@ export default function Guide() {
       <Muted>اتبع هالخطوات بالترتيب. سلامتك أهم من أي شي.</Muted>
       {STEPS.filter((_, i) => more || i < 3).map(([t, d], i) => (
         <Card key={i} style={[rtl.row, { gap: 12, alignItems: 'flex-start' }]}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}><T style={{ color: '#fff', fontWeight: '800' }}>{i + 1}</T></View>
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}><T style={{ color: C.onAccent, fontWeight: '800' }}>{i + 1}</T></View>
           <View style={{ flex: 1, gap: 2 }}><T style={{ fontWeight: '800', fontSize: 16 }}>{t}</T><Muted style={{ fontSize: 14, lineHeight: 22 }}>{d}</Muted></View>
         </Card>
       ))}

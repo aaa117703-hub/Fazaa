@@ -29,7 +29,7 @@ export function CarPicker({ data, makeLabel, modelLabel, value, onChange }: { da
             value={value.model === OTHER ? '' : value.model}
             onChangeText={(t) => onChange({ make: value.make, model: t })}
             placeholder="اكتب الاسم" placeholderTextColor={C.muted} maxLength={40}
-            style={{ backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right', borderWidth: 1, borderColor: C.line }}
+            style={{ fontFamily: 'IBMPlexSansArabic_400Regular', backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right', borderWidth: 1, borderColor: C.line }}
           />
         )}
       </View>

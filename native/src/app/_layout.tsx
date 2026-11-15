@@ -1,6 +1,7 @@
 import { Stack, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold, useFonts } from '@expo-google-fonts/ibm-plex-sans-arabic';
 import { I18nManager, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -21,6 +22,7 @@ installDebug();
 
 function Shell() {
   const { ready } = useAuth();
+  const [fonts, fontErr] = useFonts({ IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold });
   const [splash, setSplash] = useState(true);
   const path = usePathname();
   useEffect(() => { evt('route →', path); }, [path]);
@@ -44,7 +46,7 @@ function Shell() {
         <Stack.Screen name="route" options={{ presentation: 'modal' }} />
       </Stack>
       <UpdateGate />
-      {splash && <Splash ready={ready} onDone={() => { evt('splash done'); setSplash(false); }} />}
+      {splash && <Splash ready={ready && (fonts || !!fontErr)} onDone={() => { evt('splash done'); setSplash(false); }} />}
       <DebugConsole />
     </View>
   );

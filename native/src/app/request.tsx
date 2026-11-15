@@ -13,7 +13,7 @@ import { askBlock } from '@/lib/blocks';
 import { distKm } from '@/lib/data';
 import { report } from '@/lib/report';
 import { supabase } from '@/lib/supabase';
-import { C, R } from '@/lib/theme';
+import { C, fontFor, R } from '@/lib/theme';
 
 export const AK = 'sanad_active_req';
 const ISSUES: [string, string][] = [['tow', 'عطل كامل — أحتاج سحب'], ['battery', 'بطارية'], ['tire', 'إطار'], ['fuel', 'وقود'], ['locked', 'مفاتيح داخل السيارة'], ['accident', 'حادث'], ['other', 'شي ثاني']];
@@ -23,7 +23,7 @@ type Req = { arrived_at?: string | null; id: string; number?: number; status: st
 type Info = { id: string; name: string; type: string; verified: boolean; phone: string };
 type Trk = { lat: number | null; lng: number | null } | null;
 
-const inp = { backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right' as const, borderWidth: 1, borderColor: C.line };
+const inp = { fontFamily: fontFor('400'), backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right' as const, borderWidth: 1, borderColor: C.line };
 const waNum = (p: string) => { let d = p.replace(/\D/g, ''); if (d.startsWith('00')) d = d.slice(2); if (d.startsWith('964')) return d; if (d.startsWith('0')) d = d.slice(1); return '964' + d; };
 
 export default function Request() {
@@ -126,7 +126,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
     const wa = crane?.phone ? 'https://wa.me/' + waNum(crane.phone) + '?text=' + encodeURIComponent('السلام عليكم، أنا صاحب الطلب #' + (r.number ?? '') + '.\nموقعي: https://maps.google.com/?q=' + r.lat + ',' + r.lng) : '';
     return (
       <>{head}
-        <Card style={{ gap: 8, backgroundColor: 'rgba(34,197,94,0.10)', borderColor: 'rgba(34,197,94,0.35)' }}>
+        <Card style={{ gap: 8, backgroundColor: 'rgba(61,214,140,0.10)', borderColor: 'rgba(61,214,140,0.35)' }}>
           <T style={{ fontWeight: '800', fontSize: 17 }}>انقبل طلبك</T>
           <T style={{ fontSize: 20, fontWeight: '800', color: C.accent }}>{crane?.name ?? 'كرين'}{crane?.verified ? ' ✓' : ''}</T>
           <Muted>{crane?.type} — اتصل وتفاهم على السعر ووقت الوصول.</Muted>

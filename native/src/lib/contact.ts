@@ -49,3 +49,13 @@ export async function contact(c: C, how: 'tel' | 'wa', pos: Pos, signedIn: boole
     await dial(c.name, phone, wa);
   } catch { Alert.alert('خطأ', 'تعذّر جلب الرقم. جرّب مرة ثانية.'); }
 }
+
+/** واتساب الدعم (الرقم من إعدادات التطبيق عند المدير) مع رسالة جاهزة. */
+export async function supportWa(msg?: string) {
+  try {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'support').maybeSingle();
+    const ph = (data?.value as { phone?: string } | null)?.phone;
+    if (!ph) { Alert.alert('الدعم غير متوفر حالياً'); return; }
+    await Linking.openURL('https://wa.me/' + waNumber(String(ph)) + '?text=' + encodeURIComponent(msg || 'مرحباً، أحتاج مساعدة بتطبيق سند جايك'));
+  } catch { Alert.alert('تعذّر فتح واتساب'); }
+}

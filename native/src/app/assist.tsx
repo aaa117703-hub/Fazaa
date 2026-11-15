@@ -15,7 +15,7 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: R.pill, backgroundColor: on ? C.accent : C.surface2 }}>
-      <T style={{ color: on ? '#fff' : C.text, fontWeight: '700', fontSize: 14 }}>{label}</T>
+      <T style={{ color: on ? C.onAccent : C.text, fontWeight: '700', fontSize: 14 }}>{label}</T>
     </Pressable>
   );
 }
@@ -63,7 +63,7 @@ export default function Assist() {
         {hist.length === 0 && <Muted style={{ textAlign: 'center', marginTop: 12 }}>اختر نوع مركبتك فوق، وبعدها اكتب المشكلة أو اضغط على عرض جاهز.</Muted>}
         {hist.map((m, i) => (
           <View key={i} style={{ alignSelf: m.role === 'user' ? 'flex-start' : 'flex-end', maxWidth: '88%', padding: 12, borderRadius: 16, backgroundColor: m.role === 'user' ? C.accent : C.surface2 }}>
-            <T style={{ color: m.role === 'user' ? '#fff' : C.text, lineHeight: 24 }}>{m.content}</T>
+            <T style={{ color: m.role === 'user' ? C.onAccent : C.text, lineHeight: 24 }}>{m.content}</T>
           </View>
         ))}
         {busy && <ActivityIndicator color={C.accent} style={{ alignSelf: 'flex-end' }} />}
@@ -73,7 +73,7 @@ export default function Assist() {
       <View style={{ padding: 12, paddingBottom: insets.bottom + 12, gap: 8, borderTopWidth: 1, borderTopColor: C.line }}>
         <View style={[rtl.row, { gap: 8 }]}>
           <TextInput value={text} onChangeText={setText} maxLength={400} placeholder="شنو المشكلة؟" placeholderTextColor={C.muted} onSubmitEditing={() => send(text)} returnKeyType="send"
-            style={{ flex: 1, backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right', borderWidth: 1, borderColor: C.line }} />
+            style={{ flex: 1, fontFamily: 'IBMPlexSansArabic_400Regular', backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right', borderWidth: 1, borderColor: C.line }} />
           <Btn label="إرسال" disabled={busy} onPress={() => send(text)} />
         </View>
         <View style={[rtl.row, { gap: 8 }]}>
