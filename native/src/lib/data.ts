@@ -11,15 +11,18 @@ export const TYPES = ['سحب', 'سطحة', 'هيدروليك', 'ثقيل', 'و�
 export const STALE_MS = 3 * 3600 * 1000;
 
 export const TIERS = [
-  { id: 'bronze', name: 'برونزي', price: 0, unit: 'مجاناً', color: '#CD7F32',
-    features: ['الظهور بالقائمة والخريطة', 'اتصال مباشر من الزبائن', 'ملف شخصي وتقييم بالنجوم', 'استلام الطلبات ضمن 40 كم'] },
-  { id: 'silver', name: 'فضي', price: 10000, unit: 'دينار / شهر', color: '#C9D1DB',
-    features: ['كل مميزات البرونزي', 'يصلك الطلب قبل غيرك', 'استلام الطلبات ضمن 50 كم', 'لوحة إحصائيات أسبوعية'] },
-  { id: 'gold', name: 'ذهبي', price: 25000, unit: 'دينار / شهر', color: '#FFC21A',
-    features: ['كل مميزات الفضي', 'أولوية أعلى للطلبات ضمن 65 كم', 'دبوس كبير ومميز على الخريطة', 'إعلان مميز أعلى الصفحة الرئيسية'] },
-  { id: 'diamond', name: 'ماسي', price: 50000, unit: 'دينار / شهر', color: '#6EE7F9',
-    features: ['كل مميزات الذهبي', 'أعلى أولوية للطلبات ضمن 80 كم', 'أكبر دبوس على الخريطة', 'أول إعلان مميز دائماً'] },
+  { id: 'bronze', name: 'أساسي', tag: 'للبداية', price: 0, unit: 'مجاناً', color: '#8C949B', fleet: 1, radius: 40,
+    features: ['الظهور بالقائمة والخريطة', 'اتصال مباشر من الزبائن', 'ملف شخصي وتقييم بالنجوم', 'استلام الطلبات ضمن 40 كم', 'كرين واحد بالحساب'] },
+  { id: 'silver', name: 'فضي', tag: 'تصلك الطلبات أسرع', price: 10000, unit: 'دينار / شهر', color: '#D9DADC', fleet: 2, radius: 50,
+    features: ['كل مميزات الأساسي', 'يصلك الطلب قبل غيرك', 'استلام الطلبات ضمن 50 كم', 'لوحة إحصائيات أسبوعية', 'حتى كرينين بالحساب'] },
+  { id: 'gold', name: 'ذهبي', tag: 'ظهور مميز', price: 25000, unit: 'دينار / شهر', color: '#FFC93C', fleet: 5, radius: 65,
+    features: ['كل مميزات الفضي', 'أولوية أعلى للطلبات ضمن 65 كم', 'دبوس كبير ومميز على الخريطة', 'قسم «الموصى بهم» بالرئيسية', 'حتى 5 كرينات بالحساب'] },
+  { id: 'diamond', name: 'شركات', tag: 'لأصحاب الأساطيل', price: 50000, unit: 'دينار / شهر', color: '#5AA9FF', fleet: 10, radius: 80,
+    features: ['كل مميزات الذهبي', 'أعلى أولوية للطلبات ضمن 80 كم', 'أكبر دبوس وأول ظهور بالموصى بهم', 'إدارة أسطول حتى 10 كرينات', 'دعم مباشر عبر واتساب'] },
 ];
+// العضوية الفعّالة: المنتهية ترجع «أساسي»
+export const effTier = (c?: { tier?: string | null; sub_expires_at?: string | null } | null) =>
+  c && c.tier && c.tier !== 'bronze' && c.sub_expires_at && Date.parse(c.sub_expires_at) > Date.now() ? c.tier : 'bronze';
 export const tierOf = (id?: string | null) => TIERS.find((t) => t.id === id) ?? TIERS[0];
 
 export function distKm(a: { latitude: number; longitude: number }, b: { lat: number; lng: number }) {

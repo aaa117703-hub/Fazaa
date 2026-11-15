@@ -10,11 +10,12 @@ import { CarPicker, carOk, CarVal } from '@/components/car-picker';
 import { Select } from '@/components/select';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { ago, fmtDist, GOVS, TYPES, tierOf } from '@/lib/data';
+import { ago, effTier, fmtDist, GOVS, TYPES, tierOf } from '@/lib/data';
+import { carSpec, carSpecText } from '@/lib/carspecs';
 import { report } from '@/lib/report';
 import { supabase } from '@/lib/supabase';
-import { C, R } from '@/lib/theme';
-import { CRANE_MAKES } from '@/lib/vehicles';
+import { C, fontFor, R } from '@/lib/theme';
+import { CARS, CRANE_MAKES } from '@/lib/vehicles';
 
 const ISSUE: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
 const GROUPS: [string, [string, string][]][] = [
@@ -24,13 +25,13 @@ const GROUPS: [string, [string, string][]][] = [
 ];
 const DST: Record<string, [string, string]> = { pending: [C.warn, 'قيد المراجعة'], approved: [C.ok, 'مقبول'], rejected: [C.danger, 'مرفوض'] };
 
-type CraneRow = { id: string; name: string; type: string; status: string; lat: number; lng: number; governorate: string | null; listed: boolean; verified: boolean; tier: string | null; crane_make: string | null; crane_model: string | null; updated_at: string };
+type CraneRow = { id: string; name: string; type: string; status: string; lat: number; lng: number; governorate: string | null; listed: boolean; verified: boolean; tier: string | null; sub_expires_at?: string | null; crane_make: string | null; crane_model: string | null; updated_at: string };
 type Target = { request_id: string; distance_km: number; requests: { id: string; number: number | null; issue: string; destination: string | null; note: string | null; status: string; created_at: string } | null };
-type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null }; p: { full_name: string | null; phone: string | null; car: string | null } | null };
+type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null }; p: { full_name: string | null; phone: string | null; car: string | null; car_weight_kg?: number | null; car_length_m?: number | null } | null };
 type Doc = { id: string; kind: string; status: string; note: string | null };
 type Wk = { locked?: boolean; views: number; calls: number; requests: number; accepted: number } | null;
 
-const inp = { backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right' as const, borderWidth: 1, borderColor: C.line };
+const inp = { fontFamily: fontFor('400'), backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right' as const, borderWidth: 1, borderColor: C.line };
 const cleanPhone = (s: string) => s.replace(/\D/g, '').replace(/^00964/, '0').replace(/^964/, '0');
 const validPhone = (s: string) => /^07\d{9}$/.test(s);
 
@@ -47,6 +48,10 @@ export default function Driver() {
   const [incoming, setIncoming] = useState<Target[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [ident, setIdent] = useState<{ doc_name: string | null; doc_plate: string | null } | null>(null);
+  const [idName, setIdName] = useState<string | null>(null);
+  const [idPlate, setIdPlate] = useState<string | null>(null);
+  const [idErr, setIdErr] = useState('');
   const [stats, setStats] = useState({ today: 0, total: 0, rating: null as number | null, count: 0 });
   const [wk, setWk] = useState<Wk>(null);
   const [editing, setEditing] = useState(false);
@@ -65,7 +70,7 @@ export default function Driver() {
       setCrane(c);
       const ids = fl.map((x) => x.id);
       if (!c) { setIncoming([]); setJobs([]); return; }
-      const [ct, calls, rs, tg, jb, dc, w] = await Promise.all([
+      const [ct, calls, rs, tg, jb, dc, w, idn] = await Promise.all([
         supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle(),
         supabase.from('calls').select('created_at').eq('crane_id', c.id).order('created_at', { ascending: false }).limit(500),
         supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', c.id).maybeSingle(),
@@ -73,7 +78,9 @@ export default function Driver() {
         supabase.from('requests').select('*').in('accepted_crane_id', ids).eq('status', 'accepted').order('accepted_at', { ascending: false }),
         supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).order('created_at', { ascending: false }),
         supabase.rpc('my_crane_stats', {}),
+        supabase.from('crane_identity').select('doc_name,doc_plate').eq('crane_id', c.id).maybeSingle(),
       ]);
+      setIdent((idn.data as { doc_name: string | null; doc_plate: string | null } | null) ?? null);
       setPhone((ct.data as { phone?: string } | null)?.phone ?? '');
       const cl = (calls.data ?? []) as { created_at: string }[];
       const day = new Date().toDateString();
@@ -91,7 +98,7 @@ export default function Driver() {
       setIncoming(inc);
       const js: Job[] = [];
       for (const r of ((jb.data ?? []) as Job['r'][])) {
-        const { data: p } = await supabase.from('profiles').select('full_name,phone,car').eq('id', r.customer_id).maybeSingle();
+        const { data: p } = await supabase.from('profiles').select('full_name,phone,car,car_weight_kg,car_length_m').eq('id', r.customer_id).maybeSingle();
         js.push({ r, p: p as Job['p'] });
       }
       setJobs(js);
@@ -125,7 +132,7 @@ export default function Driver() {
   }, [crane?.id, crane?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const wrap = (c: React.ReactNode) => (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }} keyboardShouldPersistTaps="handled">
       <T style={{ fontSize: 26, fontWeight: '800' }}>لوحة السائق</T>
       {c}
     </ScrollView>
@@ -136,7 +143,7 @@ export default function Driver() {
   if (!crane || editing || adding) return wrap(<RegForm crane={editing ? crane : null} adding={adding} phone={editing ? phone : ''} uid={uid!} onDone={(id) => { setEditing(false); setAdding(false); if (id) setSelId(id); load(); }} onCancel={editing ? () => setEditing(false) : adding ? () => setAdding(false) : undefined} />);
 
   const avail = crane.status === 'available';
-  const pkg = tierOf(crane.tier);
+  const pkg = tierOf(effTier(crane));
 
   async function goAvailable() {
     const perm = await Location.requestForegroundPermissionsAsync();
@@ -180,6 +187,15 @@ export default function Driver() {
       load();
     } catch { Alert.alert('تعذّر الرفع', 'جرّب صورة ثانية أو أعد المحاولة.'); }
   }
+  async function saveIdentity() {
+    const name = (idName ?? ident?.doc_name ?? '').trim().replace(/\s+/g, ' '), plate = (idPlate ?? ident?.doc_plate ?? '').trim();
+    if (name.split(' ').length < 3 || name.length < 5) return setIdErr('اكتب الاسم الثلاثي كامل.');
+    if (plate.length < 3) return setIdErr('اكتب رقم اللوحة.');
+    setIdErr('');
+    const { error } = await supabase.from('crane_identity').upsert({ crane_id: crane!.id, owner_id: uid, doc_name: name, doc_plate: plate }, { onConflict: 'crane_id' });
+    if (error) { setIdErr('تعذّر الحفظ. جرّب مرة ثانية.'); return; }
+    setIdName(null); setIdPlate(null); Alert.alert('تم حفظ بياناتك'); load();
+  }
   function remove() {
     Alert.alert('حذف تسجيلك كسائق؟', 'راح يختفي كرينك من القائمة والخريطة.', [
       { text: 'لا', style: 'cancel' },
@@ -193,14 +209,14 @@ export default function Driver() {
       <Card style={{ gap: 8 }}>
         <View style={[rtl.row, { justifyContent: 'space-between' }]}>
           <T style={{ fontWeight: '800', fontSize: 17 }}>{fleet.length > 1 ? 'كرينات حسابك (' + fleet.length + ')' : 'حساب شركة؟'}</T>
-          {fleet.length < 10 && <Btn small kind="secondary" label="+ أضف كرين آخر" onPress={() => setAdding(true)} />}
+          {fleet.length < pkg.fleet && <Btn small kind="secondary" label="+ أضف كرين آخر" onPress={() => setAdding(true)} />}
         </View>
         {fleet.length > 1 ? (
           <>
             <View style={[rtl.row, { flexWrap: 'wrap', gap: 8 }]}>
               {fleet.map((x) => (
                 <Pressable key={x.id} onPress={() => setSelId(x.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: R.pill, backgroundColor: x.id === crane.id ? C.accent : C.surface2 }}>
-                  <T style={{ color: x.id === crane.id ? '#fff' : C.text, fontWeight: '700' }}>{x.name}</T>
+                  <T style={{ color: x.id === crane.id ? C.onAccent : C.text, fontWeight: '700' }}>{x.name}</T>
                 </Pressable>
               ))}
             </View>
@@ -208,12 +224,12 @@ export default function Driver() {
           </>
         ) : <Muted style={{ fontSize: 13 }}>عندك أكثر من كرين؟ أضفهم تحت حساب واحد.</Muted>}
       </Card>
-      {!crane.listed && <Card style={{ backgroundColor: 'rgba(245,158,11,0.12)', borderColor: 'rgba(245,158,11,0.4)' }}><T style={{ color: C.warn }}>تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</T></Card>}
+      {!crane.listed && <Card style={{ backgroundColor: 'rgba(255,201,60,0.12)', borderColor: 'rgba(255,201,60,0.4)' }}><T style={{ color: C.warn }}>تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</T></Card>}
 
       <Card style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>حالتك الحين</T>
         <View style={[rtl.row, { gap: 8 }]}>
-          <Pressable onPress={() => { if (!avail) goAvailable(); }} style={{ flex: 1, padding: 13, borderRadius: R.md, backgroundColor: avail ? C.ok : C.surface2 }}><T style={{ textAlign: 'center', fontWeight: '800', color: avail ? '#fff' : C.muted }}>متاح</T></Pressable>
+          <Pressable onPress={() => { if (!avail) goAvailable(); }} style={{ flex: 1, padding: 13, borderRadius: R.md, backgroundColor: avail ? C.ok : C.surface2 }}><T style={{ textAlign: 'center', fontWeight: '800', color: avail ? C.onAccent : C.muted }}>متاح</T></Pressable>
           <Pressable onPress={() => { if (avail) goBusy(); }} style={{ flex: 1, padding: 13, borderRadius: R.md, backgroundColor: !avail ? C.danger : C.surface2 }}><T style={{ textAlign: 'center', fontWeight: '800', color: !avail ? '#fff' : C.muted }}>مشغول</T></Pressable>
         </View>
         <Muted>آخر تحديث: {ago(crane.updated_at)}. {avail ? 'موقعك يتحدّث طول ما التطبيق مفتوح.' : 'موقعك ما يتحدّث وأنت «مشغول».'}</Muted>
@@ -240,7 +256,11 @@ export default function Driver() {
           {jobs.map(({ r, p }) => (
             <View key={r.id} style={{ gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 }}>
               <T style={{ fontWeight: '800' }}>{p?.full_name ?? 'زبون'} · {ISSUE[r.issue] ?? ''}</T>
-              {!!p?.car && <Muted>{p.car}</Muted>}
+              {!!p?.car && (() => {
+                const mk = Object.keys(CARS).find((m) => p.car!.startsWith(m + ' ')); const sp = mk ? carSpec(mk, p.car!.slice(mk.length + 1).replace(/\s*(19|20)\d{2}$/, '')) : null;
+                const line = p.car_weight_kg || p.car_length_m ? carSpecText(p.car_weight_kg, p.car_length_m ? +p.car_length_m : null, false) : sp ? carSpecText(sp.kg, sp.m, true) : '';
+                return <View style={{ gap: 2 }}><T style={{ color: C.accent, fontWeight: '700' }}>🚗 {p.car}</T>{!!line && <Muted style={{ fontSize: 12.5 }}>{line}</Muted>}</View>;
+              })()}
               <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
                 {!!p?.phone && <Btn small label="اتصل" style={{ backgroundColor: C.ok }} onPress={() => dial(p.full_name ?? 'الزبون', p.phone ?? '')} />}
                 <Btn small kind="secondary" label="مسار لموقع الزبون" onPress={() => router.push({ pathname: '/route', params: { lat: String(r.lat), lng: String(r.lng), name: p?.full_name ?? 'الزبون' } })} />
@@ -270,31 +290,57 @@ export default function Driver() {
               <View key={l} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 8, alignItems: 'center' }}><T style={{ fontSize: 18, fontWeight: '800' }}>{v}</T><Muted style={{ fontSize: 11 }}>{l}</Muted></View>
             ))}
           </View>
-          {wk.locked && <><Muted>شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالباقة الفضية وأعلى.</Muted><Btn small label="شوف الباقات" onPress={() => router.push('/packages')} /></>}
+          {wk.locked && <><Muted>شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالعضوية الفضية وأعلى.</Muted><Btn small label="شوف العضوية" onPress={() => router.push('/packages')} /></>}
         </Card>
       )}
 
-      <Card style={{ gap: 10 }}>
-        <T style={{ fontWeight: '800', fontSize: 17 }}>وثائقك ({docs.length}/6)</T>
-        <Muted>ارفع صوراً واضحة لوجهي كل وثيقة. الإدارة تراجعها وتسجّل بياناتك بنفسها، وبعدها تظهر شارة «موثق». الصور خاصة ولا يراها غير المدير.</Muted>
-        {GROUPS.map(([title, slots]) => (
-          <View key={title} style={{ gap: 6 }}>
-            <T style={{ fontWeight: '700', color: C.accent }}>{title}</T>
-            {slots.map(([k, l]) => {
-              const mine = docs.find((x) => x.kind === k); const st = mine ? DST[mine.status] : null;
-              return (
-                <View key={k} style={[rtl.row, { gap: 8, backgroundColor: C.surface2, borderRadius: R.sm, padding: 10 }]}>
-                  <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{l}</T>{mine?.status === 'rejected' && !!mine.note && <Muted>السبب: {mine.note}</Muted>}</View>
-                  {st ? <T style={{ color: st[0], fontWeight: '800', fontSize: 13 }}>{st[1]}</T> : <Muted>ما انرفع</Muted>}
-                  {(!mine || mine.status === 'rejected') && <Btn small kind="secondary" label="رفع" onPress={() => pickDoc(k)} />}
+      {(() => {
+        const done = new Set(docs.map((x) => x.kind)).size, hasId = !!(ident?.doc_name && ident?.doc_plate);
+        const pct = Math.round(((done + (hasId ? 2 : 0)) / 8) * 100);
+        const state: [string, string, string] = crane.verified ? [C.ok, 'موثّق', 'اسمك ورقم لوحتك ظاهرين للزبائن مع شارة «موثّق».']
+          : done === 6 && hasId ? [C.info, 'قيد المراجعة', 'الإدارة تراجع وثائقك وبياناتك. غالباً خلال يوم.'] : [C.accent, 'غير مكتمل', 'أكمل بياناتك وارفع الوثائق الست حتى تحصل على شارة «موثّق».'];
+        return (
+          <Card style={{ gap: 12 }}>
+            <View style={[rtl.row, { gap: 12 }]}>
+              <View style={{ width: 58, height: 58, borderRadius: 29, borderWidth: 5, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ position: 'absolute', width: 58, height: 58, borderRadius: 29, borderWidth: 5, borderColor: state[0], opacity: Math.max(0.25, pct / 100) }} />
+                <T style={{ fontWeight: '800', fontSize: 13 }}>{pct}%</T>
+              </View>
+              <View style={{ flex: 1, gap: 2 }}><T style={{ fontWeight: '800', fontSize: 17 }}>التوثيق</T><T style={{ color: state[0], fontWeight: '700', fontSize: 13 }}>{state[1]}</T></View>
+            </View>
+            <Muted>{state[2]} الصور خاصة ولا يراها غير المدير.</Muted>
+            <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 }}>
+              <T style={{ fontWeight: '700' }}>① بياناتك الرسمية</T>
+              <Muted>الاسم الثلاثي (مثل البطاقة)</Muted>
+              <TextInput value={idName ?? ident?.doc_name ?? ''} onChangeText={setIdName} placeholder="مثال: علي حسين محمد" placeholderTextColor={C.muted} maxLength={100} style={inp} />
+              <Muted>رقم لوحة السيارة</Muted>
+              <TextInput value={idPlate ?? ident?.doc_plate ?? ''} onChangeText={setIdPlate} placeholder="مثال: بغداد 12345 أ" placeholderTextColor={C.muted} maxLength={30} style={inp} />
+              {!!idErr && <T style={{ color: C.danger }}>{idErr}</T>}
+              <Btn small label="حفظ البيانات" onPress={saveIdentity} />
+            </View>
+            <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 }}>
+              <T style={{ fontWeight: '700' }}>② الوثائق ({done}/6)</T>
+              {GROUPS.map(([title, slots]) => (
+                <View key={title} style={{ gap: 6 }}>
+                  <T style={{ fontWeight: '700', color: C.accent }}>{title}</T>
+                  {slots.map(([k, l]) => {
+                    const mine = docs.find((x) => x.kind === k); const st = mine ? DST[mine.status] : null;
+                    return (
+                      <View key={k} style={[rtl.row, { gap: 8, backgroundColor: C.surface2, borderRadius: R.sm, padding: 10 }]}>
+                        <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>{l}</T>{mine?.status === 'rejected' && !!mine.note && <Muted>السبب: {mine.note}</Muted>}</View>
+                        {st ? <T style={{ color: st[0], fontWeight: '800', fontSize: 13 }}>{st[1]}</T> : <Muted>ما انرفع</Muted>}
+                        {(!mine || mine.status === 'rejected') && <Btn small kind="secondary" label="رفع" onPress={() => pickDoc(k)} />}
+                      </View>
+                    );
+                  })}
                 </View>
-              );
-            })}
-          </View>
-        ))}
-      </Card>
+              ))}
+            </View>
+          </Card>
+        );
+      })()}
 
-      <Card style={[rtl.row, { gap: 8 }]}><View style={{ flex: 1 }}><Muted>باقتك</Muted><T style={{ fontWeight: '800', fontSize: 17 }}>{pkg.name}</T></View><Btn small kind="ghost" label="الباقات" onPress={() => router.push('/packages')} /></Card>
+      <Card style={[rtl.row, { gap: 8 }]}><View style={{ flex: 1 }}><Muted>عضويتك</Muted><T style={{ fontWeight: '800', fontSize: 17 }}>{pkg.name}</T></View><Btn small kind="ghost" label="العضوية" onPress={() => router.push('/packages')} /></Card>
 
       <Btn label="تعديل بياناتي" kind="secondary" onPress={() => setEditing(true)} />
       <Btn label="حذف تسجيلي كسائق" kind="danger" onPress={remove} />
@@ -355,7 +401,7 @@ function RegForm({ crane, adding, phone, uid, onDone, onCancel }: { crane: Crane
         <View style={{ gap: 6 }}><Muted>رقم الاتصال للزبائن</Muted><TextInput value={ph} onChangeText={setPh} keyboardType="phone-pad" maxLength={16} placeholder="07xxxxxxxxx" placeholderTextColor={C.muted} style={[inp, { writingDirection: 'ltr' }]} /><Muted style={{ fontSize: 12 }}>يظهر فقط للزبائن المسجّلين.</Muted></View>
         {!crane && (
           <>
-            <Card style={{ backgroundColor: 'rgba(255,107,44,0.12)', borderColor: 'rgba(255,107,44,0.35)' }}><T style={{ color: C.accent2 }}>أول 20 سائق: 3 أشهر مجاناً بدون أي التزام.</T></Card>
+            <Card style={{ backgroundColor: 'rgba(255,201,60,0.12)', borderColor: 'rgba(255,201,60,0.35)' }}><T style={{ color: C.accent2 }}>أول 20 سائق: 3 أشهر مجاناً بدون أي التزام.</T></Card>
             <View style={[rtl.row, { gap: 10 }]}><Switch value={agree} onValueChange={setAgree} trackColor={{ true: C.accent }} /><Muted style={{ flex: 1 }}>أفهم إن موقعي يتحدّث فقط وأنا «متاح» والتطبيق مفتوح، وإن اسم الكرين ورقمي يظهرون للزبائن.</Muted></View>
           </>
         )}

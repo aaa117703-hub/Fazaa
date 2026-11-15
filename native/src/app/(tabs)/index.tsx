@@ -1,12 +1,14 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Share, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
+import { CountUp, FadeIn, Pulse, Radar } from '@/components/fx';
 import { Select } from '@/components/select';
 import { useBlocks } from '@/lib/blocks';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
@@ -77,6 +79,7 @@ export default function Home() {
   const call = (c: Crane, how: 'tel' | 'wa') => contact(c, how, src === 'default' ? null : pos, !!session, go);
   const route = (c: Crane) => router.push({ pathname: '/route', params: { lat: String(c.lat), lng: String(c.lng), name: c.name } });
   const best = list.find((x) => x.c.status === 'available');
+  const recommended = list.filter((x) => x.c.status === 'available' && (x.c.tier === 'gold' || x.c.tier === 'diamond')).slice(0, 8);
   const filtered = onlyFree || !!type || !!gov;
   const request = () => (session ? router.push('/request') : go());
   const shareLoc = () => {
@@ -88,6 +91,9 @@ export default function Home() {
     <View style={{ gap: 12 }}>
       <View style={[rtl.row, { gap: 8 }]}>
         <T style={{ fontSize: 26, fontWeight: '800', color: C.accent, flex: 1 }}>سند جايك</T>
+        <Pressable onPress={() => router.push('/settings')} accessibilityLabel="الإعدادات" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="options-outline" size={22} color={C.text} />
+        </Pressable>
       </View>
       <Muted>{src === 'gps' ? 'موقعك: من الجهاز' : src === 'manual' ? 'موقعك: يدوي (حسب المحافظة)' : 'موقعك غير محدد — اضغط «حدّد موقعي» أو «اختر يدوياً».'}</Muted>
       <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
@@ -97,12 +103,19 @@ export default function Home() {
       </View>
 
       {hasReq && !!session && <Btn label="طلبك الحالي — اضغط للتفاصيل" kind="secondary" onPress={() => router.push('/request')} />}
-      <Card style={{ backgroundColor: 'rgba(255,107,44,0.12)', borderColor: 'rgba(255,107,44,0.35)', gap: 8 }}>
-        <T style={{ fontSize: 18, fontWeight: '800' }}>{best ? 'سيارتي تعطلت — أقرب كرين متاح' : 'سيارتي تعطلت'}</T>
+      <FadeIn>
+      <Card style={{ backgroundColor: 'rgba(255,201,60,0.10)', borderColor: 'rgba(255,201,60,0.4)', gap: 8, overflow: 'hidden' }}>
+        <View pointerEvents="none" style={{ position: 'absolute', left: -30, top: -30 }}><Radar size={150} /></View>
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, backgroundColor: C.accent, opacity: 0.9 }} />
+        <T style={{ fontSize: 18, fontWeight: '800', marginTop: 4 }}>{best ? 'سيارتي تعطلت — أقرب كرين متاح' : 'سيارتي تعطلت'}</T>
         {best ? (
           <>
             <T style={{ fontSize: 20, fontWeight: '800', color: C.accent }}>{best.c.name}</T>
-            <Muted>{best.c.type} · {fmtDist(best.d)} عنك · {statusOf(best.c).txt}</Muted>
+            <View style={[rtl.row, { gap: 6, flexWrap: 'wrap' }]}>
+              <Muted>{best.c.type} ·</Muted>
+              <CountUp key={best.c.id} to={best.d} fmt={fmtDist} style={{ color: C.text, fontSize: 13, fontWeight: '700' }} />
+              <Muted>عنك · {statusOf(best.c).txt}</Muted>
+            </View>
           </>
         ) : (
           <Muted>{loading ? 'جاري البحث عن الكرينات…' : err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : 'ما لكينا كرين متاح هسه' + (filtered ? ' بهذا الفلتر' : '') + '. شوف القائمة وجرّب تتصل.'}</Muted>
@@ -110,12 +123,31 @@ export default function Home() {
         <Btn label="أرسل طلب لأقرب 3 كرينات" onPress={request} />
         {best && <Btn label="أو اتصل مباشرة بأقرب كرين" kind="secondary" onPress={() => call(best.c, 'tel')} />}
       </Card>
+      </FadeIn>
 
       <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
-        <Btn label="طوارئ SOS" kind="danger" small onPress={() => router.push('/sos')} style={{ flexGrow: 1 }} />
+        <Pulse style={{ flexGrow: 1 }}><Btn label="طوارئ SOS" kind="danger" small onPress={() => router.push('/sos')} /></Pulse>
         <Btn label="شنو أسوي؟" kind="secondary" small onPress={() => router.push('/guide')} style={{ flexGrow: 1 }} />
         <Btn label="أرسل موقعي" kind="secondary" small onPress={shareLoc} style={{ flexGrow: 1 }} />
       </View>
+
+      {recommended.length > 0 && (
+        <FadeIn delay={150}>
+          <T style={{ fontSize: 18, fontWeight: '800', marginBottom: 8 }}>الموصى بهم</T>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}>
+            {recommended.map(({ c, d }) => (
+              <Pressable key={c.id} onPress={() => router.push('/crane/' + c.id)} style={{ width: 200, padding: 12, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1.5, borderColor: c.tier === 'diamond' ? C.info : C.accent, gap: 4 }}>
+                <T style={{ fontWeight: '800', fontSize: 15 }} numberOfLines={1}>{c.name}</T>
+                <Muted numberOfLines={1}>{c.type}{c.governorate ? ' · ' + c.governorate : ''}</Muted>
+                <View style={[rtl.row, { justifyContent: 'space-between' }]}>
+                  <T style={{ color: C.accent, fontWeight: '700', fontSize: 13 }}>{c.rating_avg ? '★ ' + Number(c.rating_avg).toFixed(1) : 'جديد'}</T>
+                  <Muted style={{ fontSize: 12 }}>{fmtDist(d)}</Muted>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </FadeIn>
+      )}
 
       <View style={{ height: 260, borderRadius: R.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.line }}>
         {pos && (
@@ -124,7 +156,7 @@ export default function Home() {
               const sz = c.tier === 'diamond' ? 34 : c.tier === 'gold' ? 28 : 20;
               return (
                 <Marker key={c.id} coordinate={{ latitude: c.lat, longitude: c.lng }} tracksViewChanges={false} onCalloutPress={() => router.push('/crane/' + c.id)} title={c.name} description={c.type}>
-                  <View style={{ width: sz, height: sz, borderRadius: sz / 2, backgroundColor: c.status === 'available' ? C.ok : C.warn, borderWidth: 3, borderColor: c.tier === 'diamond' ? '#6EE7F9' : c.tier === 'gold' ? '#FFC21A' : '#fff' }} />
+                  <View style={{ width: sz, height: sz, borderRadius: sz / 2, backgroundColor: c.status === 'available' ? C.ok : C.warn, borderWidth: 3, borderColor: c.tier === 'diamond' ? C.info : c.tier === 'gold' ? C.accent : '#fff' }} />
                 </Marker>
               );
             })}
@@ -134,7 +166,7 @@ export default function Home() {
 
       <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
         <Pressable onPress={() => setOnlyFree((v) => !v)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: R.pill, backgroundColor: onlyFree ? C.accent : C.surface2 }}>
-          <T style={{ fontWeight: '700', color: onlyFree ? '#fff' : C.muted }}>متاح فقط</T>
+          <T style={{ fontWeight: '700', color: onlyFree ? C.onAccent : C.muted }}>متاح فقط</T>
         </Pressable>
         <Select label="المحافظة" value={gov} allLabel="كل المحافظات" options={GOVS.map((g) => g.name)} onChange={setGov} />
         <Select label="نوع الكرين" value={type} allLabel="كل الأنواع" options={TYPES} onChange={setType} />
@@ -146,7 +178,7 @@ export default function Home() {
   return (
     <FlatList
       style={{ backgroundColor: C.bg }}
-      contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 10 }}
+      contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 10 }}
       data={list}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}
@@ -157,8 +189,8 @@ export default function Home() {
           {err ? <Btn label="إعادة المحاولة" kind="secondary" onPress={() => pos && load(pos)} /> : filtered ? <Btn label="إلغاء الفلاتر" kind="secondary" onPress={() => { setOnlyFree(false); setType(''); setGov(''); }} /> : null}
         </View>
       )}
-      renderItem={({ item: x }) => (
-        <CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} />
+      renderItem={({ item: x, index }) => (
+        <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} /></FadeIn>
       )}
     />
   );

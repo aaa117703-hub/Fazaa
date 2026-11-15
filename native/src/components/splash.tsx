@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { C } from '@/lib/theme';
 
@@ -10,7 +10,7 @@ const AP = Animated.createAnimatedComponent(Path);
 const AC = Animated.createAnimatedComponent(Circle);
 const ARCH = 'M19 86V51a31 31 0 0 1 62 0V86';
 const AL = 35 + Math.PI * 31 + 35;
-const DUR = 3000;
+const DUR = 2500;
 
 function at(d: number): [number, number] {
   if (d <= 35) return [19, 86 - d];
@@ -48,7 +48,7 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
     return () => clearTimeout(id);
   }, [finished, ready, out]);
 
-  // الخط الزمني: 3 ثواني
+  // الخط الزمني (يُضغط على 2.5 ثانية)
   const k = (a: number, b: number, from: number, to: number, easing?: (x: number) => number) =>
     t.interpolate({ inputRange: [a / 3, b / 3], outputRange: [from, to], extrapolate: 'clamp', easing });
   const ease = Easing.out(Easing.cubic);
@@ -56,7 +56,6 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
   const chevOp = k(1.3, 1.7, 0, 1);
   const scale = k(0, 1.6, 0.82, 1, Easing.out(Easing.back(1.4)));
   const logoOp = k(0, 0.5, 0, 1);
-  const glow = k(0, 1.4, 0, 1);
   const wordOp = k(1.7, 2.4, 0, 1);
   const wordY = k(1.7, 2.4, 10, 0, ease);
   // النقطة تطلع على القوس
@@ -72,23 +71,6 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, s.root, { opacity: out }]} pointerEvents={finished && ready ? 'none' : 'auto'}>
-      <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
-            <Stop offset="0" stopColor="#1d2329" />
-            <Stop offset="0.55" stopColor="#12161a" />
-            <Stop offset="1" stopColor="#0a0c0e" />
-          </LinearGradient>
-          <RadialGradient id="gl" cx="50%" cy="42%" rx="60%" ry="40%">
-            <Stop offset="0" stopColor="#FF6B2C" stopOpacity="0.22" />
-            <Stop offset="1" stopColor="#FF6B2C" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect x="0" y="0" width={width} height={height} fill="url(#bg)" />
-      </Svg>
-      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: glow }]}>
-        <Svg width={width} height={height}><Rect x="0" y="0" width={width} height={height} fill="url(#gl)" /></Svg>
-      </Animated.View>
       <Animated.View style={{ width: size, height: size, opacity: logoOp, transform: [{ scale }] }}>
         <Svg viewBox="0 0 100 100" width={size} height={size}>
           <AP d={ARCH} fill="none" stroke={C.accent} strokeWidth={15} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={[AL, AL]} strokeDashoffset={archOff as unknown as number} />
@@ -110,5 +92,5 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
 }
 
 const s = StyleSheet.create({
-  root: { alignItems: 'center', justifyContent: 'center', zIndex: 100 },
+  root: { alignItems: 'center', justifyContent: 'center', zIndex: 100, backgroundColor: C.bg },
 });

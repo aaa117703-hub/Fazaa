@@ -1,0 +1,83 @@
+import Constants from 'expo-constants';
+import { router } from 'expo-router';
+import React from 'react';
+import { Alert, Linking, Pressable, ScrollView, Switch, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { showSizePreview } from '@/components/size-preview';
+import { Btn, Card, Muted, T, rtl } from '@/components/ui';
+import { BTN_STEPS, FONT_STEPS, Lang, setPrefs, usePrefs } from '@/lib/prefs';
+import { PAGES } from '@/lib/site';
+import { C } from '@/lib/theme';
+
+function Stepper({ label, steps, value, onChange }: { label: string; steps: [number, string][]; value: number; onChange: (n: number) => void }) {
+  const mk = (txt: string, d: number) => {
+    const n = value + d, off = n < 0 || n >= steps.length;
+    return (
+      <Pressable disabled={off} onPress={() => { onChange(n); showSizePreview(); }} accessibilityLabel={d > 0 ? 'تكبير' : 'تصغير'}
+        style={{ width: 46, height: 46, borderRadius: 23, borderWidth: 1.5, borderColor: C.line, backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', opacity: off ? 0.35 : 1 }}>
+        <T style={{ fontSize: 24, fontWeight: '800' }}>{txt}</T>
+      </Pressable>
+    );
+  };
+  return (
+    <View style={[rtl.row, { gap: 10 }]}>
+      <T style={{ flex: 1, fontWeight: '700' }}>{label}</T>
+      {mk('−', -1)}
+      <T style={{ minWidth: 70, textAlign: 'center', fontWeight: '800', color: C.accent }}>{steps[value][1]}</T>
+      {mk('+', 1)}
+    </View>
+  );
+}
+
+const LANGS: [Lang, string][] = [['ar', 'العربية'], ['en', 'English'], ['ckb', 'کوردی']];
+
+export default function Settings() {
+  const insets = useSafeAreaInsets();
+  const p = usePrefs();
+  const open = (u: string) => Linking.openURL(u).catch(() => Alert.alert('تعذّر فتح الرابط'));
+  return (
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 40, gap: 12, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
+      <T style={{ fontSize: 26, fontWeight: '800' }}>الإعدادات</T>
+      <Muted>كل الإعدادات تنحفظ على جهازك فقط.</Muted>
+
+      <Card style={{ gap: 14 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>حجم الخط والأزرار</T>
+        <Muted>غيّر الحجم وراح يظهر لك نموذج بالضبط حتى تشوف النتيجة.</Muted>
+        <Stepper label="حجم الخط" steps={FONT_STEPS} value={p.fontStep} onChange={(n) => setPrefs({ fontStep: n })} />
+        <Stepper label="حجم الأزرار" steps={BTN_STEPS} value={p.btnStep} onChange={(n) => setPrefs({ btnStep: n })} />
+        <Btn small kind="secondary" label="إعادة للحجم العادي" onPress={() => { setPrefs({ fontStep: 1, btnStep: 1 }); showSizePreview(); }} />
+      </Card>
+
+      <Card style={{ gap: 10 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>اللغة</T>
+        <View style={[rtl.row, { gap: 8 }]}>
+          {LANGS.map(([k, n]) => (
+            <Pressable key={k} onPress={() => setPrefs({ lang: k })} style={{ flex: 1, paddingVertical: 11, borderRadius: 99, alignItems: 'center', borderWidth: 1.5, borderColor: p.lang === k ? C.accent : C.line, backgroundColor: p.lang === k ? 'rgba(255,201,60,0.10)' : C.surface2 }}>
+              <T style={{ fontWeight: '700', color: p.lang === k ? C.accent : C.text }}>{n}</T>
+            </Pressable>
+          ))}
+        </View>
+        <Muted style={{ fontSize: 12 }}>الترجمة الإنجليزية والكردية (سۆرانی) تجريبية وتشمل أغلب النصوص. الكردية تحتاج مراجعة متحدث قبل الإطلاق.</Muted>
+      </Card>
+
+      <Card style={{ gap: 6 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>المظهر</T>
+        <View style={[rtl.row, { gap: 10 }]}>
+          <View style={{ flex: 1 }}><T style={{ fontWeight: '700' }}>تقليل الحركة</T><Muted>يوقّف الحركات والانتقالات المتحركة.</Muted></View>
+          <Switch value={p.reduceMotion} onValueChange={(v) => setPrefs({ reduceMotion: v })} trackColor={{ true: C.accent, false: C.line }} thumbColor="#fff" />
+        </View>
+      </Card>
+
+      <Card style={{ gap: 8 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>حول سند جايك</T>
+        <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>الإصدار</T><Muted>{Constants.expoConfig?.version ?? '1.0.0'}</Muted></View>
+        <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>التغطية الحالية</T><Muted>كل محافظات العراق</Muted></View>
+        <Btn kind="secondary" label="دليل «سيارتي تعطلت»" onPress={() => router.push('/guide')} />
+        <Btn kind="secondary" label="سياسة الخصوصية" onPress={() => open(PAGES.privacy)} />
+        <Btn kind="secondary" label="شروط الاستخدام" onPress={() => open(PAGES.terms)} />
+        <Btn kind="secondary" label="تواصل مع الدعم" onPress={() => open(PAGES.support)} />
+      </Card>
+    </ScrollView>
+  );
+}

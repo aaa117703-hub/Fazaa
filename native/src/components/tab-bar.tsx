@@ -13,7 +13,7 @@ type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const META: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'الرئيسية', icon: 'home' },
   driver: { label: 'سائق', icon: 'car-sport' },
-  packages: { label: 'الباقات', icon: 'diamond' },
+  packages: { label: 'العضوية', icon: 'diamond' },
   profile: { label: 'حسابي', icon: 'person' },
 };
 
@@ -28,9 +28,9 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
     <Pressable onPress={onPress} hitSlop={6} style={s.item} accessibilityRole="button" accessibilityLabel={label}>
       <Animated.View style={[s.orb, { opacity: lift, transform: [{ translateY: -17 }, { scale: orb }] }]} />
       <Animated.View style={{ transform: [{ translateY: y }] }}>
-        <Ionicons name={icon} size={24} color={active ? '#fff' : tint ?? C.muted} />
+        <Ionicons name={icon} size={24} color={active ? C.onAccent : tint ?? C.muted} />
       </Animated.View>
-      <T style={[s.label, { color: active ? C.accent : C.muted, fontWeight: active ? '800' : '600' }]}>{label}</T>
+      <T numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[s.label, { color: active ? C.accent : C.muted, fontWeight: active ? '800' : '600' }]}>{label}</T>
     </Pressable>
   );
 }
@@ -79,7 +79,7 @@ const s = StyleSheet.create({
   // داخل التدفق (مو absolute) حتى تكون اللمسات داخل حدود الأب بالكامل على iOS
   wrap: { paddingHorizontal: 12, paddingTop: 22, alignItems: 'center', backgroundColor: C.bg },
   bar: {
-    flexDirection: 'row-reverse', width: '100%', maxWidth: 560, height: 66, borderRadius: 26, backgroundColor: 'rgba(24,27,31,0.97)',
+    flexDirection: 'row-reverse', width: '100%', maxWidth: 560, height: 66, borderRadius: 26, backgroundColor: 'rgba(28,32,36,0.98)',
     borderWidth: 1, borderColor: C.line, shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12,
   },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3, paddingTop: 4 },

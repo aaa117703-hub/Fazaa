@@ -11,6 +11,7 @@
       "bundleIdentifier": "com.sanadjaik.app",
       "supportsTablet": true,
       "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "نحتاج الوصول للصور لتغيير صورتك الشخصية ورفع وثائقك.",
         "NSLocationWhenInUseUsageDescription": "نستخدم موقعك لعرض أقرب كرين لسيارتك وإرسال طلبك للسائقين القريبين."
       }
     },
@@ -31,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#101214",
+          "backgroundColor": "#14171A",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 120
         }
