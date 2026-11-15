@@ -26,7 +26,7 @@ export default function Membership() {
   const cur = mine ? effTier(mine) : null;
   const ios = Platform.OS === 'ios';
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }}>
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }}>
       <T style={{ fontSize: 26, fontWeight: '800' }}>العضوية</T>
       <Muted>للسائقين فقط. الزبون يستخدم سند جايك مجاناً دائماً.</Muted>
       <Card style={{ backgroundColor: 'rgba(61,214,140,0.10)', borderColor: 'rgba(61,214,140,0.35)' }}>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, TextProps, TextStyle, View, ViewStyle } from 'react-native';
 
+import { tr } from '@/lib/i18n';
+import { btnScale, fontScale, usePrefs } from '@/lib/prefs';
 import { evt } from '@/lib/debuglog';
 import { tap } from '@/lib/safe';
 import { C, R, fontFor } from '@/lib/theme';
@@ -11,9 +13,24 @@ export const rtl = StyleSheet.create({
   text: { textAlign: 'right', writingDirection: 'rtl' },
 });
 
-export function T({ style, ...p }: TextProps) {
+function trChildren(c: React.ReactNode, lang: 'ar' | 'en' | 'ckb'): React.ReactNode {
+  if (lang === 'ar') return c;
+  if (typeof c === 'string') return tr(c, lang);
+  if (Array.isArray(c)) return c.map((x) => (typeof x === 'string' ? tr(x, lang) : x));
+  return c;
+}
+
+export function T({ style, children, ...p }: TextProps) {
+  const pr = usePrefs(), k = fontScale(pr);
   const f = StyleSheet.flatten(style) as TextStyle | undefined;
-  return <Text {...p} style={[{ color: C.text, fontSize: 15 }, rtl.text, style, { fontFamily: fontFor(f?.fontWeight), fontWeight: 'normal' }]} />;
+  const size = (f?.fontSize ?? 15) * k;
+  const lh = f?.lineHeight ? f.lineHeight * k : undefined;
+  const en = pr.lang === 'en';
+  return (
+    <Text {...p} style={[{ color: C.text }, rtl.text, style, { fontSize: size, lineHeight: lh, fontFamily: fontFor(f?.fontWeight), fontWeight: 'normal' }, en && { textAlign: 'left', writingDirection: 'ltr' }]}>
+      {trChildren(children, pr.lang)}
+    </Text>
+  );
 }
 
 export function Muted({ style, ...p }: TextProps) {
@@ -38,6 +55,7 @@ export function Btn({ label, onPress, kind = 'primary', disabled, style, textSty
   const bg = kind === 'primary' ? C.accent : kind === 'danger' ? C.danger : kind === 'secondary' ? C.surface2 : 'transparent';
   const border = kind === 'ghost' ? C.accent : kind === 'secondary' ? C.line : 'transparent';
   const fg = kind === 'primary' ? C.onAccent : kind === 'ghost' ? C.accent : '#fff';
+  const bk = btnScale(usePrefs());
   return (
     <Pressable
       disabled={disabled}
@@ -48,7 +66,7 @@ export function Btn({ label, onPress, kind = 'primary', disabled, style, textSty
       }}
       style={({ pressed }) => [
         s.btn,
-        small && { paddingVertical: 8, paddingHorizontal: 14 },
+        small ? { paddingVertical: 8 * bk, paddingHorizontal: 16 * bk, minHeight: 38 * bk } : { paddingVertical: 13 * bk, paddingHorizontal: 20 * bk, minHeight: 48 * bk },
         { backgroundColor: bg, borderColor: border, opacity: disabled ? 0.5 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
         style,
       ]}>
@@ -58,6 +76,6 @@ export function Btn({ label, onPress, kind = 'primary', disabled, style, textSty
 }
 
 const s = StyleSheet.create({
-  card: { backgroundColor: C.surface, borderRadius: R.md, borderWidth: 1, borderColor: C.line, padding: 14 },
-  btn: { borderRadius: R.md, paddingVertical: 13, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  card: { backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.line, padding: 14 },
+  btn: { borderRadius: R.pill, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

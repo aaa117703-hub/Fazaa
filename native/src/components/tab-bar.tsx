@@ -30,7 +30,7 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
       <Animated.View style={{ transform: [{ translateY: y }] }}>
         <Ionicons name={icon} size={24} color={active ? C.onAccent : tint ?? C.muted} />
       </Animated.View>
-      <T style={[s.label, { color: active ? C.accent : C.muted, fontWeight: active ? '800' : '600' }]}>{label}</T>
+      <T numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[s.label, { color: active ? C.accent : C.muted, fontWeight: active ? '800' : '600' }]}>{label}</T>
     </Pressable>
   );
 }

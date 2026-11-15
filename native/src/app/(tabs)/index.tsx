@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
@@ -90,6 +91,9 @@ export default function Home() {
     <View style={{ gap: 12 }}>
       <View style={[rtl.row, { gap: 8 }]}>
         <T style={{ fontSize: 26, fontWeight: '800', color: C.accent, flex: 1 }}>سند جايك</T>
+        <Pressable onPress={() => router.push('/settings')} accessibilityLabel="الإعدادات" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="options-outline" size={22} color={C.text} />
+        </Pressable>
       </View>
       <Muted>{src === 'gps' ? 'موقعك: من الجهاز' : src === 'manual' ? 'موقعك: يدوي (حسب المحافظة)' : 'موقعك غير محدد — اضغط «حدّد موقعي» أو «اختر يدوياً».'}</Muted>
       <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
@@ -174,7 +178,7 @@ export default function Home() {
   return (
     <FlatList
       style={{ backgroundColor: C.bg }}
-      contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 10 }}
+      contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 10 }}
       data={list}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}

@@ -1,4 +1,4 @@
-import { Stack, usePathname } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold, useFonts } from '@expo-google-fonts/ibm-plex-sans-arabic';
@@ -7,10 +7,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DebugConsole } from '@/components/debug-console';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { SizePreview } from '@/components/size-preview';
 import { Splash } from '@/components/splash';
 import { UpdateGate } from '@/components/update-gate';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { evt, installDebug, notify, touchStat } from '@/lib/debuglog';
+import { usePrefs } from '@/lib/prefs';
 import { C } from '@/lib/theme';
 
 // نثبّت اتجاه التخطيط ونرسم RTL يدوياً حتى يكون السلوك واحداً على كل الأجهزة.
@@ -25,6 +27,11 @@ function Shell() {
   const [fonts, fontErr] = useFonts({ IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold });
   const [splash, setSplash] = useState(true);
   const path = usePathname();
+  const prefs = usePrefs();
+  // أول تشغيل: اختيار اللغة ثم تسجيل الدخول
+  useEffect(() => {
+    if (!splash && prefs.loaded && !prefs.onboarded && path !== '/onboarding') router.push('/onboarding');
+  }, [splash, prefs.loaded, prefs.onboarded, path]);
   useEffect(() => { evt('route →', path); }, [path]);
   useEffect(() => { evt('auth ready =', ready); }, [ready]);
   return (
@@ -44,8 +51,11 @@ function Shell() {
         <Stack.Screen name="request" options={{ presentation: 'modal' }} />
         <Stack.Screen name="assist" options={{ presentation: 'modal' }} />
         <Stack.Screen name="route" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
       </Stack>
       <UpdateGate />
+      <SizePreview />
       {splash && <Splash ready={ready && (fonts || !!fontErr)} onDone={() => { evt('splash done'); setSplash(false); }} />}
       <DebugConsole />
     </View>

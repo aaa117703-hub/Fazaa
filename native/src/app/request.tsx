@@ -31,7 +31,7 @@ export default function Request() {
   const [active, setActive] = useState<{ id: string; targets: number | null } | null | undefined>(undefined);
   useEffect(() => { AsyncStorage.getItem(AK).then((v) => setActive(v ? JSON.parse(v) : null)).catch(() => setActive(null)); }, []);
   if (active === undefined) return <View style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center' }}><ActivityIndicator color={C.accent} /></View>;
-  const wrap = (c: React.ReactNode) => <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 22, paddingBottom: insets.bottom + 30, gap: 12 }} keyboardShouldPersistTaps="handled">{c}</ScrollView>;
+  const wrap = (c: React.ReactNode) => <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: 22, paddingBottom: insets.bottom + 30, gap: 12 }} keyboardShouldPersistTaps="handled">{c}</ScrollView>;
   if (!active) return wrap(<Form onSent={(a) => { AsyncStorage.setItem(AK, JSON.stringify(a)).catch(() => {}); setActive(a); }} />);
   return wrap(<Track a={active} onReset={() => { AsyncStorage.removeItem(AK).catch(() => {}); setActive(null); }} />);
 }

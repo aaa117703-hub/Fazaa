@@ -136,7 +136,7 @@ export default function Profile() {
   }
 
   const wrap = (c: React.ReactNode) => (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 140, gap: 12 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 140, gap: 12 }} keyboardShouldPersistTaps="handled">
       <T style={{ fontSize: 26, fontWeight: '800' }}>حسابي</T>
       {c}
     </ScrollView>
@@ -245,6 +245,7 @@ function Legal() {
   const open = (u: string) => Linking.openURL(u).catch(() => Alert.alert('تعذّر فتح الرابط'));
   return (
     <Card style={{ gap: 8 }}>
+      <Btn label="الإعدادات (الخط والأزرار واللغة)" kind="secondary" onPress={() => router.push('/settings')} />
       <Btn label="تواصل مع الدعم" kind="secondary" onPress={() => open(PAGES.support)} />
       <Btn label="سياسة الخصوصية" kind="secondary" onPress={() => open(PAGES.privacy)} />
       <Btn label="شروط الاستخدام" kind="secondary" onPress={() => open(PAGES.terms)} />

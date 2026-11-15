@@ -2,14 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleProp, View, ViewStyle } from 'react-native';
 
 import { T } from '@/components/ui';
+import { usePrefs } from '@/lib/prefs';
 import { C } from '@/lib/theme';
 
 // ظهور متدرّج (يطلع من تحت مع تلاشي). delay بالملّي ثانية.
 export function FadeIn({ delay = 0, children, style }: { delay?: number; children: React.ReactNode; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(0)).current;
+  const calm = usePrefs().reduceMotion;
+  const v = useRef(new Animated.Value(calm ? 1 : 0)).current;
   useEffect(() => {
+    if (calm) return;
     Animated.timing(v, { toValue: 1, duration: 420, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [v, delay]);
+  }, [v, delay, calm]);
   return (
     <Animated.View style={[style, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }]}>{children}</Animated.View>
   );
@@ -17,16 +20,18 @@ export function FadeIn({ delay = 0, children, style }: { delay?: number; childre
 
 // نبض خفيف (للزر الحرج SOS)
 export function Pulse({ children, color = C.danger, style }: { children: React.ReactNode; color?: string; style?: StyleProp<ViewStyle> }) {
+  const calm = usePrefs().reduceMotion;
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (calm) return;
     const a = Animated.loop(Animated.timing(v, { toValue: 1, duration: 1800, easing: Easing.out(Easing.quad), useNativeDriver: true }));
     a.start();
     return () => a.stop();
-  }, [v]);
+  }, [v, calm]);
   return (
     <View style={style}>
-      <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderRadius: 16, borderWidth: 2, borderColor: color,
-        opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }) }] }} />
+      {!calm && <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderRadius: 16, borderWidth: 2, borderColor: color,
+        opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] }) }] }} />}
       {children}
     </View>
   );
@@ -34,12 +39,14 @@ export function Pulse({ children, color = C.danger, style }: { children: React.R
 
 // دوائر رادار تتوسّع خلف البطاقة
 export function Radar({ size = 120, color = C.accent }: { size?: number; color?: string }) {
+  const calm = usePrefs().reduceMotion;
   const vs = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
   useEffect(() => {
+    if (calm) return;
     const anims = vs.map((v, i) => Animated.loop(Animated.sequence([Animated.delay(i * 800), Animated.timing(v, { toValue: 1, duration: 2400, easing: Easing.out(Easing.quad), useNativeDriver: true })])));
     anims.forEach((a) => a.start());
     return () => anims.forEach((a) => a.stop());
-  }, [vs]);
+  }, [vs, calm]);
   return (
     <View pointerEvents="none" style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       {vs.map((v, i) => (

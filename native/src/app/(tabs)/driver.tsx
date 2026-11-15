@@ -132,7 +132,7 @@ export default function Driver() {
   }, [crane?.id, crane?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const wrap = (c: React.ReactNode) => (
-    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }} keyboardShouldPersistTaps="handled">
+    <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 12 }} keyboardShouldPersistTaps="handled">
       <T style={{ fontSize: 26, fontWeight: '800' }}>لوحة السائق</T>
       {c}
     </ScrollView>
