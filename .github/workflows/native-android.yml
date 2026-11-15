@@ -3,8 +3,10 @@ name: Native Android APK
 on:
   workflow_dispatch:
   push:
-    branches: ['native-app']
+    branches: ['native-app', 'native-v3']
     paths: ['.github/workflows/native-android.yml', 'native/android.trigger']
+permissions:
+  contents: write
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -32,3 +34,9 @@ jobs:
         with:
           name: sanad-jaik-native-apk
           path: native/android/app/build/outputs/apk/release/*.apk
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/*.apk sanad-jaik-native.apk
+          gh release create "native-android-${{ github.run_number }}" sanad-jaik-native.apk --title "سند جايك (أندرويد) APK #${{ github.run_number }}" --notes "ملف APK للتجربة على أندرويد (arm64). فعّل «التثبيت من مصادر غير معروفة» ثم افتحه."

@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Ionicons } from '@expo/vector-icons';
 
-import { AuthArt } from '@/components/auth-art';
-import { Btn, Card, Muted, T } from '@/components/ui';
+import { AuthBg, AuthBrand, glass } from '@/components/auth-art';
+import { Btn, Muted, T } from '@/components/ui';
 import { SITE } from '@/lib/site';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
@@ -73,7 +73,7 @@ export default function Login() {
   const title = mode === 'in' ? 'أهلاً بعودتك' : mode === 'up' ? 'حساب جديد' : 'نسيت كلمة المرور';
   const sub = mode === 'in' ? 'سجّل دخولك حتى تكمل.' : mode === 'up' ? 'أنشئ حسابك بدقيقة.' : 'اكتب إيميلك وراح نرسل لك رابط لتغيير كلمة المرور.';
   const Field = ({ icon, children }: { icon: React.ComponentProps<typeof Ionicons>['name']; children: React.ReactNode }) => (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: C.surface2, borderRadius: 99, borderWidth: 1, borderColor: C.line, paddingHorizontal: 16, gap: 10 }}>
+    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: 'rgba(37,42,47,0.85)', borderRadius: 99, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, minHeight: 54, gap: 10 }}>
       <Ionicons name={icon} size={20} color={C.muted} />
       {children}
     </View>
@@ -81,11 +81,12 @@ export default function Login() {
   const bare = { ...input, flex: 1, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 };
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
-        <AuthArt height={270} />
-        <View style={{ marginTop: -56, paddingHorizontal: 16, gap: 14, maxWidth: 520, width: '100%', alignSelf: 'center' }}>
-          <Card style={{ padding: 20, gap: 12 }}>
-            <T style={{ fontSize: 26, fontWeight: '800' }}>{title}</T>
+      <AuthBg />
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24, paddingHorizontal: 18 }}>
+        <View style={{ gap: 14, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+          <View style={[glass, { gap: 12 }]}>
+            <AuthBrand />
+            <T style={{ fontSize: 28, fontWeight: '800', marginTop: 10 }}>{title}</T>
             <Muted>{sub}</Muted>
             {mode === 'up' && <Field icon="person-outline"><TextInput value={name} onChangeText={setName} placeholder="الاسم الثلاثي" placeholderTextColor={C.muted} style={bare} /></Field>}
             <Field icon="mail-outline"><TextInput value={email} onChangeText={setEmail} placeholder="الإيميل" placeholderTextColor={C.muted} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={[bare, { writingDirection: 'ltr' }]} /></Field>
@@ -98,13 +99,13 @@ export default function Login() {
             {mode === 'in' && <Pressable onPress={() => { setMode('forgot'); setErr(''); setInfo(''); }}><T style={{ color: C.accent, fontWeight: '700' }}>نسيت كلمة المرور؟</T></Pressable>}
             {!!err && <T style={{ color: C.danger }}>{err}</T>}
             {!!info && <T style={{ color: C.ok }}>{info}</T>}
-            {busy ? <ActivityIndicator color={C.accent} /> : <Btn label={mode === 'in' ? 'دخول' : mode === 'forgot' ? 'أرسل الرابط' : 'إنشاء الحساب'} onPress={submit} />}
+            {busy ? <ActivityIndicator color={C.accent} /> : <Btn label={mode === 'in' ? 'دخول' : mode === 'forgot' ? 'أرسل الرابط' : 'إنشاء الحساب'} onPress={submit} style={{ minHeight: 54 }} />}
             {mode === 'in' && <Pressable onPress={() => { setMode('up'); setErr(''); }}><T style={{ textAlign: 'center', color: C.muted }}>ما عندك حساب؟ <T style={{ color: C.accent, fontWeight: '800' }}>أنشئ حساب</T></T></Pressable>}
             {mode === 'up' && <Pressable onPress={() => { setMode('in'); setErr(''); }}><T style={{ textAlign: 'center', color: C.muted }}>عندك حساب؟ <T style={{ color: C.accent, fontWeight: '800' }}>سجّل دخول</T></T></Pressable>}
             {mode === 'forgot' && <Pressable onPress={() => { setMode('in'); setErr(''); setInfo(''); }}><T style={{ color: C.accent, fontWeight: '700', textAlign: 'center' }}>رجوع للدخول</T></Pressable>}
-          </Card>
+          </View>
           <Muted style={{ textAlign: 'center', fontSize: 12 }}>رقمك يظهر فقط للسائق اللي يقبل طلبك. بالتسجيل أنت توافق على الشروط وسياسة الخصوصية (من «حسابي»).</Muted>
-          <Btn label="تصفح بدون حساب" kind="ghost" onPress={() => router.back()} />
+          <Btn label="تصفح بدون حساب" kind="secondary" onPress={() => router.back()} style={{ backgroundColor: 'rgba(20,23,26,0.6)' }} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

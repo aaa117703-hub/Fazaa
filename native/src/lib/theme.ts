@@ -17,7 +17,7 @@ export const C = {
   info: '#5AA9FF',
 } as const;
 
-export const R = { sm: 14, md: 18, lg: 24, pill: 999 } as const;
+export const R = { sm: 16, md: 22, lg: 28, pill: 999 } as const;
 
 // خط IBM Plex Sans Arabic: عائلة لكل وزن (RN ما يركّب الأوزان لخط مخصص)
 export function fontFor(weight?: string | number): string {
