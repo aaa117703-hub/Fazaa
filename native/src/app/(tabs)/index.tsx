@@ -130,7 +130,7 @@ export default function Home() {
       {recommended.length > 0 && (
         <FadeIn delay={150}>
           <T style={{ fontSize: 18, fontWeight: '800', marginBottom: 8 }}>الموصى بهم</T>
-          <ScrollView horizontal inverted showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}>
             {recommended.map(({ c, d }) => (
               <Pressable key={c.id} onPress={() => router.push('/crane/' + c.id)} style={{ width: 200, padding: 12, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1.5, borderColor: c.tier === 'diamond' ? C.info : C.accent, gap: 4 }}>
                 <T style={{ fontWeight: '800', fontSize: 15 }} numberOfLines={1}>{c.name}</T>
