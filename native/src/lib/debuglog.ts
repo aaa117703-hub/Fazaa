@@ -49,3 +49,7 @@ export function installDebug() {
   } catch { void g; }
   dlog('evt', 'debug console installed');
 }
+
+// الكونسل مخفي افتراضياً؛ يظهر بخمس ضغطات على شعار «حول سند جايك» بالإعدادات.
+export const dbgState = { on: false };
+export function toggleDebug() { dbgState.on = !dbgState.on; notify(); }

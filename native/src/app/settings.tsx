@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
 import React from 'react';
 import { Alert, Linking, Pressable, ScrollView, Switch, View } from 'react-native';
@@ -6,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { showSizePreview } from '@/components/size-preview';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
+import { toggleDebug } from '@/lib/debuglog';
 import { BTN_STEPS, FONT_STEPS, Lang, setPrefs, usePrefs } from '@/lib/prefs';
 import { PAGES } from '@/lib/site';
 import { C } from '@/lib/theme';
@@ -33,12 +35,13 @@ function Stepper({ label, steps, value, onChange }: { label: string; steps: [num
 const LANGS: [Lang, string][] = [['ar', 'العربية'], ['en', 'English'], ['ckb', 'کوردی']];
 
 export default function Settings() {
+  const taps = React.useRef({ n: 0, t: 0 });
   const insets = useSafeAreaInsets();
   const p = usePrefs();
   const open = (u: string) => Linking.openURL(u).catch(() => Alert.alert('تعذّر فتح الرابط'));
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 40, gap: 12, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
-      <T style={{ fontSize: 26, fontWeight: '800' }}>الإعدادات</T>
+      <BackBar /><T style={{ fontSize: 26, fontWeight: '800' }}>الإعدادات</T>
       <Muted>كل الإعدادات تنحفظ على جهازك فقط.</Muted>
 
       <Card style={{ gap: 14 }}>
@@ -70,7 +73,7 @@ export default function Settings() {
       </Card>
 
       <Card style={{ gap: 8 }}>
-        <T style={{ fontWeight: '800', fontSize: 17 }}>حول سند جايك</T>
+        <Pressable onPress={() => { const k = taps.current, now = Date.now(); k.n = now - k.t < 1500 ? k.n + 1 : 1; k.t = now; if (k.n >= 5) { k.n = 0; toggleDebug(); } }}><T style={{ fontWeight: '800', fontSize: 17 }}>حول سند جايك</T></Pressable>
         <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>الإصدار</T><Muted>{Constants.expoConfig?.version ?? '1.0.0'}</Muted></View>
         <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>التغطية الحالية</T><Muted>كل محافظات العراق</Muted></View>
         <Btn kind="secondary" label="دليل «سيارتي تعطلت»" onPress={() => router.push('/guide')} />

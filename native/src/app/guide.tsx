@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { BackBar } from '@/components/back-bar';
 import * as Location from 'expo-location';
 import React from 'react';
 import { Alert, ScrollView, Share, View } from 'react-native';
@@ -21,7 +22,7 @@ export default function Guide() {
   };
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: 22, paddingBottom: insets.bottom + 28, gap: 12 }}>
-      <T style={{ fontSize: 24, fontWeight: '800' }}>شنو أسوي إذا تعطلت سيارتي؟</T>
+      <BackBar /><T style={{ fontSize: 24, fontWeight: '800' }}>شنو أسوي إذا تعطلت سيارتي؟</T>
       <Muted>اتبع هالخطوات بالترتيب. سلامتك أهم من أي شي.</Muted>
       {STEPS.filter((_, i) => more || i < 3).map(([t, d], i) => (
         <Card key={i} style={[rtl.row, { gap: 12, alignItems: 'flex-start' }]}>

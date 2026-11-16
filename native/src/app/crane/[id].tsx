@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { BackBar } from '@/components/back-bar';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
@@ -40,7 +41,7 @@ export default function CraneProfile() {
   const go = () => router.push('/login');
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 18, paddingTop: 24, paddingBottom: insets.bottom + 30, gap: 14, alignItems: 'center' }}>
-      <Avatar c={p} size={92} />
+      <BackBar /><Avatar c={p} size={92} />
       <T style={{ fontSize: 22, fontWeight: '800' }}>{p.name}</T>
       <View style={[rtl.row, { gap: 8 }]}>{p.verified && <Badge txt="موثق" color={C.ok} />}<Badge txt={t.name} color={t.color} /></View>
       <Muted>{p.type}{p.governorate ? ' · ' + p.governorate : ''}</Muted>

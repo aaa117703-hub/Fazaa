@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { BackBar } from '@/components/back-bar';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -66,6 +67,7 @@ export default function RouteScreen() {
         <Marker coordinate={dest} title={name ?? 'الوجهة'} pinColor={C.accent} />
         {me && <Polyline coordinates={line ?? [me, dest]} strokeColor={C.accent} strokeWidth={5} lineDashPattern={line ? undefined : [10, 8]} />}
       </MapView>
+      <BackBar style={{ position: 'absolute', right: 14, top: insets.top + 10 }} />
       <View style={{ position: 'absolute', left: 14, right: 14, bottom: insets.bottom + 14, backgroundColor: C.surface, borderRadius: R.lg, borderWidth: 1, borderColor: C.line, padding: 16, gap: 10 }}>
         <T style={{ fontSize: 17, fontWeight: '800' }}>{name ?? 'الوجهة'}</T>
         {state === 'loading' && <View style={[rtl.row, { gap: 8 }]}><ActivityIndicator color={C.accent} /><Muted>جاري تحديد موقعك…</Muted></View>}

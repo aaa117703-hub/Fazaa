@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
 import React from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
@@ -18,7 +19,7 @@ export default function Sos() {
   const insets = useSafeAreaInsets();
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingTop: 20 + insets.top * 0.3, gap: 12, paddingBottom: insets.bottom + 24 }} style={{ backgroundColor: C.bg }}>
-      <T style={{ fontSize: 24, fontWeight: '800', color: C.danger }}>طوارئ SOS</T>
+      <BackBar /><T style={{ fontSize: 24, fontWeight: '800', color: C.danger }}>طوارئ SOS</T>
       <Muted>إذا كو خطر فوري أو إصابات، اتصل بجهات الطوارئ أول شي.</Muted>
       {NUMS.map((x) => (
         <Pressable

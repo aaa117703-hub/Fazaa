@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { BackBar } from '@/components/back-bar';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,7 +56,7 @@ export default function Assist() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: 20, gap: 10 }}>
-        <T style={{ fontSize: 24, fontWeight: '800' }}>مساعد الأعطال</T>
+        <BackBar /><T style={{ fontSize: 24, fontWeight: '800' }}>مساعد الأعطال</T>
         <Muted>اكتب شنو صار بمركبتك وأقلك شنو تسوي. نصائح عامة وما تغني عن الميكانيكي.</Muted>
         <View style={[rtl.row, { flexWrap: 'wrap', gap: 8 }]}>
           {VEHICLES.map((v) => <Chip key={v} label={v} on={v === vehicle} onPress={() => setVehicle(v === vehicle ? '' : v)} />)}

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BackBar } from '@/components/back-bar';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { dial } from '@/lib/contact';
@@ -57,7 +58,7 @@ function Form({ onSent }: { onSent: (a: { id: string; targets: number | null }) 
   };
   return (
     <>
-      <T style={{ fontSize: 24, fontWeight: '800' }}>سيارتي تعطلت</T>
+      <BackBar /><T style={{ fontSize: 24, fontWeight: '800' }}>سيارتي تعطلت</T>
       <Muted>راح نرسل طلبك لأقرب 3 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.</Muted>
       <View style={{ gap: 6 }}><Muted>شنو المشكلة؟</Muted>
         <Select label="شنو المشكلة؟" value={issueName(issue)} options={ISSUES.map((i) => i[1])} onChange={(v) => setIssue((ISSUES.find((i) => i[1] === v) ?? ISSUES[0])[0])} /></View>

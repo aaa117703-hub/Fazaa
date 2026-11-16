@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { asText, clearLines, dlog, getLines, subscribe, touchStat } from '@/lib/debuglog';
+import { asText, clearLines, dbgState, dlog, getLines, subscribe, touchStat } from '@/lib/debuglog';
 
 const COL = { log: '#9aa4ad', warn: '#ffb020', error: '#ff5a5a', touch: '#5ad1ff', evt: '#7CFC9a' } as const;
 
@@ -12,6 +12,7 @@ export function DebugConsole() {
   const [open, setOpen] = useState(false);
   const [, force] = useState(0);
   useEffect(() => subscribe(() => force((n) => n + 1)), []);
+  if (!dbgState.on) return null;
   const errs = getLines().filter((l) => l.lvl === 'error').length;
   return (
     <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, { zIndex: 999 }]}>
