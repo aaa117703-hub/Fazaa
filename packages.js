@@ -49,6 +49,8 @@
     F.$$('[data-pkg]', el).forEach((b) => {
       b.onclick = () => {
         const t = F.tierOf(b.dataset.pkg);
+        // نسجّل الطلب حتى تشوفه الإدارة (ما نمنع واتساب إذا فشل التسجيل)
+        if (c && c.id) F.sb.q('subscription_requests', '', { method: 'POST', body: { crane_id: c.id, tier: b.dataset.pkg, period: 'monthly' } }).catch(() => {});
         F.contact.support('مرحباً، أريد الاشتراك بعضوية «' + t.name + '» بتطبيق سند جايك' + (c && c.id ? ' (رقم الكرين: ' + c.id + ')' : ''));
       };
     });

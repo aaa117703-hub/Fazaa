@@ -2,12 +2,12 @@
 (function () {
   'use strict';
   const F = window.F;
-  let tab = 'subs', mode = 'drivers', govFilter = '';
+  let tab = 'subreq', mode = 'drivers', govFilter = '', userQ = '', userF = 'all', usersCache = [];
   let cache = { cranes: [], phones: {} };
 
   const TABSETS = {
-    drivers: [['subs', 'المشتركين'], ['cranes', 'كل السواق'], ['docs', 'الوثائق']],
-    app: [['control', 'التحكم'], ['shops', 'المحلات'], ['overview', 'نظرة عامة'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['health', 'فحص الاتصال']]
+    drivers: [['subreq', 'طلبات الاشتراك'], ['subs', 'المشتركين'], ['cranes', 'كل السواق'], ['docs', 'الوثائق']],
+    app: [['users', 'المستخدمين'], ['control', 'التحكم'], ['shops', 'المحلات'], ['overview', 'نظرة عامة'], ['requests', 'الطلبات'], ['reports', 'البلاغات'], ['errors', 'الأخطاء'], ['alog', 'السجل'], ['health', 'فحص الاتصال']]
   };
   const DAY = 864e5;
   const left = (c) => {
@@ -30,12 +30,80 @@
     const days = st.daily || [], mx = Math.max(1, ...days.map((d) => d.n));
     const chart = '<div class="bars">' + days.map((d) => '<div class="bar" title="' + d.d + ': ' + d.n + '"><i style="height:' + Math.round(d.n / mx * 100) + '%"></i><span>' + d.d.slice(3) + '</span></div>').join('') + '</div>';
     const gmax = Math.max(1, ...(st.by_gov || []).map((g) => g.n));
-    return '<div class="stats">' + stat(st.today, 'طلبات اليوم') + stat(st.week, 'آخر 7 أيام') + stat(st.month, 'آخر 30 يوم') + '</div>' +
+    return (await extraStats()) + '<div class="stats">' + stat(st.today, 'طلبات اليوم') + stat(st.week, 'آخر 7 أيام') + stat(st.month, 'آخر 30 يوم') + '</div>' +
       '<div class="stats mt">' + stat(st.drivers, 'سواق مسجلين') + stat(st.online, 'متاح الحين') + stat(st.users, 'مستخدمين') + '</div>' +
       '<div class="stats mt">' + stat(F.money(Math.round(monthly)), 'إيراد شهري تقريبي') + stat(F.money(Math.round(total)), 'قيمة الاشتراكات الفعّالة') + stat(st.avg_rating != null ? '★ ' + st.avg_rating : '—', 'متوسط التقييم') + '</div>' +
       '<div class="stats mt">' + stat(st.completed_month, 'طلبات مكتملة (30 يوم)') + stat(rep, 'بلاغات جديدة') + stat(st.month ? Math.round(st.completed_month / st.month * 100) + '%' : '—', 'نسبة الإنجاز') + '</div>' +
       '<div class="card mt"><h2>الطلبات آخر 14 يوم</h2>' + chart + '</div>' +
       '<div class="card mt"><h2>السواق حسب المحافظة</h2>' + ((st.by_gov || []).map((g) => '<div class="hbar"><span>' + F.esc(g.g) + '</span><div><i style="width:' + Math.round(g.n / gmax * 100) + '%"></i></div><b>' + g.n + '</b></div>').join('') || '<p class="muted small">ما كو بيانات.</p>') + '</div>';
+  }
+
+
+  /* ---------- المستخدمين / طلبات الاشتراك / الأخطاء / السجل ---------- */
+  const wa = (ph, msg) => 'https://wa.me/964' + String(ph || '').replace(/^0/, '') + (msg ? '?text=' + encodeURIComponent(msg) : '');
+  const ago = (s) => { if (!s) return '—'; const d = Math.floor((Date.now() - Date.parse(s)) / DAY); return d <= 0 ? 'اليوم' : d === 1 ? 'أمس' : 'قبل ' + d + ' يوم'; };
+  async function users() {
+    const rows = (await F.sb.rpc('admin_users', { p_search: userQ || null, p_limit: 500 })) || [];
+    usersCache = rows;
+    const F2 = { all: () => true, drivers: (u) => !!u.crane_id, customers: (u) => !u.crane_id, subs: (u) => u.crane_id && u.tier !== 'bronze' && u.sub_expires_at && Date.parse(u.sub_expires_at) > Date.now(), pending: (u) => u.sub_pending, inactive: (u) => !u.last_sign_in_at || Date.now() - Date.parse(u.last_sign_in_at) > 30 * DAY };
+    const L = { all: 'الكل', drivers: 'سواق', customers: 'زبائن', subs: 'مشتركين', pending: 'طلب اشتراك', inactive: 'غير نشط 30 يوم' };
+    const list = rows.filter(F2[userF] || F2.all);
+    return '<div class="card"><div class="field"><label>بحث (اسم، إيميل، هاتف)</label><div class="row"><input id="ad-uq" class="grow" maxlength="60" value="' + F.esc(userQ) + '"><button class="btn" data-a="u-search">بحث</button></div></div>' +
+      '<div class="tabs">' + Object.keys(L).map((k) => '<button class="chip ' + (k === userF ? 'on' : '') + '" data-a="u-filter" data-id="' + k + '">' + L[k] + ' (' + rows.filter(F2[k]).length + ')</button>').join('') + '</div>' +
+      '<div class="row between mt-s"><span class="muted small">' + list.length + ' مستخدم</span><button class="btn sm secondary" data-a="u-csv">تصدير Excel</button></div></div>' +
+      '<div class="card mt">' + (list.map((u) =>
+        '<div class="sub-row"><div><b>' + F.esc(u.full_name || 'بدون اسم') + '</b> ' +
+        (u.crane_id ? '<span class="badge ' + (u.verified ? 'green' : 'amber') + '">سائق' + (u.verified ? ' موثق' : '') + '</span> ' : '') +
+        (u.crane_id && u.tier !== 'bronze' ? '<span class="badge amber">' + F.esc((F.tierOf(u.tier) || {}).name || u.tier) + '</span> ' : '') +
+        (u.sub_pending ? '<span class="badge red">طلب اشتراك</span>' : '') +
+        '<div class="muted small ltr">' + F.esc(u.email || '') + '</div>' +
+        '<div class="muted small">' + F.esc([u.governorate, u.car].filter(Boolean).join(' · ') || '—') + '</div>' +
+        '<div class="muted small">سجّل ' + dshort(u.created_at) + ' · آخر دخول ' + ago(u.last_sign_in_at) + ' · طلبات ' + u.requests_n + ' · اتصالات ' + u.calls_n + '</div></div>' +
+        '<div class="sub-side">' + (u.phone ? '<a class="btn sm secondary ltr" target="_blank" rel="noopener" href="' + wa(u.phone) + '">واتساب ' + F.esc(u.phone) + '</a>' : '<span class="muted small">بدون رقم</span>') + '</div></div>').join('') || '<p class="muted small">ما كو نتائج.</p>') + '</div>';
+  }
+  function csvUsers() {
+    const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const head = ['الاسم', 'الإيميل', 'الهاتف', 'المحافظة', 'السيارة', 'سائق', 'الباقة', 'ينتهي', 'تاريخ التسجيل', 'آخر دخول', 'الطلبات', 'الاتصالات'];
+    const lines = usersCache.map((u) => [u.full_name, u.email, u.phone, u.governorate, u.car, u.crane_id ? 'نعم' : 'لا', u.crane_id ? u.tier : '', u.sub_expires_at || '', u.created_at, u.last_sign_in_at || '', u.requests_n, u.calls_n].map(q).join(','));
+    const blob = new Blob(['﻿' + [head.map(q).join(',')].concat(lines).join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sanad-users.csv'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  async function subreq() {
+    const [rows, ph] = await Promise.all([F.sb.q('subscription_requests', 'select=id,user_id,crane_id,tier,period,status,note,created_at,cranes(name,governorate)&order=created_at.desc&limit=200'), F.sb.q('crane_contacts', 'select=crane_id,phone&limit=1000')]);
+    const phones = {}; (ph || []).forEach((x) => { phones[x.crane_id] = x.phone; });
+    const line = (r) => {
+      const t = (F.tierOf(r.tier) || {}), p = phones[r.crane_id];
+      return '<div class="sub-row"><div><b>' + F.esc(r.cranes ? r.cranes.name : '—') + '</b> <span class="badge amber">' + F.esc(t.name || r.tier) + ' · ' + (r.period === 'yearly' ? 'سنوي' : 'شهري') + '</span>' +
+        '<div class="muted small">' + F.esc(r.cranes && r.cranes.governorate || '') + ' · ' + dshort(r.created_at) + ' · ' + ({ pending: 'بانتظار', approved: 'مفعّل', rejected: 'مرفوض' }[r.status]) + '</div></div>' +
+        '<div class="sub-side">' + (p ? '<a class="btn sm secondary" target="_blank" rel="noopener" href="' + wa(p, 'مرحباً، بخصوص طلب اشتراكك بعضوية «' + (t.name || '') + '» بسند جايك') + '">واتساب</a>' : '') +
+        (r.status === 'pending' ? '<button class="btn sm green" data-a="sr-ok" data-id="' + r.id + '">تفعيل</button><button class="btn sm danger" data-a="sr-no" data-id="' + r.id + '">رفض</button>' : '') + '</div></div>';
+    };
+    const pend = (rows || []).filter((r) => r.status === 'pending'), done = (rows || []).filter((r) => r.status !== 'pending');
+    return '<div class="card"><h2>بانتظار القرار (' + pend.length + ')</h2><p class="muted small">يوصل الطلب لما السائق يضغط «اطلب عبر واتساب». اتفق وياه بالواتساب، وبعد الدفع اضغط «تفعيل».</p>' + (pend.map(line).join('') || '<p class="muted small">ما كو طلبات.</p>') + '</div>' +
+      '<div class="card mt"><h2>السجل (' + done.length + ')</h2>' + (done.map(line).join('') || '<p class="muted small">فارغ.</p>') + '</div>';
+  }
+  async function errorsTab() {
+    const rows = (await F.sb.q('error_log', 'select=id,platform,msg,ctx,created_at,user_id&order=created_at.desc&limit=100')) || [];
+    const by = {}; rows.forEach((r) => { (by[r.msg] = by[r.msg] || { n: 0, r: r }).n++; });
+    const top = Object.values(by).sort((a, b) => b.n - a.n).slice(0, 8);
+    return '<div class="card"><div class="row between"><h2 style="margin:0">أخطاء التطبيق (' + rows.length + ')</h2>' + (rows.length ? '<button class="btn sm danger" data-a="err-clear">مسح الكل</button>' : '') + '</div>' +
+      '<p class="muted small">تنرسل تلقائياً من الموقع والتطبيق لما يصير خطأ عند المستخدم.</p>' +
+      (top.length ? '<h3 class="mt-s">الأكثر تكراراً</h3>' + top.map((x) => '<div class="sub-row"><div class="small ltr">' + F.esc(x.r.msg) + '</div><div class="sub-side"><b>×' + x.n + '</b></div></div>').join('') : '') + '</div>' +
+      '<div class="card mt">' + (rows.map((r) => '<div class="sub-row"><div><div class="small ltr">' + F.esc(r.msg) + '</div>' + (r.ctx ? '<div class="muted small ltr">' + F.esc(r.ctx) + '</div>' : '') + '</div><div class="sub-side muted small">' + F.esc(r.platform || '') + '<br>' + ago(r.created_at) + '</div></div>').join('') || '<p class="muted small">ما كو أخطاء 🎉</p>') + '</div>';
+  }
+  async function alogTab() {
+    const rows = (await F.sb.q('admin_log', 'select=id,action,target,detail,created_at&order=created_at.desc&limit=100')) || [];
+    const AL = { sub_approve: 'تفعيل اشتراك', sub_reject: 'رفض اشتراك' };
+    return '<div class="card"><h2>سجل إجراءات الإدارة</h2>' + (rows.map((r) => '<div class="sub-row"><div><b>' + F.esc(AL[r.action] || r.action) + '</b><div class="muted small">' + F.esc(r.detail || '') + '</div></div><div class="sub-side muted small">' + dshort(r.created_at) + '</div></div>').join('') || '<p class="muted small">ما كو إجراءات بعد.</p>') + '</div>';
+  }
+  async function extraStats() {
+    try {
+      const o = await F.sb.rpc('admin_overview');
+      return '<div class="stats">' + stat(o.users_7d, 'مستخدمين جدد (7 أيام)') + stat(o.active_7d, 'نشطين (7 أيام)') + stat(o.sub_pending, 'طلبات اشتراك') + '</div>' +
+        '<div class="stats mt">' + stat(o.expiring_7d, 'اشتراكات تنتهي خلال أسبوع') + stat(o.req_unanswered_7d, 'طلبات بدون قبول (7 أيام)') + stat(o.errors_24h, 'أخطاء آخر 24 ساعة') + '</div>' +
+        '<div class="stats mt">' + stat(o.docs_pending, 'وثائق بانتظار') + stat(o.shops_pending, 'محلات بانتظار') + stat(o.reports_new, 'بلاغات جديدة') + '</div>' +
+        '<div class="stats mt">' + stat(o.tier_silver, 'مشتركين فضي') + stat(o.tier_gold, 'مشتركين ذهبي') + stat(o.tier_diamond, 'مشتركين شركات') + '</div><div class="mt"></div>';
+    } catch (e) { return ''; }
   }
 
   async function cranes() {
@@ -161,7 +229,7 @@
       TABS.map((t) => '<button class="chip ' + (t[0] === tab ? 'on' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
     el.innerHTML = hdr + '<p class="muted center mt">جاري التحميل…</p>';
     let body;
-    try { body = await ({ overview: overview, shops: shopsTab, subs: subs, control: control, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
+    try { body = await ({ users: users, subreq: subreq, errors: errorsTab, alog: alogTab, overview: overview, shops: shopsTab, subs: subs, control: control, cranes: cranes, requests: requests, docs: docsTab, reports: reports, health: health }[tab])(); }
     catch (e) { body = '<div class="warn">' + F.esc(F.errMsg(e)) + '</div>'; }
     el.innerHTML = hdr + body;
     const gs = F.$('#ad-gov', el); if (gs) gs.onchange = () => { govFilter = gs.value; render(); };
@@ -251,6 +319,12 @@
     if (t.dataset.tab) { tab = t.dataset.tab; return render(); }
     const a = t.dataset.a, id = t.dataset.id;
     const c = cache.cranes.find((x) => x.id === id);
+    if (a === 'u-search') { userQ = (F.$('#ad-uq').value || '').trim(); return render(); }
+    if (a === 'u-filter') { userF = id; return render(); }
+    if (a === 'u-csv') return csvUsers();
+    if (a === 'err-clear') return confirmBox('مسح الأخطاء', 'تنمسح كل الأخطاء المسجلة.', 'امسح', () => F.sb.q('error_log', 'id=gt.0', { method: 'DELETE' }).then(() => { F.toast('تم', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err')));
+    if (a === 'sr-ok') { const m = F.modal('<h2>تفعيل الاشتراك</h2><div class="field"><label>المدة (أشهر)</label><input id="sr-m" class="ltr" inputmode="numeric" value="1" maxlength="2"></div><div class="row mt"><button class="btn grow" id="sr-y">تفعيل</button><button class="btn secondary" id="sr-n">رجوع</button></div>'); F.$('#sr-n', m.el).onclick = m.close; F.$('#sr-y', m.el).onclick = () => { const mo = Math.max(1, Math.min(36, parseInt(F.$('#sr-m', m.el).value, 10) || 1)); m.close(); F.sb.rpc('decide_subscription', { p_id: id, p_approve: true, p_months: mo }).then(() => { F.toast('تم التفعيل', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err')); }; return; }
+    if (a === 'sr-no') return F.sb.rpc('decide_subscription', { p_id: id, p_approve: false }).then(() => { F.toast('تم الرفض'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
     if (a === 'add') return addModal();
     if (a === 'sp-save') { const ph = F.cleanPhone(F.$('#sp-phone').value); if (ph && !F.validPhone(ph)) return F.toast('الرقم لازم 11 رقم ويبدأ بـ 07.', 'err'); return setting('support', { phone: ph || '' }); }
     if (a === 'shop-add') return F.shops.add();
