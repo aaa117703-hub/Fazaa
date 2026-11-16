@@ -11,7 +11,7 @@ import { Select } from '@/components/select';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { loadBlocks, unblock } from '@/lib/blocks';
-import { ago, avatarUrl, GOVS } from '@/lib/data';
+import { avatarUrl, GOVS } from '@/lib/data';
 import { carSpec, carSpecText } from '@/lib/carspecs';
 import { PAGES } from '@/lib/site';
 import { supabase } from '@/lib/supabase';
@@ -19,9 +19,13 @@ import { C, fontFor, R } from '@/lib/theme';
 import { CARS } from '@/lib/vehicles';
 
 type Prof = { full_name: string | null; phone: string | null; car: string | null; governorate: string | null; avatar_path?: string | null; car_weight_kg?: number | null; car_length_m?: number | null };
-type ReqRow = { number: number | null; issue: string; status: string; created_at: string };
+type ReqRow = { number: number | null; issue: string; status: string; created_at: string; destination?: string | null; cranes?: { name: string } | null };
 const ST: Record<string, string> = { open: 'قيد البحث', accepted: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي', expired: 'منتهي' };
 const ISS: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
+const ISS_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> = { tow: 'car-outline', battery: 'battery-dead-outline', tire: 'disc-outline', fuel: 'water-outline', locked: 'key-outline', accident: 'warning-outline', other: 'help-circle-outline' };
+const ST_COLOR: Record<string, string> = { open: C.info, accepted: C.accent, completed: C.ok, cancelled: C.muted, expired: C.muted };
+const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+const fmtWhen = (iso: string) => { const d = new Date(iso); const h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0'); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' · ' + ((h % 12) || 12) + ':' + m + (h >= 12 ? ' م' : ' ص'); };
 const inp = { fontFamily: fontFor('400'), backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right' as const, borderWidth: 1, borderColor: C.line };
 
 const parseCar = (t: string | null): CarVal => {
@@ -86,7 +90,7 @@ export default function Profile() {
     if (!uid) return;
     const [pr, rq, bl] = await Promise.all([
       supabase.from('profiles').select('full_name,phone,car,governorate,avatar_path,car_weight_kg,car_length_m').eq('id', uid).maybeSingle(),
-      supabase.from('requests').select('number,issue,status,created_at').order('created_at', { ascending: false }).limit(10),
+      supabase.from('requests').select('number,issue,status,created_at,destination,cranes(name)').order('created_at', { ascending: false }).limit(15),
       loadBlocks().catch(() => ({} as Record<string, string>)),
     ]);
     setP((pr.data as Prof | null) ?? { full_name: null, phone: null, car: null, governorate: null });
@@ -209,15 +213,35 @@ export default function Profile() {
         <Btn label="تعديل حسابي" onPress={startEdit} style={{ alignSelf: 'stretch', marginTop: 4 }} />
       </View>
 
-      <Card style={{ gap: 6 }}>
+      <View style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>طلباتي السابقة</T>
-        {reqs === null ? <ActivityIndicator color={C.accent} /> : reqs.length === 0 ? <Muted>ما عندك طلبات بعد.</Muted> : reqs.map((x, i) => (
-          <View key={i} style={[rtl.row, { justifyContent: 'space-between', paddingVertical: 4 }]}>
-            <T><T style={{ fontWeight: '800' }}>#{x.number ?? ''}</T> {ISS[x.issue] ?? ''}</T>
-            <Muted style={{ fontSize: 13 }}>{ST[x.status] ?? x.status} · {ago(x.created_at)}</Muted>
-          </View>
-        ))}
-      </Card>
+        {reqs === null ? <ActivityIndicator color={C.accent} /> : reqs.length === 0 ? <Card><Muted>ما عندك طلبات بعد.</Muted></Card> : reqs.map((x, i) => {
+          const col = ST_COLOR[x.status] ?? C.muted;
+          return (
+            <Card key={i} style={{ gap: 8, padding: 14 }}>
+              <View style={[rtl.row, { gap: 12 }]}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: col + '22', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name={ISS_ICON[x.issue] ?? 'help-circle-outline'} size={22} color={col} />
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <T style={{ fontWeight: '800', fontSize: 16 }}>{ISS[x.issue] ?? 'طلب مساعدة'}</T>
+                  <Muted style={{ fontSize: 12 }}>{fmtWhen(x.created_at)}</Muted>
+                </View>
+                <View style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 99, backgroundColor: col + '22' }}>
+                  <T style={{ color: col, fontSize: 12, fontWeight: '700' }}>{ST[x.status] ?? x.status}</T>
+                </View>
+              </View>
+              {(!!x.cranes?.name || !!x.destination) && (
+                <View style={{ gap: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.line }}>
+                  {!!x.cranes?.name && <View style={[rtl.row, { gap: 6 }]}><Ionicons name="person-outline" size={15} color={C.muted} /><Muted style={{ fontSize: 13 }}>السائق: {x.cranes.name}</Muted></View>}
+                  {!!x.destination && <View style={[rtl.row, { gap: 6 }]}><Ionicons name="location-outline" size={15} color={C.muted} /><Muted style={{ fontSize: 13, flex: 1 }}>الوجهة: {x.destination}</Muted></View>}
+                </View>
+              )}
+              {x.number != null && <Muted style={{ fontSize: 11 }}>رقم الطلب {x.number}</Muted>}
+            </Card>
+          );
+        })}
+      </View>
 
       {blocked.length > 0 && (
         <Card style={{ gap: 8 }}>

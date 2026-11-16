@@ -16,7 +16,7 @@ export function ArchLoader({ pct, size = 150 }: { pct: number; size?: number }) 
   const trail: React.ReactNode[] = [];
   for (let d = 0; d <= AL; d += 3) {
     const [x, y] = at(d);
-    const dot = <View key={d} style={{ position: 'absolute', left: (x - 6) * u, top: (y - 6) * u, width: 12 * u, height: 12 * u, borderRadius: 6 * u, backgroundColor: d <= cur ? '#FF6B2C' : 'rgba(255,255,255,0.16)' }} />;
+    const dot = <View key={d} style={{ position: 'absolute', left: (x - 6) * u, top: (y - 6) * u, width: 12 * u, height: 12 * u, borderRadius: 6 * u, backgroundColor: d <= cur ? '#FFC93C' : 'rgba(255,255,255,0.16)' }} />;
     (d <= cur ? trail : track).push(dot);
   }
   const [px, py] = at(cur);
@@ -28,7 +28,7 @@ export function ArchLoader({ pct, size = 150 }: { pct: number; size?: number }) 
         <View style={{ position: 'absolute', left: -2 * u, top: 6 * u, width: 22 * u, height: 7 * u, borderRadius: 4 * u, backgroundColor: '#F5F5F0', transform: [{ rotate: '-47deg' }] }} />
         <View style={{ position: 'absolute', left: 9 * u, top: 6 * u, width: 22 * u, height: 7 * u, borderRadius: 4 * u, backgroundColor: '#F5F5F0', transform: [{ rotate: '47deg' }] }} />
       </View>
-      <View style={{ position: 'absolute', left: (px - 6.5) * u, top: (py - 6.5) * u, width: 13 * u, height: 13 * u, borderRadius: 6.5 * u, backgroundColor: '#F5F5F0', shadowColor: '#FF6B2C', shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }} />
+      <View style={{ position: 'absolute', left: (px - 6.5) * u, top: (py - 6.5) * u, width: 13 * u, height: 13 * u, borderRadius: 6.5 * u, backgroundColor: '#F5F5F0', shadowColor: '#FFC93C', shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }} />
     </View>
   );
 }
