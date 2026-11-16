@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackBar } from '@/components/back-bar';
@@ -9,12 +9,22 @@ import { useIsAdmin } from '@/lib/admin';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
-type Tab = 'cranes' | 'docs' | 'shops' | 'reports';
-const TABS: [Tab, string][] = [['cranes', 'السواق'], ['docs', 'الوثائق'], ['shops', 'المحلات'], ['reports', 'البلاغات']];
+type Tab = 'users' | 'subreq' | 'cranes' | 'docs' | 'shops' | 'reports' | 'errors';
+const TABS: [Tab, string][] = [['users', 'المستخدمين'], ['subreq', 'الاشتراكات'], ['cranes', 'السواق'], ['docs', 'الوثائق'], ['shops', 'المحلات'], ['reports', 'البلاغات'], ['errors', 'الأخطاء']];
 const DK: Record<string, string> = { id_front: 'الهوية — أمام', id_back: 'الهوية — خلف', vehicle_front: 'سنوية — أمام', vehicle_back: 'سنوية — خلف', license_front: 'الإجازة — أمام', license_back: 'الإجازة — خلف' };
 const ST: Record<string, [string, string]> = { pending: ['بانتظار', C.warn], approved: ['مقبول', C.ok], rejected: ['مرفوض', C.danger] };
 
 type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+
+const ago = (s?: string | null) => { if (!s) return '—'; const d = Math.floor((Date.now() - Date.parse(s)) / 864e5); return d <= 0 ? 'اليوم' : d === 1 ? 'أمس' : 'قبل ' + d + ' يوم'; };
+const TN: Record<string, string> = { bronze: 'أساسي', silver: 'فضي', gold: 'ذهبي', diamond: 'شركات' };
+const waUrl = (ph: string, msg?: string) => 'https://wa.me/964' + ph.replace(/^0/, '') + (msg ? '?text=' + encodeURIComponent(msg) : '');
+const UF: Record<string, [string, (u: Row) => boolean]> = {
+  all: ['الكل', () => true], drivers: ['سواق', (u) => !!u.crane_id], customers: ['زبائن', (u) => !u.crane_id],
+  subs: ['مشتركين', (u) => !!u.crane_id && u.tier !== 'bronze' && !!u.sub_expires_at && Date.parse(u.sub_expires_at) > Date.now()],
+  pending: ['طلب اشتراك', (u) => !!u.sub_pending], inactive: ['غير نشط', (u) => !u.last_sign_in_at || Date.now() - Date.parse(u.last_sign_in_at) > 30 * 864e5],
+};
 
 function Chip({ txt, color }: { txt: string; color: string }) {
   return <View style={{ paddingHorizontal: 10, paddingVertical: 3, borderRadius: 99, backgroundColor: color + '22' }}><T style={{ color, fontSize: 12, fontWeight: '700' }}>{txt}</T></View>;
@@ -23,26 +33,43 @@ function Chip({ txt, color }: { txt: string; color: string }) {
 export default function Admin() {
   const insets = useSafeAreaInsets();
   const admin = useIsAdmin();
-  const [tab, setTab] = useState<Tab>('cranes');
+  const [tab, setTab] = useState<Tab>('users');
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
   const [img, setImg] = useState('');
+  const [q, setQ] = useState('');
+  const [qIn, setQIn] = useState('');
+  const [flt, setFlt] = useState('all');
+  const [ov, setOv] = useState<Row | null>(null);
+  const [phones, setPhones] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setBusy(true);
     let r: { data: Row[] | null; error: unknown };
-    if (tab === 'cranes') r = await supabase.from('cranes').select('id,name,type,governorate,verified,listed,tier,status').order('created_at', { ascending: false }).limit(200);
+    if (tab === 'users') r = await supabase.rpc('admin_users', { p_search: q || null, p_limit: 500 }) as typeof r;
+    else if (tab === 'subreq') {
+      r = await supabase.from('subscription_requests').select('id,crane_id,tier,period,status,created_at,cranes(name,governorate)').order('created_at', { ascending: false }).limit(200);
+      const ph = await supabase.from('crane_contacts').select('crane_id,phone').limit(1000);
+      setPhones(Object.fromEntries(((ph.data ?? []) as Row[]).map((x) => [x.crane_id, x.phone])));
+    }
+    else if (tab === 'errors') r = await supabase.from('error_log').select('id,platform,msg,ctx,created_at').order('created_at', { ascending: false }).limit(100);
+    else if (tab === 'cranes') r = await supabase.from('cranes').select('id,name,type,governorate,verified,listed,tier,status').order('created_at', { ascending: false }).limit(200);
     else if (tab === 'docs') r = await supabase.from('driver_documents').select('id,kind,path,status,note,crane_id,cranes(name,verified,governorate)').order('created_at', { ascending: true }).limit(300);
     else if (tab === 'shops') r = await supabase.from('shops').select('id,name,kind,phone,status,governorate').order('created_at', { ascending: false }).limit(200);
     else r = await supabase.from('reports').select('id,reason,details,status,cranes(name)').order('created_at', { ascending: false }).limit(100);
     setRows(r.error ? [] : (r.data ?? []));
     if (r.error) Alert.alert('تعذّر التحميل', 'تأكد من الإنترنت وصلاحيات المدير.');
     setBusy(false);
-  }, [tab]);
+  }, [tab, q]);
   useEffect(() => { if (admin) load(); }, [admin, load]);
+  useEffect(() => { if (admin) supabase.rpc('admin_overview').then(({ data }) => setOv(data as Row | null), () => {}); }, [admin]);
 
   const patch = async (table: string, id: string, body: Row) => {
     const { error } = await supabase.from(table).update(body).eq('id', id);
+    if (error) Alert.alert('تعذّر الحفظ', error.message); else load();
+  };
+  const decide = async (id: string, ok: boolean, months: number) => {
+    const { error } = await supabase.rpc('decide_subscription', { p_id: id, p_approve: ok, p_months: months });
     if (error) Alert.alert('تعذّر الحفظ', error.message); else load();
   };
   const del = (table: string, id: string, what: string) =>
@@ -76,6 +103,70 @@ export default function Admin() {
         </View>
         {busy && <ActivityIndicator color={C.accent} style={{ marginTop: 20 }} />}
         {!busy && rows.length === 0 && <Muted>ما كو بيانات.</Muted>}
+
+
+        {!busy && tab === 'users' && (
+          <>
+            {ov && (
+              <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
+                {([['مستخدمين', ov.users], ['جدد 7 أيام', ov.users_7d], ['نشطين 7 أيام', ov.active_7d], ['سواق', ov.drivers], ['طلبات اشتراك', ov.sub_pending], ['تنتهي قريباً', ov.expiring_7d], ['أخطاء 24س', ov.errors_24h]] as [string, number][]).map(([l, n]) => (
+                  <View key={l} style={{ flexGrow: 1, minWidth: 90, padding: 10, borderRadius: 18, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: 'center' }}>
+                    <T style={{ fontSize: 20, fontWeight: '800', color: C.accent }}>{n ?? 0}</T><Muted style={{ fontSize: 11 }}>{l}</Muted>
+                  </View>
+                ))}
+              </View>
+            )}
+            <View style={[rtl.row, { gap: 8 }]}>
+              <TextInput value={qIn} onChangeText={setQIn} onSubmitEditing={() => setQ(qIn.trim())} returnKeyType="search" placeholder="بحث: اسم، إيميل، هاتف" placeholderTextColor={C.muted} style={{ flex: 1, fontFamily: 'IBMPlexSansArabic_400Regular', color: C.text, textAlign: 'right', backgroundColor: C.surface2, borderRadius: 99, borderWidth: 1, borderColor: C.line, paddingHorizontal: 16, paddingVertical: 11 }} />
+              <Btn small label="بحث" onPress={() => setQ(qIn.trim())} />
+            </View>
+            <View style={[rtl.row, { gap: 6, flexWrap: 'wrap' }]}>
+              {Object.entries(UF).map(([k, [l, f]]) => (
+                <Pressable key={k} onPress={() => setFlt(k)} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 99, backgroundColor: flt === k ? C.accent : C.surface2 }}>
+                  <T style={{ fontSize: 13, fontWeight: '700', color: flt === k ? C.onAccent : C.text }}>{l} ({rows.filter(f).length})</T>
+                </Pressable>
+              ))}
+            </View>
+            {rows.filter(UF[flt][1]).map((u) => (
+              <Card key={u.id} style={{ gap: 6 }}>
+                <View style={[rtl.row, { gap: 6, flexWrap: 'wrap' }]}>
+                  <T style={{ fontWeight: '800' }}>{u.full_name || 'بدون اسم'}</T>
+                  {!!u.crane_id && <Chip txt={u.verified ? 'سائق موثق' : 'سائق'} color={u.verified ? C.ok : C.warn} />}
+                  {!!u.crane_id && u.tier !== 'bronze' && <Chip txt={TN[u.tier] ?? u.tier} color={C.accent} />}
+                  {!!u.sub_pending && <Chip txt="طلب اشتراك" color={C.danger} />}
+                </View>
+                <Muted style={{ writingDirection: 'ltr' }}>{u.email}</Muted>
+                <Muted>{[u.governorate, u.car].filter(Boolean).join(' · ') || '—'}</Muted>
+                <Muted style={{ fontSize: 12 }}>آخر دخول {ago(u.last_sign_in_at)} · طلبات {u.requests_n} · اتصالات {u.calls_n}</Muted>
+                {!!u.phone && <Btn small kind="secondary" label={'واتساب ' + u.phone} onPress={() => Linking.openURL(waUrl(u.phone)).catch(() => {})} />}
+              </Card>
+            ))}
+          </>
+        )}
+
+        {!busy && tab === 'subreq' && rows.map((r) => {
+          const [lbl, col] = ST[r.status] ?? [r.status, C.muted];
+          const ph = phones[r.crane_id];
+          return (
+            <Card key={r.id} style={{ gap: 8 }}>
+              <View style={[rtl.row, { gap: 8, justifyContent: 'space-between' }]}><T style={{ fontWeight: '800', flex: 1 }}>{r.cranes?.name ?? '—'}</T><Chip txt={lbl} color={col} /></View>
+              <Muted>{TN[r.tier] ?? r.tier} · {r.period === 'yearly' ? 'سنوي' : 'شهري'} · {r.cranes?.governorate ?? ''} · {ago(r.created_at)}</Muted>
+              <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
+                {!!ph && <Btn small kind="secondary" label="واتساب" onPress={() => Linking.openURL(waUrl(ph, 'مرحباً، بخصوص طلب اشتراكك بعضوية «' + (TN[r.tier] ?? '') + '» بسند جايك')).catch(() => {})} />}
+                {r.status === 'pending' && <Btn small label="تفعيل شهر" onPress={() => decide(r.id, true, 1)} />}
+                {r.status === 'pending' && r.period === 'yearly' && <Btn small label="تفعيل سنة" onPress={() => decide(r.id, true, 12)} />}
+                {r.status === 'pending' && <Btn small kind="danger" label="رفض" onPress={() => decide(r.id, false, 1)} />}
+              </View>
+            </Card>
+          );
+        })}
+
+        {!busy && tab === 'errors' && rows.map((r) => (
+          <Card key={r.id} style={{ gap: 4 }}>
+            <T style={{ fontSize: 13, writingDirection: 'ltr', textAlign: 'left' }}>{r.msg}</T>
+            <Muted style={{ fontSize: 12 }}>{r.platform ?? ''} · {ago(r.created_at)}</Muted>
+          </Card>
+        ))}
 
         {!busy && tab === 'cranes' && rows.map((c) => (
           <Card key={c.id} style={{ gap: 8 }}>

@@ -1,3 +1,7 @@
+import { Platform } from 'react-native';
+
+import { supabase } from '@/lib/supabase';
+
 // سجل تشخيص داخل التطبيق: يلتقط console والأخطاء واللمسات ويعرضها بلوحة (DebugConsole).
 type Line = { t: number; lvl: 'log' | 'warn' | 'error' | 'touch' | 'evt'; msg: string };
 const MAX = 300;
@@ -9,6 +13,14 @@ function fmt(a: unknown): string {
   if (a instanceof Error) return a.name + ': ' + a.message + (a.stack ? '\n' + String(a.stack).split('\n').slice(0, 4).join('\n') : '');
   if (typeof a === 'string') return a;
   try { return JSON.stringify(a)?.slice(0, 600) ?? String(a); } catch { return String(a); }
+}
+// يرسل الأخطاء الحقيقية (غير الممسوكة) للإدارة: حد أقصى 5 لكل تشغيل وبدون تكرار.
+const sentErr = new Set<string>();
+function sendErr(label: string, e: unknown) {
+  const msg = (label + ': ' + fmt(e)).slice(0, 580);
+  if (sentErr.size >= 5 || sentErr.has(msg) || /Network request failed|Failed to fetch/i.test(msg)) return;
+  sentErr.add(msg);
+  supabase.from('error_log').insert({ platform: Platform.OS, msg, ctx: fmt(e).slice(0, 1400) }).then(() => {}, () => {});
 }
 export function dlog(lvl: Line['lvl'], ...args: unknown[]) {
   lines.push({ t: Date.now(), lvl, msg: args.map(fmt).join(' ').slice(0, 900) });
@@ -37,7 +49,7 @@ export function installDebug() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const EU = (globalThis as any).ErrorUtils;
   if (EU?.setGlobalHandler) {
-    EU.setGlobalHandler((e: unknown, fatal?: boolean) => { dlog('error', fatal ? 'FATAL' : 'JS error', e); });
+    EU.setGlobalHandler((e: unknown, fatal?: boolean) => { dlog('error', fatal ? 'FATAL' : 'JS error', e); sendErr(fatal ? 'FATAL' : 'JS error', e); });
   }
   // وعود مرفوضة بدون catch
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,7 +57,7 @@ export function installDebug() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const tracking = require('promise/setimmediate/rejection-tracking');
-    tracking.enable({ allRejections: true, onUnhandled: (_id: number, err: unknown) => dlog('error', 'unhandled promise', err) });
+    tracking.enable({ allRejections: true, onUnhandled: (_id: number, err: unknown) => { dlog('error', 'unhandled promise', err); sendErr('unhandled promise', err); } });
   } catch { void g; }
   dlog('evt', 'debug console installed');
 }

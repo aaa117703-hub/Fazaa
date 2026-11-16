@@ -59,7 +59,7 @@ export default function Membership() {
               ))}
               {mine ? (
                 <Btn label={current ? 'عضويتك الحالية' : p.price ? 'اطلب عبر واتساب' : 'المجانية'} kind={current || !p.price ? 'secondary' : 'primary'} disabled={current || !p.price}
-                  onPress={() => supportWa('مرحباً، أريد الاشتراك بعضوية «' + p.name + '» بتطبيق سند جايك' + (mine.id ? ' (رقم الكرين: ' + mine.id + ')' : ''))} />
+                  onPress={() => { supabase.from('subscription_requests').insert({ crane_id: mine.id, tier: p.id, period: 'monthly' }).then(() => {}, () => {}); supportWa('مرحباً، أريد الاشتراك بعضوية «' + p.name + '» بتطبيق سند جايك' + (mine.id ? ' (رقم الكرين: ' + mine.id + ')' : '')); }} />
               ) : (
                 <Btn label="سجّل كسائق أول" kind="ghost" onPress={() => router.navigate('/driver' as never)} />
               )}
