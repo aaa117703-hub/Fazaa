@@ -4,11 +4,11 @@ import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
 import { CountUp, FadeIn, Pulse, Radar } from '@/components/fx';
+import { HomeMap } from '@/components/home-map';
 import { Select } from '@/components/select';
 import { useBlocks } from '@/lib/blocks';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
@@ -29,6 +29,7 @@ export default function Home() {
   const [cranes, setCranes] = useState<Crane[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [onlyFree, setOnlyFree] = useState(false);
   const [type, setType] = useState('');
   const [gov, setGov] = useState('');
@@ -39,7 +40,17 @@ export default function Home() {
   const load = useCallback(async (p: Pos) => {
     setLoading(true); setErr(false);
     const { data, error } = await supabase.rpc('nearby_cranes', { p_lat: p.latitude, p_lng: p.longitude, p_radius_km: 2000, p_limit: 200 });
-    if (error) setErr(true); else setCranes((data ?? []) as Crane[]);
+    if (error) {
+      // بدون إنترنت: نعرض آخر قائمة محفوظة
+      const raw = await AsyncStorage.getItem('sanad_cranes_cache').catch(() => null);
+      let cached: Crane[] = [];
+      try { cached = raw ? JSON.parse(raw) : []; } catch { /* */ }
+      if (cached.length) { setCranes(cached); setOffline(true); } else setErr(true);
+    } else {
+      setOffline(false);
+      setCranes((data ?? []) as Crane[]);
+      AsyncStorage.setItem('sanad_cranes_cache', JSON.stringify(data ?? [])).catch(() => {});
+    }
     setLoading(false);
   }, []);
 
@@ -102,6 +113,7 @@ export default function Home() {
         <Select label="اختر محافظتك" value="" allLabel="اختر يدوياً" options={GOVS.map((g) => g.name)} onChange={chooseGov} />
       </View>
 
+      {offline && <Card style={{ borderColor: C.warn, padding: 10 }}><Muted>أنت بدون إنترنت. تظهر آخر قائمة محفوظة وقد لا تكون محدّثة.</Muted></Card>}
       {hasReq && !!session && <Btn label="طلبك الحالي — اضغط للتفاصيل" kind="secondary" onPress={() => router.push('/request')} />}
       <FadeIn>
       <Card style={{ backgroundColor: 'rgba(255,201,60,0.10)', borderColor: 'rgba(255,201,60,0.4)', gap: 8, overflow: 'hidden' }}>
@@ -149,20 +161,7 @@ export default function Home() {
         </FadeIn>
       )}
 
-      <View style={{ height: 260, borderRadius: R.lg, overflow: 'hidden', borderWidth: 1, borderColor: C.line }}>
-        {pos && (
-          <MapView key={src + (pos.latitude + pos.longitude).toFixed(2)} style={{ flex: 1 }} initialRegion={{ ...pos, latitudeDelta: src === 'default' ? 4 : 0.4, longitudeDelta: src === 'default' ? 4 : 0.4 }} showsUserLocation={src === 'gps'}>
-            {list.map(({ c }) => {
-              const sz = c.tier === 'diamond' ? 34 : c.tier === 'gold' ? 28 : 20;
-              return (
-                <Marker key={c.id} coordinate={{ latitude: c.lat, longitude: c.lng }} tracksViewChanges={false} onCalloutPress={() => router.push('/crane/' + c.id)} title={c.name} description={c.type}>
-                  <View style={{ width: sz, height: sz, borderRadius: sz / 2, backgroundColor: c.status === 'available' ? C.ok : C.warn, borderWidth: 3, borderColor: c.tier === 'diamond' ? C.info : c.tier === 'gold' ? C.accent : '#fff' }} />
-                </Marker>
-              );
-            })}
-          </MapView>
-        )}
-      </View>
+      {pos && <HomeMap pos={pos} src={src} cranes={list.map((x) => x.c)} />}
 
       <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
         <Pressable onPress={() => setOnlyFree((v) => !v)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: R.pill, backgroundColor: onlyFree ? C.accent : C.surface2 }}>

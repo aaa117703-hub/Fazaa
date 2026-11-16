@@ -52,6 +52,8 @@ function Shell() {
         <Stack.Screen name="assist" options={{ presentation: 'modal' }} />
         <Stack.Screen name="route" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="legal" />
+        <Stack.Screen name="admin" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
       </Stack>
       <UpdateGate />

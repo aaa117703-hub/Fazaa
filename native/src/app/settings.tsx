@@ -2,14 +2,14 @@ import Constants from 'expo-constants';
 import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
 import React from 'react';
-import { Alert, Linking, Pressable, ScrollView, Switch, View } from 'react-native';
+import { Pressable, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { showSizePreview } from '@/components/size-preview';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
+import { useIsAdmin } from '@/lib/admin';
 import { toggleDebug } from '@/lib/debuglog';
 import { BTN_STEPS, FONT_STEPS, Lang, setPrefs, usePrefs } from '@/lib/prefs';
-import { PAGES } from '@/lib/site';
 import { C } from '@/lib/theme';
 
 function Stepper({ label, steps, value, onChange }: { label: string; steps: [number, string][]; value: number; onChange: (n: number) => void }) {
@@ -38,7 +38,7 @@ export default function Settings() {
   const taps = React.useRef({ n: 0, t: 0 });
   const insets = useSafeAreaInsets();
   const p = usePrefs();
-  const open = (u: string) => Linking.openURL(u).catch(() => Alert.alert('تعذّر فتح الرابط'));
+  const admin = useIsAdmin();
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 40, gap: 12, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
       <BackBar /><T style={{ fontSize: 26, fontWeight: '800' }}>الإعدادات</T>
@@ -76,10 +76,11 @@ export default function Settings() {
         <Pressable onPress={() => { const k = taps.current, now = Date.now(); k.n = now - k.t < 1500 ? k.n + 1 : 1; k.t = now; if (k.n >= 5) { k.n = 0; toggleDebug(); } }}><T style={{ fontWeight: '800', fontSize: 17 }}>حول سند جايك</T></Pressable>
         <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>الإصدار</T><Muted>{Constants.expoConfig?.version ?? '1.0.0'}</Muted></View>
         <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>التغطية الحالية</T><Muted>كل محافظات العراق</Muted></View>
+        {admin && <Btn label="لوحة الإدارة" onPress={() => router.push('/admin')} />}
         <Btn kind="secondary" label="دليل «سيارتي تعطلت»" onPress={() => router.push('/guide')} />
-        <Btn kind="secondary" label="سياسة الخصوصية" onPress={() => open(PAGES.privacy)} />
-        <Btn kind="secondary" label="شروط الاستخدام" onPress={() => open(PAGES.terms)} />
-        <Btn kind="secondary" label="تواصل مع الدعم" onPress={() => open(PAGES.support)} />
+        <Btn kind="secondary" label="سياسة الخصوصية" onPress={() => router.push('/legal?k=privacy')} />
+        <Btn kind="secondary" label="شروط الاستخدام" onPress={() => router.push('/legal?k=terms')} />
+        <Btn kind="secondary" label="تواصل مع الدعم" onPress={() => router.push('/legal?k=support')} />
       </Card>
     </ScrollView>
   );
