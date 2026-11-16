@@ -94,7 +94,7 @@ export default function Profile() {
       loadBlocks().catch(() => ({} as Record<string, string>)),
     ]);
     setP((pr.data as Prof | null) ?? { full_name: null, phone: null, car: null, governorate: null });
-    setReqs((rq.data as ReqRow[]) ?? []);
+    setReqs((rq.data as unknown as ReqRow[]) ?? []);
     setBlocked(Object.entries(bl));
   }, [uid]);
   useFocusEffect(useCallback(() => { load().catch(() => {}); }, [load]));
