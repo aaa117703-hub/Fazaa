@@ -29,7 +29,7 @@ jobs:
       - run: npx expo prebuild --platform android --no-install
       - name: Build release APK
         working-directory: native/android
-        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64 -Dorg.gradle.jvmargs="-Xmx4g"
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a -Dorg.gradle.jvmargs="-Xmx4g"
       - uses: actions/upload-artifact@v4
         with:
           name: sanad-jaik-native-apk
@@ -39,4 +39,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp android/app/build/outputs/apk/release/*.apk sanad-jaik-native.apk
-          gh release create "native-android-${{ github.run_number }}" sanad-jaik-native.apk --title "سند جايك (أندرويد) APK #${{ github.run_number }}" --notes "ملف APK للتجربة على أندرويد (كل المعالجات). فعّل «التثبيت من مصادر غير معروفة» ثم افتحه."
+          gh release create "native-android-${{ github.run_number }}" sanad-jaik-native.apk --title "سند جايك (أندرويد) APK #${{ github.run_number }}" --notes "ملف APK للتجربة على أندرويد (معالجات ARM: 32 و64 بت، يغطي كل الهواتف الحقيقية). فعّل «التثبيت من مصادر غير معروفة» ثم افتحه."
