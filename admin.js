@@ -151,7 +151,7 @@
   }
 
   async function docsTab() {
-    const rows = await F.sb.q('driver_documents', 'select=id,kind,path,status,note,created_at,crane_id,cranes(name,verified,governorate)&order=created_at.asc&limit=300');
+    const rows = await F.sb.q('driver_documents', 'select=id,kind,path,status,note,created_at,crane_id,cranes(name,verified,governorate)&purged_at=is.null&order=created_at.asc&limit=300');
     const by = {};
     (rows || []).forEach((r) => { (by[r.crane_id] = by[r.crane_id] || { c: r.cranes, id: r.crane_id, d: [] }).d.push(r); });
     const list = Object.values(by).sort((x, y) => y.d.filter((z) => z.status === 'pending').length - x.d.filter((z) => z.status === 'pending').length);
@@ -162,7 +162,7 @@
           '<div class="row"><button class="btn sm secondary" data-a="doc-view" data-p="' + F.esc(r.path) + '">عرض</button>' +
           (r.status !== 'approved' ? '<button class="btn sm green" data-a="doc-ok" data-id="' + r.id + '">قبول</button>' : '') +
           (r.status !== 'rejected' ? '<button class="btn sm danger" data-a="doc-no" data-id="' + r.id + '">رفض</button>' : '') + '</div></div>').join('') + '</div>' +
-        '<div class="row mt-s"><button class="btn sm secondary" data-a="info" data-id="' + g.id + '">معلومات السائق</button><button class="btn sm ' + (g.c && g.c.verified ? 'green' : '') + '" data-a="verify-crane" data-id="' + g.id + '">' + (g.c && g.c.verified ? 'موثق ✓' : 'وثّق الكرين') + '</button></div></div>').join('') || '<p class="muted">ما كو وثائق مرفوعة بعد.</p>') + '</div>';
+        '<div class="row mt-s"><button class="btn sm secondary" data-a="info" data-id="' + g.id + '">معلومات السائق</button><button class="btn sm ' + (g.c && g.c.verified ? 'green' : '') + '" data-a="dfile" data-id="' + g.id + '">' + (g.c && g.c.verified ? 'موثق ✓ — الملف' : 'ملف السائق والتوثيق') + '</button></div></div>').join('') || '<p class="muted">ما كو وثائق مرفوعة بعد.</p>') + '</div>';
   }
 
   async function subs() {
@@ -185,7 +185,7 @@
   async function control() {
     const st = await F.sb.q('app_settings', 'select=key,value');
     const g = (k) => ((st || []).find((x) => x.key === k) || { value: {} }).value || {};
-    const m = g('maintenance'), n = g('announcement'), sp = g('support');
+    const m = g('maintenance'), n = g('announcement'), sp = g('support'), av = g('auto_verify'), dm = g('show_demo');
     return '<div class="card"><h2>رقم الدعم الفني (واتساب)</h2><p class="muted small">يظهر زر «تواصل مع الدعم» للمستخدمين.</p><div class="field"><input id="sp-phone" class="ltr" inputmode="tel" maxlength="16" placeholder="07701234567" value="' + F.esc(sp.phone || '') + '"></div><button class="btn block" data-a="sp-save">حفظ</button></div>' +
       '<div class="card mt"><h2>قفل التطبيق (صيانة)</h2><p class="muted small">عند التفعيل يظهر للزبائن والسواق شاشة صيانة ولا يدخلون. أنت (المدير) تبقى تدخل.</p>' +
       '<div class="field"><label>رسالة الصيانة</label><input id="mt-msg" maxlength="140" value="' + F.esc(m.msg || '') + '"></div>' +
@@ -193,7 +193,64 @@
       '<div class="card mt"><h2>إعلان لكل المستخدمين</h2><p class="muted small">شريط يظهر أعلى التطبيق.</p>' +
       '<div class="field"><label>نص الإعلان</label><input id="an-msg" maxlength="160" value="' + F.esc(n.msg || '') + '"></div>' +
       '<div class="row"><button class="btn grow" data-a="an-save" data-on="1">نشر الإعلان</button><button class="btn secondary grow" data-a="an-save" data-on="0">إخفاء</button></div>' +
-      '<p class="muted small mt-s">الحالة: ' + (n.on ? 'ظاهر' : 'مخفي') + '</p></div>';
+      '<p class="muted small mt-s">الحالة: ' + (n.on ? 'ظاهر' : 'مخفي') + '</p></div>' +
+      '<div class="card mt"><h2>التوثيق التلقائي</h2><p class="muted small">إذا انفتح: السائق اللي وثائقه تطابق بياناته (وما عنده تكرار) يتوثق مباشرة وتنحذف صوره. إذا مطفي: تظهر «مطابق» وتضغط توثيق بنفسك. أنصح تبقيه مطفي أول أسبوعين.</p>' +
+      '<button class="btn block ' + (av.on ? 'danger' : '') + '" data-a="set-auto" data-on="' + (av.on ? 1 : 0) + '">' + (av.on ? 'إطفاء التوثيق التلقائي' : 'تشغيل التوثيق التلقائي') + '</button></div>' +
+      '<div class="card mt"><h2>الكرينات التجريبية</h2><p class="muted small">' + (dm.on === false ? 'مخفية عن الناس وتظهر لك فقط.' : 'ظاهرة للجميع حالياً (للتجربة).') + ' اطفيها قبل الإطلاق الحقيقي.</p>' +
+      '<button class="btn block ' + (dm.on === false ? '' : 'danger') + '" data-a="set-demo" data-on="' + (dm.on === false ? 0 : 1) + '">' + (dm.on === false ? 'إظهار التجريبية' : 'إخفاء التجريبية عن الناس') + '</button></div>';
+  }
+
+  /* ملف السائق: المكتوب مقابل المقروء من الوثائق، التكرار، الصور، وقرار التوثيق */
+  const CHK_T = { match: ['green', 'مطابق'], mismatch: ['red', 'غير مطابق'], unreadable: ['amber', 'صور غير واضحة'], pending: ['amber', 'لم يُفحص'], error: ['amber', 'تعذّر الفحص'] };
+  function cmpRow(label, f) {
+    f = f || {};
+    return '<div class="dfc"><div class="row between"><b>' + label + '</b><span class="badge ' + (f.ok === true ? 'green' : f.ok === false ? 'red' : 'amber') + '">' + (f.ok === true ? 'يطابق' : f.ok === false ? 'يختلف' : 'غير محسوم') + '</span></div>' +
+      '<div class="muted small">المكتوب: ' + F.esc(f.typed || '—') + '</div><div class="muted small">بالوثيقة: ' + F.esc(f.read || '—') + '</div></div>';
+  }
+  async function driverFile(id) {
+    let c, ck, dc, ph, idn, dups;
+    try {
+      const r = await Promise.all([
+        F.sb.q('cranes', 'select=*&id=eq.' + id), F.sb.q('doc_checks', 'select=status,message,details,auto_applied&crane_id=eq.' + id).catch(() => []),
+        F.sb.q('driver_documents', 'select=id,kind,path,status&crane_id=eq.' + id + '&purged_at=is.null&order=kind'),
+        F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + id).catch(() => []), F.sb.q('crane_identity', 'select=doc_name,doc_plate&crane_id=eq.' + id).catch(() => []),
+        F.sb.rpc('admin_dups', { p_crane: id }).catch(() => [])
+      ]);
+      c = r[0] && r[0][0]; ck = r[1] && r[1][0]; dc = r[2] || []; ph = r[3] && r[3][0]; idn = r[4] && r[4][0]; dups = Array.isArray(r[5]) ? r[5] : [];
+    } catch (e) { return F.toast(F.errMsg(e), 'err'); }
+    if (!c) return F.toast('الكرين غير موجود', 'err');
+    const f = ck && ck.details && ck.details.fields, st = CHK_T[ck ? ck.status : 'pending'] || CHK_T.pending;
+    const m = F.modal('<h2>' + F.esc(c.name) + '</h2>' +
+      '<p><span class="badge ' + (c.verified ? 'green' : 'amber') + '">' + (c.verified ? 'موثّق' : 'غير موثّق') + '</span>' + (c.suspended ? ' <span class="badge red">موقوف' + (c.suspend_reason ? ': ' + F.esc(c.suspend_reason) : '') + '</span>' : '') + (c.verified_until ? ' <span class="muted small">لحد ' + F.esc(c.verified_until) + '</span>' : '') + '</p>' +
+      '<div class="card"><b>البيانات</b><div class="muted small">الاسم الثلاثي: ' + F.esc(idn && idn.doc_name || '—') + '</div><div class="muted small">رقم اللوحة: ' + F.esc(idn && idn.doc_plate || '—') + '</div><div class="muted small">السيارة: ' + F.esc([c.crane_make, c.crane_model].filter(Boolean).join(' ') || '—') + ' · ' + F.esc(c.type || '') + '</div><div class="muted small">المحافظة: ' + F.esc(c.governorate || '—') + '</div><div class="muted small ltr">الهاتف: ' + F.esc(ph && ph.phone || '—') + '</div></div>' +
+      (dups.length ? '<div class="warn mt-s"><b>تنبيه: تكرار محتمل</b>' + dups.map((d) => '<div class="small">' + F.esc(d.name) + ' — ' + F.esc((d.why || []).join('، ')) + '</div>').join('') + '</div>' : '') +
+      '<div class="card mt-s"><div class="row between"><b>مطابقة الوثائق</b><span class="badge ' + st[0] + '">' + st[1] + (ck && ck.auto_applied ? ' (تلقائي)' : '') + '</span></div>' +
+        (ck && ck.message ? '<div class="muted small">' + F.esc(ck.message) + '</div>' : '') +
+        (f ? cmpRow('الاسم', f.name) + cmpRow('رقم اللوحة', f.plate) + cmpRow('السيارة', f.car) + cmpRow('المحافظة', f.governorate) + (f.owner_differs === true ? '<div class="muted small">ملاحظة: اسم مالك السنوية يختلف عن اسم السائق.</div>' : '') : '') +
+        '<button class="btn sm secondary mt-s" id="df-scan">' + (dc.length ? 'أعد الفحص' : 'فحص') + '</button></div>' +
+      '<div class="card mt-s"><b>الصور (' + dc.length + ')</b>' + (dc.length ? dc.map((d) => '<div class="row between" style="padding:6px 0"><span>' + (DK[d.kind] || d.kind) + '</span><button class="btn sm secondary" data-p="' + F.esc(d.path) + '">عرض</button></div>').join('') : '<div class="muted small">ما كو صور (محذوفة بعد التوثيق أو ما انرفعت).</div>') + '</div>' +
+      '<div class="card mt-s"><b>القرار</b><div class="field"><input id="df-why" maxlength="200" placeholder="سبب الرفض أو الإيقاف (يوصل للسائق)"></div><div class="row wrap">' +
+        (c.verified ? '<button class="btn sm secondary grow" id="df-no">إلغاء التوثيق</button>' : '<button class="btn sm grow" id="df-ok">وثّق السائق</button><button class="btn sm danger grow" id="df-no">ارفض</button>') +
+      '</div><button class="btn sm block mt-s ' + (c.suspended ? '' : 'danger') + '" id="df-sus">' + (c.suspended ? 'رفع الإيقاف' : 'إيقاف السائق (يختفي من الخريطة)') + '</button></div>' +
+      '<button class="btn block mt" id="df-x">إغلاق</button>');
+    const done = (msg) => { F.toast(msg, 'ok'); m.close(); render(); };
+    const decide = async (ok) => {
+      const why = F.$('#df-why', m.el).value.trim();
+      try { const r = await F.sb.fn('verify-docs', { action: 'finalize', crane_id: id, ok: ok, reason: why || undefined, until: ok && ck && ck.details ? ck.details.until : undefined }); if (r && r.error) throw new Error(r.error); done(ok ? 'تم التوثيق وانحذفت الصور' : 'تم. وصل السبب للسائق'); } catch (e) { F.toast(F.errMsg(e), 'err'); }
+    };
+    F.$('#df-x', m.el).onclick = m.close;
+    F.$('#df-scan', m.el).onclick = async () => { try { const r = await F.sb.fn('verify-docs', { action: 'scan', crane_id: id }); F.toast(r && r.message || 'تم الفحص', 'ok'); m.close(); driverFile(id); } catch (e) { F.toast(F.errMsg(e), 'err'); } };
+    const okb = F.$('#df-ok', m.el); if (okb) okb.onclick = () => { if (dups.length || !ck || ck.status !== 'match') { const o = F.$('#df-ok', m.el); if (o.dataset.sure !== '1') { o.dataset.sure = '1'; o.textContent = (dups.length ? 'فيه تكرار' : 'مو «مطابق»') + ' — اضغط مرة ثانية للتأكيد'; return; } } decide(true); };
+    F.$('#df-no', m.el).onclick = () => decide(false);
+    F.$('#df-sus', m.el).onclick = async () => {
+      const on = !c.suspended, why = F.$('#df-why', m.el).value.trim();
+      try {
+        await F.sb.q('cranes', 'id=eq.' + id, { method: 'PATCH', body: { suspended: on, suspended_auto: false, suspend_reason: on ? (why || 'إيقاف من الإدارة') : null } });
+        F.sb.rpc('admin_log_add', { p_action: on ? 'driver_suspend' : 'driver_unsuspend', p_target: id, p_detail: why || null }).catch(() => {});
+        done(on ? 'تم إيقاف السائق' : 'تم رفع الإيقاف');
+      } catch (e) { F.toast(F.errMsg(e), 'err'); }
+    };
+    m.el.querySelectorAll('[data-p]').forEach((b) => { b.onclick = () => F.sb.signedUrl('driver-docs', b.dataset.p).then((u) => { const mm = F.modal('<img src="' + F.esc(u) + '" alt="" style="width:100%;border-radius:12px"><button class="btn block mt" id="dv-x">إغلاق</button>'); F.$('#dv-x', mm.el).onclick = mm.close; }).catch((err) => F.toast(F.errMsg(err), 'err')); });
   }
 
   const SK = { car_repair: 'تصليح سيارات', tyres: 'إطارات وبنشر', car_parts: 'قطع غيار', mechanic: 'ميكانيكي', car_electrics: 'كهرباء سيارات', oil_change: 'تبديل زيوت', fuel: 'محطة وقود', restaurant: 'مطعم على الطريق الدولي', rest_area: 'استراحة على الطريق الدولي' };
@@ -343,7 +400,9 @@
     if (a === 'doc-view') return F.sb.signedUrl('driver-docs', t.dataset.p).then((u) => { const m = F.modal('<img src="' + F.esc(u) + '" alt="" style="width:100%;border-radius:12px"><button class="btn block mt" id="dv-x">إغلاق</button>'); F.$('#dv-x', m.el).onclick = m.close; }).catch((err) => F.toast(F.errMsg(err), 'err'));
     if (a === 'doc-ok') return F.sb.q('driver_documents', 'id=eq.' + id, { method: 'PATCH', body: { status: 'approved' } }).then(() => { F.toast('تم القبول', 'ok'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err'));
     if (a === 'doc-no') { const why = prompt('سبب الرفض (يظهر للسائق):') || 'الصورة غير واضحة'; return F.sb.q('driver_documents', 'id=eq.' + id, { method: 'PATCH', body: { status: 'rejected', note: why } }).then(() => { F.toast('تم الرفض'); render(); }).catch((err) => F.toast(F.errMsg(err), 'err')); }
-    if (a === 'verify-crane') return patch(id, { verified: true });
+    if (a === 'verify-crane' || a === 'dfile') return driverFile(id);
+    if (a === 'set-auto') return setting('auto_verify', { on: t.dataset.on !== '1' });
+    if (a === 'set-demo') return setting('show_demo', { on: t.dataset.on !== '1' });
     if (a === 'rp') return F.sb.q('reports', 'id=eq.' + id, { method: 'PATCH', body: { status: t.dataset.s } }).then(render).catch((err) => F.toast(F.errMsg(err), 'err'));
   }
 
