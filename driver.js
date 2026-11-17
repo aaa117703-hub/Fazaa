@@ -271,6 +271,8 @@
     try {
       const r = await F.sb.fn('verify-docs', { action: 'scan', crane_id: crane.id });
       if (!silent && r && r.message) F.toast(r.message, r.status === 'match' ? 'ok' : undefined);
+      else if (!silent && r && r.error === 'not_configured') F.toast('الفحص الآلي غير مفعّل حالياً. الإدارة تراجع وثائقك يدوياً.');
+      else if (!silent && r && r.error === 'limit') F.toast(r.message || 'وصلت الحد اليومي للفحص.');
     } catch (e) { /* الفحص يتكرر لاحقاً */ }
     scanning = false;
     await refresh();
