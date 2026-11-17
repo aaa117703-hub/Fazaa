@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { DriverBid } from '@/components/bidding';
 import { geoAlert, getFix } from '@/lib/geo';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
@@ -27,8 +28,8 @@ const GROUPS: [string, [string, string][]][] = [
 const DST: Record<string, [string, string]> = { pending: [C.warn, 'قيد المراجعة'], approved: [C.ok, 'مقبول'], rejected: [C.danger, 'مرفوض'] };
 
 type CraneRow = { id: string; name: string; type: string; status: string; lat: number; lng: number; governorate: string | null; listed: boolean; verified: boolean; tier: string | null; sub_expires_at?: string | null; crane_make: string | null; crane_model: string | null; updated_at: string };
-type Target = { request_id: string; distance_km: number; requests: { id: string; number: number | null; issue: string; destination: string | null; note: string | null; status: string; created_at: string } | null };
-type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null }; p: { full_name: string | null; phone: string | null; car: string | null; car_weight_kg?: number | null; car_length_m?: number | null } | null };
+type Target = { request_id: string; crane_id: string; distance_km: number; requests: { id: string; number: number | null; issue: string; destination: string | null; note: string | null; status: string; created_at: string } | null };
+type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null; agreed_price?: number | null }; p: { full_name: string | null; phone: string | null; car: string | null; car_weight_kg?: number | null; car_length_m?: number | null } | null };
 type Doc = { id: string; kind: string; status: string; note: string | null };
 type Wk = { locked?: boolean; views: number; calls: number; requests: number; accepted: number } | null;
 
@@ -77,7 +78,7 @@ export default function Driver() {
         supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle(),
         supabase.from('calls').select('created_at').eq('crane_id', c.id).order('created_at', { ascending: false }).limit(500),
         supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', c.id).maybeSingle(),
-        supabase.from('request_targets').select('request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)').in('crane_id', ids).eq('status', 'sent').order('sent_at', { ascending: false }).limit(20),
+        supabase.from('request_targets').select('request_id,crane_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)').in('crane_id', ids).eq('status', 'sent').order('sent_at', { ascending: false }).limit(20),
         supabase.from('requests').select('*').in('accepted_crane_id', ids).eq('status', 'accepted').order('accepted_at', { ascending: false }),
         supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).is('purged_at', null).order('created_at', { ascending: false }),
         supabase.rpc('my_crane_stats', {}),
@@ -263,7 +264,8 @@ export default function Driver() {
               <View style={rtl.row}><T style={{ fontWeight: '800', flex: 1 }}>{r.number ? '#' + r.number + ' · ' : ''}{ISSUE[r.issue] ?? r.issue}</T><Muted>{fmtDist(+t.distance_km)} · {ago(r.created_at)}</Muted></View>
               {!!r.destination && <Muted>إلى: {r.destination}</Muted>}
               {!!r.note && <Muted>{r.note}</Muted>}
-              <View style={[rtl.row, { gap: 8 }]}><Btn label="قبول" style={{ flex: 1, backgroundColor: C.ok }} onPress={() => act('accept_request', r.id, 'قبلت الطلب. تواصل مع الزبون.')} /><Btn label="رفض" kind="secondary" onPress={() => act('decline_request', r.id)} /></View>
+              <DriverBid requestId={r.id} craneId={t.crane_id} onAccepted={() => { fastUntil.current = Date.now() + 2 * 3600000; load(); }} />
+              <View style={[rtl.row, { gap: 8 }]}><Btn label="قبول بدون سعر (نتفق بالاتصال)" kind="secondary" style={{ flex: 1 }} onPress={() => act('accept_request', r.id, 'قبلت الطلب. تواصل مع الزبون.')} /><Btn label="تجاهل" kind="secondary" onPress={() => act('decline_request', r.id)} /></View>
             </View>); })}
         </Card>
       )}
@@ -274,6 +276,7 @@ export default function Driver() {
           {jobs.map(({ r, p }) => (
             <View key={r.id} style={{ gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 }}>
               <T style={{ fontWeight: '800' }}>{p?.full_name ?? 'زبون'} · {ISSUE[r.issue] ?? ''}</T>
+              {!!r.agreed_price && <T style={{ color: C.ok, fontWeight: '800' }}>السعر المتفق عليه: {r.agreed_price.toLocaleString('en-US')} د.ع</T>}
               {!!p?.car && (() => {
                 const mk = Object.keys(CARS).find((m) => p.car!.startsWith(m + ' ')); const sp = mk ? carSpec(mk, p.car!.slice(mk.length + 1).replace(/\s*(19|20)\d{2}$/, '')) : null;
                 const line = p.car_weight_kg || p.car_length_m ? carSpecText(p.car_weight_kg, p.car_length_m ? +p.car_length_m : null, false) : sp ? carSpecText(sp.kg, sp.m, true) : '';

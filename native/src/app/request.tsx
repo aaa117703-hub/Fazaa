@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CustomerOffers } from '@/components/bidding';
 import { geoAlert, getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
@@ -20,7 +21,7 @@ export const AK = 'sanad_active_req';
 const ISSUES: [string, string][] = [['tow', 'عطل كامل — أحتاج سحب'], ['battery', 'بطارية'], ['tire', 'إطار'], ['fuel', 'وقود'], ['locked', 'مفاتيح داخل السيارة'], ['accident', 'حادث'], ['other', 'شي ثاني']];
 const issueName = (k: string) => (ISSUES.find((i) => i[0] === k) ?? [0, k])[1];
 
-type Req = { arrived_at?: string | null; id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null };
+type Req = { arrived_at?: string | null; id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null; agreed_price?: number | null };
 type Info = { id: string; name: string; type: string; verified: boolean; phone: string };
 type Trk = { lat: number | null; lng: number | null } | null;
 
@@ -118,7 +119,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
   );
   const cancel = async () => { const { error } = await supabase.rpc('cancel_request', { p_request_id: r.id }); if (error) Alert.alert('خطأ', 'تعذّر إلغاء الطلب.'); else onReset(); };
 
-  if (r.status === 'open') return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>نبحث لك عن كرين…</T><Muted>أرسلنا طلبك إلى {a.targets ?? 'أقرب'} كرين. الطلب ينتهي بعد 15 دقيقة إذا ما انقبل.</Muted><ActivityIndicator color={C.accent} /></Card><Btn label="إلغاء الطلب" kind="danger" onPress={cancel} /><Btn label="إخفاء (الطلب يبقى شغال)" kind="secondary" onPress={() => router.back()} /></>);
+  if (r.status === 'open') return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>نبحث لك عن كرين…</T><Muted>أرسلنا طلبك إلى {a.targets ?? 'أقرب'} كرين. الطلب ينتهي بعد 15 دقيقة إذا ما انقبل.</Muted><ActivityIndicator color={C.accent} /></Card><CustomerOffers requestId={r.id} onAccepted={() => { poll().catch(() => {}); }} /><Btn label="إلغاء الطلب" kind="danger" onPress={cancel} /><Btn label="إخفاء (الطلب يبقى شغال)" kind="secondary" onPress={() => router.back()} /></>);
   if (r.status === 'accepted') {
     const me = { latitude: r.lat, longitude: r.lng };
     const has = trk && trk.lat != null && trk.lng != null;
@@ -129,7 +130,8 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
         <Card style={{ gap: 8, backgroundColor: 'rgba(61,214,140,0.10)', borderColor: 'rgba(61,214,140,0.35)' }}>
           <T style={{ fontWeight: '800', fontSize: 17 }}>انقبل طلبك</T>
           <T style={{ fontSize: 20, fontWeight: '800', color: C.accent }}>{crane?.name ?? 'كرين'}{crane?.verified ? ' ✓' : ''}</T>
-          <Muted>{crane?.type} — اتصل وتفاهم على السعر ووقت الوصول.</Muted>
+          {r.agreed_price ? <T style={{ color: C.ok, fontWeight: '800' }}>السعر المتفق عليه: {r.agreed_price.toLocaleString('en-US')} د.ع</T> : null}
+          <Muted>{crane?.type} — {r.agreed_price ? 'اتصل وتفاهم على وقت الوصول.' : 'اتصل وتفاهم على السعر ووقت الوصول.'}</Muted>
           {!!r.arrived_at && <View style={{ alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 5, borderRadius: R.pill, backgroundColor: C.ok + '29' }}><T style={{ color: C.ok, fontWeight: '800' }}>وصل الكرين ✓</T></View>}
           {has ? (
             <>
