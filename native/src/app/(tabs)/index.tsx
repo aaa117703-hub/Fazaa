@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
 import { CountUp, FadeIn, Pulse, Radar } from '@/components/fx';
+import { geoAlert, getFix } from '@/lib/geo';
 import { HomeMap } from '@/components/home-map';
 import { Select } from '@/components/select';
 import { useBlocks } from '@/lib/blocks';
@@ -56,12 +57,10 @@ export default function Home() {
 
   const useGps = useCallback(async () => {
     try {
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (perm.status !== 'granted') { Alert.alert('الموقع مغلق', 'فعّل الموقع من إعدادات الجهاز، أو اختر محافظتك يدوياً.'); return; }
-      const r = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const p = { latitude: r.coords.latitude, longitude: r.coords.longitude };
+      const f = await getFix();
+      const p = { latitude: f.latitude, longitude: f.longitude };
       setPos(p); setSrc('gps'); load(p);
-    } catch { Alert.alert('تعذّر تحديد موقعك', 'جرّب مرة ثانية أو اختر محافظتك يدوياً.'); }
+    } catch (e) { geoAlert(e); }
   }, [load]);
 
   useEffect(() => {

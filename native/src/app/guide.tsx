@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
+import { geoAlert, getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
-import * as Location from 'expo-location';
 import React from 'react';
-import { Alert, ScrollView, Share, View } from 'react-native';
+import { ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
@@ -14,11 +14,9 @@ export default function Guide() {
   const [more, setMore] = React.useState(false);
   const share = async () => {
     try {
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (perm.status !== 'granted') { Alert.alert('الموقع مغلق', 'فعّل الموقع من إعدادات الجهاز حتى نرسل موقعك.'); return; }
-      const r = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      await Share.share({ message: 'أحتاج مساعدة — سيارتي متعطلة.\nموقعي: https://www.google.com/maps?q=' + r.coords.latitude.toFixed(6) + ',' + r.coords.longitude.toFixed(6) });
-    } catch { Alert.alert('تعذّر', 'ما كدرنا نحدد موقعك. جرّب مرة ثانية.'); }
+      const r = await getFix();
+      await Share.share({ message: 'أحتاج مساعدة — سيارتي متعطلة.\nموقعي' + (r.approx ? ' (تقريبي)' : '') + ': https://www.google.com/maps?q=' + r.latitude.toFixed(6) + ',' + r.longitude.toFixed(6) });
+    } catch (e) { geoAlert(e, 'حتى نكدر نرسل موقعك.'); }
   };
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: 22, paddingBottom: insets.bottom + 28, gap: 12 }}>

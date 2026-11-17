@@ -1,4 +1,4 @@
-import * as Location from 'expo-location';
+import { getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -33,11 +33,9 @@ export default function RouteScreen() {
     let off = false;
     (async () => {
       try {
-        const perm = await Location.requestForegroundPermissionsAsync();
-        if (perm.status !== 'granted') { if (!off) setState('noloc'); return; }
-        const p = (await Location.getLastKnownPositionAsync()) ?? (await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }));
-        if (off || !p) { if (!off) setState('noloc'); return; }
-        const a = { latitude: p.coords.latitude, longitude: p.coords.longitude };
+        const p = await getFix();
+        if (off) return;
+        const a = { latitude: p.latitude, longitude: p.longitude };
         setMe(a); setState('ok');
         setInfo({ km: km(a, dest), min: Math.round((km(a, dest) / 40) * 60) });
         try {

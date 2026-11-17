@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { geoAlert, getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
-import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { dial } from '@/lib/contact';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -46,10 +46,9 @@ function Form({ onSent }: { onSent: (a: { id: string; targets: number | null }) 
   const send = async () => {
     setBusy(true); setErr('');
     try {
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (perm.status !== 'granted') { setErr('لازم تفعّل الموقع حتى نرسل طلبك لأقرب كرينات.'); setBusy(false); return; }
-      const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const { data, error } = await supabase.rpc('create_request', { p_lat: p.coords.latitude, p_lng: p.coords.longitude, p_issue: issue, p_destination: dest.trim() || null, p_note: note.trim() || null });
+      let p: { latitude: number; longitude: number };
+      try { p = await getFix(); } catch (e) { setBusy(false); setErr('ما كدرنا نحدد موقعك. فعّل الموقع من إعدادات الجهاز وجرّب مرة ثانية.'); geoAlert(e, 'الطلب يحتاج موقعك حتى يوصل لأقرب سائق.'); return; }
+      const { data, error } = await supabase.rpc('create_request', { p_lat: p.latitude, p_lng: p.longitude, p_issue: issue, p_destination: dest.trim() || null, p_note: note.trim() || null });
       if (error) throw error;
       const r = data as { request_id: string; targets: number };
       supabase.functions.invoke('notify', { body: { kind: 'new_request', request_id: r.request_id } }).catch(() => {});

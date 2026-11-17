@@ -4,13 +4,14 @@ import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, ScrollView,
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackBar } from '@/components/back-bar';
+import { DriverFile } from '@/components/driver-file';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useIsAdmin } from '@/lib/admin';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
-type Tab = 'users' | 'subreq' | 'cranes' | 'docs' | 'shops' | 'reports' | 'errors';
-const TABS: [Tab, string][] = [['users', 'المستخدمين'], ['subreq', 'الاشتراكات'], ['cranes', 'السواق'], ['docs', 'الوثائق'], ['shops', 'المحلات'], ['reports', 'البلاغات'], ['errors', 'الأخطاء']];
+type Tab = 'users' | 'subreq' | 'settings' | 'cranes' | 'docs' | 'shops' | 'reports' | 'errors';
+const TABS: [Tab, string][] = [['users', 'المستخدمين'], ['subreq', 'الاشتراكات'], ['cranes', 'السواق'], ['docs', 'الوثائق'], ['shops', 'المحلات'], ['reports', 'البلاغات'], ['errors', 'الأخطاء'], ['settings', 'الإعدادات']];
 const DK: Record<string, string> = { id_front: 'الهوية — أمام', id_back: 'الهوية — خلف', vehicle_front: 'سنوية — أمام', vehicle_back: 'سنوية — خلف', license_front: 'الإجازة — أمام', license_back: 'الإجازة — خلف' };
 const ST: Record<string, [string, string]> = { pending: ['بانتظار', C.warn], approved: ['مقبول', C.ok], rejected: ['مرفوض', C.danger] };
 
@@ -37,6 +38,9 @@ export default function Admin() {
   const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
   const [img, setImg] = useState('');
+  const [fileId, setFileId] = useState<string | null>(null);
+  const [auto, setAuto] = useState(false);
+  const [demo, setDemo] = useState(true);
   const [q, setQ] = useState('');
   const [qIn, setQIn] = useState('');
   const [flt, setFlt] = useState('all');
@@ -51,6 +55,12 @@ export default function Admin() {
       r = await supabase.from('subscription_requests').select('id,crane_id,tier,period,status,created_at,cranes(name,governorate)').order('created_at', { ascending: false }).limit(200);
       const ph = await supabase.from('crane_contacts').select('crane_id,phone').limit(1000);
       setPhones(Object.fromEntries(((ph.data ?? []) as Row[]).map((x) => [x.crane_id, x.phone])));
+    }
+    else if (tab === 'settings') {
+      const st = await supabase.from('app_settings').select('key,value').in('key', ['auto_verify', 'show_demo']);
+      const m = Object.fromEntries(((st.data ?? []) as Row[]).map((x) => [x.key, x.value?.on]));
+      setAuto(!!m.auto_verify); setDemo(m.show_demo !== false);
+      r = { data: [], error: null };
     }
     else if (tab === 'errors') r = await supabase.from('error_log').select('id,platform,msg,ctx,created_at').order('created_at', { ascending: false }).limit(100);
     else if (tab === 'cranes') r = await supabase.from('cranes').select('id,name,type,governorate,verified,listed,tier,status').order('created_at', { ascending: false }).limit(200);
@@ -71,6 +81,12 @@ export default function Admin() {
   const decide = async (id: string, ok: boolean, months: number) => {
     const { error } = await supabase.rpc('decide_subscription', { p_id: id, p_approve: ok, p_months: months });
     if (error) Alert.alert('تعذّر الحفظ', error.message); else load();
+  };
+  const setSetting = async (key: string, on: boolean) => {
+    const { error } = await supabase.from('app_settings').upsert({ key, value: { on }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+    if (error) { Alert.alert('تعذّر الحفظ', error.message); return; }
+    supabase.rpc('admin_log_add', { p_action: 'setting', p_target: key, p_detail: on ? 'on' : 'off' }).then(() => {});
+    if (key === 'auto_verify') setAuto(on); else setDemo(on);
   };
   const del = (table: string, id: string, what: string) =>
     Alert.alert('حذف ' + what, 'متأكد؟ ما يمكن التراجع.', [{ text: 'إلغاء', style: 'cancel' }, { text: 'حذف', style: 'destructive', onPress: async () => { const { error } = await supabase.from(table).delete().eq('id', id); if (error) Alert.alert('تعذّر الحذف', error.message); else load(); } }]);
@@ -138,6 +154,7 @@ export default function Admin() {
                 <Muted style={{ writingDirection: 'ltr' }}>{u.email}</Muted>
                 <Muted>{[u.governorate, u.car].filter(Boolean).join(' · ') || '—'}</Muted>
                 <Muted style={{ fontSize: 12 }}>آخر دخول {ago(u.last_sign_in_at)} · طلبات {u.requests_n} · اتصالات {u.calls_n}</Muted>
+                {!!u.crane_id && <Btn small label="ملف السائق" onPress={() => setFileId(u.crane_id)} />}
                 {!!u.phone && <Btn small kind="secondary" label={'واتساب ' + u.phone} onPress={() => Linking.openURL(waUrl(u.phone)).catch(() => {})} />}
               </Card>
             ))}
@@ -168,6 +185,21 @@ export default function Admin() {
           </Card>
         ))}
 
+        {!busy && tab === 'settings' && (
+          <>
+            <Card style={{ gap: 8 }}>
+              <T style={{ fontWeight: '800' }}>التوثيق التلقائي</T>
+              <Muted>إذا انفتح: السائق اللي وثائقه تطابق بياناته (واللي ما عنده تكرار) يتوثق مباشرة وتنحذف صوره. إذا مطفي: تظهر لك «مطابق» وتضغط توثيق بنفسك. أنصح تبقيه مطفي أول أسبوعين.</Muted>
+              <Btn kind={auto ? 'danger' : 'primary'} label={auto ? 'إطفاء التوثيق التلقائي' : 'تشغيل التوثيق التلقائي'} onPress={() => setSetting('auto_verify', !auto)} />
+            </Card>
+            <Card style={{ gap: 8 }}>
+              <T style={{ fontWeight: '800' }}>الكرينات التجريبية</T>
+              <Muted>{demo ? 'ظاهرة للجميع حالياً (للتجربة).' : 'مخفية عن الناس وتظهر لك أنت فقط.'} اطفيها قبل الإطلاق الحقيقي.</Muted>
+              <Btn kind={demo ? 'danger' : 'primary'} label={demo ? 'إخفاء التجريبية عن الناس' : 'إظهار التجريبية'} onPress={() => setSetting('show_demo', !demo)} />
+            </Card>
+          </>
+        )}
+
         {!busy && tab === 'cranes' && rows.map((c) => (
           <Card key={c.id} style={{ gap: 8 }}>
             <View style={[rtl.row, { gap: 8, justifyContent: 'space-between' }]}>
@@ -178,6 +210,7 @@ export default function Admin() {
             <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
               <Btn small kind={c.listed ? 'primary' : 'secondary'} label={c.listed ? 'ظاهر' : 'وافق وأظهر'} onPress={() => patch('cranes', c.id, { listed: !c.listed })} />
               <Btn small kind={c.verified ? 'secondary' : 'primary'} label={c.verified ? 'إلغاء التوثيق' : 'وثّق'} onPress={() => patch('cranes', c.id, { verified: !c.verified })} />
+              <Btn small label="الملف" onPress={() => setFileId(c.id)} />
               <Btn small kind="danger" label="حذف" onPress={() => del('cranes', c.id, 'الكرين')} />
             </View>
           </Card>
@@ -200,7 +233,7 @@ export default function Admin() {
                 </View>
               );
             })}
-            <Btn small kind={g.c?.verified ? 'secondary' : 'primary'} label={g.c?.verified ? 'موثق ✓ (إلغاء)' : 'وثّق الكرين'} onPress={() => patch('cranes', g.id, { verified: !g.c?.verified })} />
+            <Btn small label="فتح ملف السائق" onPress={() => setFileId(g.id)} />
           </Card>
         ))}
 
@@ -233,6 +266,7 @@ export default function Admin() {
         ))}
         <Btn kind="secondary" label="رجوع" onPress={() => router.back()} />
       </ScrollView>
+      {fileId && <DriverFile craneId={fileId} onClose={() => setFileId(null)} onChanged={load} />}
       <Modal visible={!!img} transparent animationType="fade" onRequestClose={() => setImg('')}>
         <Pressable onPress={() => setImg('')} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', padding: 16 }}>
           <Image source={{ uri: img }} resizeMode="contain" style={{ width: '100%', height: '80%' }} />

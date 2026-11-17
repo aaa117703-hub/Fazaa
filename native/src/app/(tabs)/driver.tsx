@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { geoAlert, getFix } from '@/lib/geo';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { dial } from '@/lib/contact';
@@ -52,6 +53,8 @@ export default function Driver() {
   const [idName, setIdName] = useState<string | null>(null);
   const [idPlate, setIdPlate] = useState<string | null>(null);
   const [idErr, setIdErr] = useState('');
+  const [chk, setChk] = useState<{ status: string; message: string | null } | null>(null);
+  const [scanning, setScanning] = useState(false);
   const [stats, setStats] = useState({ today: 0, total: 0, rating: null as number | null, count: 0 });
   const [wk, setWk] = useState<Wk>(null);
   const [editing, setEditing] = useState(false);
@@ -70,16 +73,18 @@ export default function Driver() {
       setCrane(c);
       const ids = fl.map((x) => x.id);
       if (!c) { setIncoming([]); setJobs([]); return; }
-      const [ct, calls, rs, tg, jb, dc, w, idn] = await Promise.all([
+      const [ct, calls, rs, tg, jb, dc, w, idn, ck] = await Promise.all([
         supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle(),
         supabase.from('calls').select('created_at').eq('crane_id', c.id).order('created_at', { ascending: false }).limit(500),
         supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', c.id).maybeSingle(),
         supabase.from('request_targets').select('request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)').in('crane_id', ids).eq('status', 'sent').order('sent_at', { ascending: false }).limit(20),
         supabase.from('requests').select('*').in('accepted_crane_id', ids).eq('status', 'accepted').order('accepted_at', { ascending: false }),
-        supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).order('created_at', { ascending: false }),
+        supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).is('purged_at', null).order('created_at', { ascending: false }),
         supabase.rpc('my_crane_stats', {}),
         supabase.from('crane_identity').select('doc_name,doc_plate').eq('crane_id', c.id).maybeSingle(),
+        supabase.from('doc_checks').select('status,message').eq('crane_id', c.id).maybeSingle(),
       ]);
+      setChk((ck.data as { status: string; message: string | null } | null) ?? null);
       setIdent((idn.data as { doc_name: string | null; doc_plate: string | null } | null) ?? null);
       setPhone((ct.data as { phone?: string } | null)?.phone ?? '');
       const cl = (calls.data ?? []) as { created_at: string }[];
@@ -128,7 +133,9 @@ export default function Driver() {
         });
       } catch { /* */ }
     })();
-    return () => { dead = true; sub?.remove(); };
+    // نبض كل نص ساعة حتى ما تتحول حالتك «مشغول» تلقائياً (النظام يطفيها بعد 5 ساعات بدون نشاط)
+    const hb = setInterval(() => { supabase.from('cranes').update({ status: 'available' }).eq('id', id).then(() => {}); }, 30 * 60 * 1000);
+    return () => { dead = true; sub?.remove(); clearInterval(hb); };
   }, [crane?.id, crane?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const wrap = (c: React.ReactNode) => (
@@ -143,17 +150,17 @@ export default function Driver() {
   if (!crane || editing || adding) return wrap(<RegForm crane={editing ? crane : null} adding={adding} phone={editing ? phone : ''} uid={uid!} onDone={(id) => { setEditing(false); setAdding(false); if (id) setSelId(id); load(); }} onCancel={editing ? () => setEditing(false) : adding ? () => setAdding(false) : undefined} />);
 
   const avail = crane.status === 'available';
+
   const pkg = tierOf(effTier(crane));
 
   async function goAvailable() {
-    const perm = await Location.requestForegroundPermissionsAsync();
-    if (perm.status !== 'granted') { Alert.alert('الموقع مغلق', 'فعّل الموقع حتى تظهر للزبائن.'); return; }
+    let p: { latitude: number; longitude: number };
+    try { p = await getFix(); } catch (e) { geoAlert(e, 'تحتاج موقعك حتى تظهر للزبائن.'); return; }
     try {
-      const p = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const { data, error } = await supabase.from('cranes').update({ status: 'available', lat: p.coords.latitude, lng: p.coords.longitude }).eq('id', crane!.id).select().single();
+      const { data, error } = await supabase.from('cranes').update({ status: 'available', lat: p.latitude, lng: p.longitude }).eq('id', crane!.id).select().single();
       if (error) throw error;
       setCrane(data as CraneRow);
-    } catch { Alert.alert('تعذّر', 'ما كدرنا نحدّد موقعك أو نحدّث الحالة.'); }
+    } catch { Alert.alert('تعذّر', 'ما كدرنا نحدّث حالتك. تأكد من الإنترنت وجرّب مرة ثانية.'); }
   }
   async function goBusy() {
     const { data, error } = await supabase.from('cranes').update({ status: 'busy' }).eq('id', crane!.id).select().single();
@@ -170,6 +177,17 @@ export default function Driver() {
     }
     load();
   }
+  async function scan(silent = false) {
+    if (!crane || scanning) return;
+    setScanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-docs', { body: { action: 'scan', crane_id: crane.id } });
+      if (error) throw error;
+      const r = data as { status?: string; message?: string };
+      if (!silent || r?.status !== 'pending') Alert.alert(r?.status === 'match' ? 'الوثائق مطابقة' : r?.status === 'mismatch' ? 'في عدم تطابق' : 'نتيجة الفحص', r?.message ?? 'تم.');
+    } catch { if (!silent) Alert.alert('تعذّر الفحص', 'جرّب مرة ثانية بعد قليل.'); }
+    setScanning(false); load();
+  }
   async function pickDoc(kind: string) {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -183,8 +201,8 @@ export default function Driver() {
       for (const o of docs.filter((x) => x.kind === kind && x.status === 'rejected')) await supabase.from('driver_documents').delete().eq('id', o.id);
       const { error } = await supabase.from('driver_documents').insert({ crane_id: crane!.id, owner_id: uid, kind, path });
       if (error) throw error;
-      Alert.alert('تم الرفع', 'بانتظار المراجعة.');
-      load();
+      const have = new Set(docs.map((x) => x.kind)); have.add(kind);
+      if (have.size >= 6 && (ident?.doc_name && ident?.doc_plate)) { Alert.alert('تم الرفع', 'نفحص وثائقك الحين…'); scan(); } else { Alert.alert('تم الرفع', 'كمّل باقي الوثائق حتى نفحصها.'); load(); }
     } catch { Alert.alert('تعذّر الرفع', 'جرّب صورة ثانية أو أعد المحاولة.'); }
   }
   async function saveIdentity() {
@@ -194,7 +212,7 @@ export default function Driver() {
     setIdErr('');
     const { error } = await supabase.from('crane_identity').upsert({ crane_id: crane!.id, owner_id: uid, doc_name: name, doc_plate: plate }, { onConflict: 'crane_id' });
     if (error) { setIdErr('تعذّر الحفظ. جرّب مرة ثانية.'); return; }
-    setIdName(null); setIdPlate(null); Alert.alert('تم حفظ بياناتك'); load();
+    setIdName(null); setIdPlate(null); Alert.alert('تم حفظ بياناتك'); await load(); if (new Set(docs.map((x) => x.kind)).size >= 6) scan(true);
   }
   function remove() {
     Alert.alert('حذف تسجيلك كسائق؟', 'راح يختفي كرينك من القائمة والخريطة.', [
@@ -296,9 +314,9 @@ export default function Driver() {
 
       {(() => {
         const done = new Set(docs.map((x) => x.kind)).size, hasId = !!(ident?.doc_name && ident?.doc_plate);
-        const pct = Math.round(((done + (hasId ? 2 : 0)) / 8) * 100);
-        const state: [string, string, string] = crane.verified ? [C.ok, 'موثّق', 'اسمك ورقم لوحتك ظاهرين للزبائن مع شارة «موثّق».']
-          : done === 6 && hasId ? [C.info, 'قيد المراجعة', 'الإدارة تراجع وثائقك وبياناتك. غالباً خلال يوم.'] : [C.accent, 'غير مكتمل', 'أكمل بياناتك وارفع الوثائق الست حتى تحصل على شارة «موثّق».'];
+        const pct = crane.verified ? 100 : Math.round(((done + (hasId ? 2 : 0)) / 8) * 100);
+        const state: [string, string, string] = crane.verified ? [C.ok, 'موثّق', 'اسمك ورقم لوحتك ظاهرين للزبائن مع شارة «موثّق». حذفنا صور وثائقك بعد التوثيق حفاظاً على خصوصيتك.']
+          : done === 6 && hasId ? [C.info, chk?.status === 'match' ? 'مطابقة، بانتظار الإدارة' : 'قيد المراجعة', chk?.status === 'match' ? 'وثائقك مطابقة لبياناتك. الإدارة تأكد التوثيق قريباً.' : 'نفحص وثائقك وبعدها الإدارة تراجعها.'] : [C.accent, 'غير مكتمل', 'أكمل بياناتك وارفع الوثائق الست حتى تحصل على شارة «موثّق».'];
         return (
           <Card style={{ gap: 12 }}>
             <View style={[rtl.row, { gap: 12 }]}>
@@ -309,6 +327,12 @@ export default function Driver() {
               <View style={{ flex: 1, gap: 2 }}><T style={{ fontWeight: '800', fontSize: 17 }}>التوثيق</T><T style={{ color: state[0], fontWeight: '700', fontSize: 13 }}>{state[1]}</T></View>
             </View>
             <Muted>{state[2]} الصور خاصة ولا يراها غير المدير.</Muted>
+            {!crane.verified && !!chk?.message && chk.status !== 'pending' && (
+              <View style={{ padding: 12, borderRadius: R.md, backgroundColor: (chk.status === 'match' ? C.ok : chk.status === 'mismatch' ? C.danger : C.warn) + '1F', borderWidth: 1, borderColor: (chk.status === 'match' ? C.ok : chk.status === 'mismatch' ? C.danger : C.warn) + '66' }}>
+                <T style={{ fontSize: 13, lineHeight: 21 }}>{chk.message}</T>
+              </View>
+            )}
+            {!crane.verified && done === 6 && hasId && <Btn small kind="secondary" label={scanning ? 'جاري الفحص…' : 'افحص وثائقي الحين'} onPress={() => scan()} />}
             <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 }}>
               <T style={{ fontWeight: '700' }}>① بياناتك الرسمية</T>
               <Muted>الاسم الثلاثي (مثل البطاقة)</Muted>
@@ -375,10 +399,9 @@ function RegForm({ crane, adding, phone, uid, onDone, onCancel }: { crane: Crane
         const b = await supabase.from('crane_contacts').update({ phone: p }).eq('crane_id', crane.id);
         if (b.error) throw b.error;
       } else {
-        const perm = await Location.requestForegroundPermissionsAsync();
         let lat: number, lng: number;
-        if (perm.status === 'granted') { const l = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }); lat = l.coords.latitude; lng = l.coords.longitude; }
-        else { const g = GOVS.find((x) => x.name === gov)!; lat = g.lat; lng = g.lng; }
+        try { const l = await getFix(); lat = l.latitude; lng = l.longitude; }
+        catch { const g = GOVS.find((x) => x.name === gov)!; lat = g.lat; lng = g.lng; }
         const { data, error } = await supabase.from('cranes').insert({ owner_id: uid, name: name.trim(), type, crane_make: make.make, crane_model: make.model, governorate: gov, lat, lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false }).select().single();
         if (error) throw error;
         const c = await supabase.from('crane_contacts').insert({ crane_id: (data as { id: string }).id, phone: p });
