@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import React, { useCallback, useState } from 'react';
 import { useFocusEffect, router } from 'expo-router';
 import { Platform, ScrollView, View } from 'react-native';
@@ -39,7 +39,7 @@ export default function Membership() {
             <Card style={{ borderColor: current ? p.color : p.color + '59', borderWidth: current ? 2 : 1, gap: 8 }}>
               <View style={[rtl.row, { gap: 12 }]}>
                 <View style={{ width: 44, height: 44, borderRadius: 22, borderWidth: 3, borderColor: p.color, backgroundColor: p.color + '24', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="diamond" size={20} color={p.color} />
+                  <Icon name="diamond" size={22} mono={p.color} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={[rtl.row, { gap: 8 }]}>
@@ -53,7 +53,7 @@ export default function Membership() {
               </View>
               {p.features.map((f) => (
                 <View key={f} style={[rtl.row, { gap: 8 }]}>
-                  <Ionicons name="checkmark-circle" size={18} color={C.ok} />
+                  <Icon name="check-circle" size={19} mono={C.ok} />
                   <T style={{ flex: 1 }}>{f}</T>
                 </View>
               ))}

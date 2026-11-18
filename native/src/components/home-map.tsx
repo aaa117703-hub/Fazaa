@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
@@ -15,10 +15,10 @@ import { C, R } from '@/lib/theme';
 type Pos = { latitude: number; longitude: number };
 const K_SHOPS = 'sanad_map_shops', K_SPEED = 'sanad_map_speed';
 
-function Fab({ icon, on, onPress, label }: { icon: React.ComponentProps<typeof Ionicons>['name']; on: boolean; onPress: () => void; label: string }) {
+function Fab({ icon, on, onPress, label }: { icon: IconName; on: boolean; onPress: () => void; label: string }) {
   return (
     <Pressable onPress={onPress} accessibilityLabel={label} style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? C.accent : 'rgba(20,23,26,0.88)', borderWidth: 1, borderColor: on ? C.accent : C.line }}>
-      <Ionicons name={icon} size={22} color={on ? C.onAccent : C.text} />
+      <Icon name={icon} size={24} {...(on ? { mono: C.onAccent } : {})} />
     </Pressable>
   );
 }
@@ -92,7 +92,7 @@ export function HomeMap({ pos, src, cranes, height = 260 }: { pos: Pos; src: 'de
           return (
             <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }} tracksViewChanges={false} title={s.name || k[0]} description={k[0] + (s.phone ? ' · اضغط للاتصال' : '')} onCalloutPress={() => { if (s.phone) dial(s.name || k[0], s.phone); }}>
               <View style={{ width: 22, height: 22, borderRadius: 7, backgroundColor: k[1], borderWidth: 2, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="build" size={12} color="#14171A" />
+                <Icon name="mechanic" size={13} mono="#14171A" />
               </View>
             </Marker>
           );
@@ -107,8 +107,8 @@ export function HomeMap({ pos, src, cranes, height = 260 }: { pos: Pos; src: 'de
         })}
       </MapView>
       <View style={{ position: 'absolute', top: 10, right: 10, gap: 8 }}>
-        <Fab icon="build-outline" on={shopsOn} onPress={toggleShops} label="محلات التصليح" />
-        <Fab icon="speedometer-outline" on={speedOn} onPress={toggleSpeed} label="عداد السرعة" />
+        <Fab icon="mechanic" on={shopsOn} onPress={toggleShops} label="محلات التصليح" />
+        <Fab icon="speed" on={speedOn} onPress={toggleSpeed} label="عداد السرعة" />
       </View>
       {speedOn && (
         <View pointerEvents="none" style={{ position: 'absolute', left: 10, bottom: 10, minWidth: 78, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 24, alignItems: 'center', backgroundColor: 'rgba(20,23,26,0.9)', borderWidth: 2, borderColor: kmh >= 120 ? C.danger : kmh < 2 ? C.line : C.accent }}>

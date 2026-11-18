@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { DriverBid } from '@/components/bidding';
+import { Icon, type IconName } from '@/components/icon';
 import { geoAlert, getFix } from '@/lib/geo';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
@@ -28,6 +29,7 @@ const GROUPS: [string, [string, string][]][] = [
 const DST: Record<string, [string, string]> = { pending: [C.warn, 'قيد المراجعة'], approved: [C.ok, 'مقبول'], rejected: [C.danger, 'مرفوض'] };
 
 type CraneRow = { id: string; name: string; type: string; status: string; lat: number; lng: number; governorate: string | null; listed: boolean; verified: boolean; tier: string | null; sub_expires_at?: string | null; crane_make: string | null; crane_model: string | null; updated_at: string };
+const ISSUE_ICON: Record<string, string> = { tow: 'tow', battery: 'battery', tire: 'tire', fuel: 'fuel', locked: 'locked', accident: 'accident', other: 'other' };
 type Target = { request_id: string; crane_id: string; distance_km: number; requests: { id: string; number: number | null; issue: string; destination: string | null; note: string | null; status: string; created_at: string } | null };
 type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null; agreed_price?: number | null }; p: { full_name: string | null; phone: string | null; car: string | null; car_weight_kg?: number | null; car_length_m?: number | null } | null };
 type Doc = { id: string; kind: string; status: string; note: string | null };
@@ -261,7 +263,7 @@ export default function Driver() {
           {incoming.length === 0 && <Muted>{avail ? 'ما كو طلبات هسه. التحديث تلقائي.' : 'حوّل «متاح» حتى توصلك الطلبات.'}</Muted>}
           {incoming.map((t) => { const r = t.requests!; return (
             <View key={t.request_id} style={{ gap: 6, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 }}>
-              <View style={rtl.row}><T style={{ fontWeight: '800', flex: 1 }}>{r.number ? '#' + r.number + ' · ' : ''}{ISSUE[r.issue] ?? r.issue}</T><Muted>{fmtDist(+t.distance_km)} · {ago(r.created_at)}</Muted></View>
+              <View style={[rtl.row, { gap: 8 }]}><Icon name={(ISSUE_ICON[r.issue] ?? 'other') as IconName} size={28} /><T style={{ fontWeight: '800', flex: 1 }}>{r.number ? '#' + r.number + ' · ' : ''}{ISSUE[r.issue] ?? r.issue}</T><Muted>{fmtDist(+t.distance_km)} · {ago(r.created_at)}</Muted></View>
               {!!r.destination && <Muted>إلى: {r.destination}</Muted>}
               {!!r.note && <Muted>{r.note}</Muted>}
               <DriverBid requestId={r.id} craneId={t.crane_id} onAccepted={() => { fastUntil.current = Date.now() + 2 * 3600000; load(); }} />

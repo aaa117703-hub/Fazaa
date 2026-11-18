@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
@@ -102,7 +102,7 @@ export default function Home() {
       <View style={[rtl.row, { gap: 8 }]}>
         <T style={{ fontSize: 26, fontWeight: '800', color: C.accent, flex: 1 }}>سند جايك</T>
         <Pressable onPress={() => router.push('/settings')} accessibilityLabel="الإعدادات" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="options-outline" size={22} color={C.text} />
+          <Icon name="settings" size={24} />
         </Pressable>
       </View>
       <Muted>{src === 'gps' ? 'موقعك: من الجهاز' : src === 'manual' ? 'موقعك: يدوي (حسب المحافظة)' : 'موقعك غير محدد — اضغط «حدّد موقعي» أو «اختر يدوياً».'}</Muted>

@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,7 +22,7 @@ type Prof = { full_name: string | null; phone: string | null; car: string | null
 type ReqRow = { number: number | null; issue: string; status: string; created_at: string; destination?: string | null; cranes?: { name: string } | null };
 const ST: Record<string, string> = { open: 'قيد البحث', accepted: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي', expired: 'منتهي' };
 const ISS: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
-const ISS_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> = { tow: 'car-outline', battery: 'battery-dead-outline', tire: 'disc-outline', fuel: 'water-outline', locked: 'key-outline', accident: 'warning-outline', other: 'help-circle-outline' };
+const ISS_ICON: Record<string, IconName> = { tow: 'tow', battery: 'battery', tire: 'tire', fuel: 'fuel', locked: 'locked', accident: 'accident', other: 'other' };
 const ST_COLOR: Record<string, string> = { open: C.info, accepted: C.accent, completed: C.ok, cancelled: C.muted, expired: C.muted };
 const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
 const fmtWhen = (iso: string) => { const d = new Date(iso); const h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0'); return d.getDate() + ' ' + MONTHS[d.getMonth()] + ' · ' + ((h % 12) || 12) + ':' + m + (h >= 12 ? ' م' : ' ص'); };
@@ -193,7 +193,7 @@ export default function Profile() {
           <View style={{ width: 102, height: 102, borderRadius: 51, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
             {p.avatar_path ? <Image source={{ uri: avatarUrl(p.avatar_path) + '?v=' + avaV }} style={{ width: '100%', height: '100%' }} contentFit="cover" /> : <T style={{ fontSize: 42, fontWeight: '700', color: C.accent }}>{(p.full_name || '؟').trim().charAt(0)}</T>}
           </View>
-          <View style={{ position: 'absolute', bottom: 0, left: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="camera" size={17} color={C.onAccent} /></View>
+          <View style={{ position: 'absolute', bottom: 0, left: 0, width: 32, height: 32, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' }}><Icon name="camera" size={18} mono={C.onAccent} /></View>
         </Pressable>
         <T style={{ fontSize: 22, fontWeight: '700' }}>{p.full_name || 'مستخدم سند جايك'}</T>
         <View style={[rtl.row, { gap: 8, flexWrap: 'wrap', justifyContent: 'center' }]}>
@@ -221,7 +221,7 @@ export default function Profile() {
             <Card key={i} style={{ gap: 8, padding: 14 }}>
               <View style={[rtl.row, { gap: 12 }]}>
                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: col + '22', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={ISS_ICON[x.issue] ?? 'help-circle-outline'} size={22} color={col} />
+                  <Icon name={ISS_ICON[x.issue] ?? 'other'} size={26} />
                 </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T style={{ fontWeight: '800', fontSize: 16 }}>{ISS[x.issue] ?? 'طلب مساعدة'}</T>
@@ -233,8 +233,8 @@ export default function Profile() {
               </View>
               {(!!x.cranes?.name || !!x.destination) && (
                 <View style={{ gap: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: C.line }}>
-                  {!!x.cranes?.name && <View style={[rtl.row, { gap: 6 }]}><Ionicons name="person-outline" size={15} color={C.muted} /><Muted style={{ fontSize: 13 }}>السائق: {x.cranes.name}</Muted></View>}
-                  {!!x.destination && <View style={[rtl.row, { gap: 6 }]}><Ionicons name="location-outline" size={15} color={C.muted} /><Muted style={{ fontSize: 13, flex: 1 }}>الوجهة: {x.destination}</Muted></View>}
+                  {!!x.cranes?.name && <View style={[rtl.row, { gap: 6 }]}><Icon name="profile" size={16} /><Muted style={{ fontSize: 13 }}>السائق: {x.cranes.name}</Muted></View>}
+                  {!!x.destination && <View style={[rtl.row, { gap: 6 }]}><Icon name="pin" size={16} /><Muted style={{ fontSize: 13, flex: 1 }}>الوجهة: {x.destination}</Muted></View>}
                 </View>
               )}
               {x.number != null && <Muted style={{ fontSize: 11 }}>رقم الطلب {x.number}</Muted>}

@@ -9,7 +9,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, TextIn
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Select } from '@/components/select';
+import { Icon, type IconName } from '@/components/icon';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { askBlock } from '@/lib/blocks';
 import { distKm } from '@/lib/data';
@@ -19,6 +19,7 @@ import { C, fontFor, R } from '@/lib/theme';
 
 export const AK = 'sanad_active_req';
 const ISSUES: [string, string][] = [['tow', 'عطل كامل — أحتاج سحب'], ['battery', 'بطارية'], ['tire', 'إطار'], ['fuel', 'وقود'], ['locked', 'مفاتيح داخل السيارة'], ['accident', 'حادث'], ['other', 'شي ثاني']];
+const ISSUE_SHORT: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح', accident: 'حادث', other: 'أخرى' };
 const issueName = (k: string) => (ISSUES.find((i) => i[0] === k) ?? [0, k])[1];
 
 type Req = { arrived_at?: string | null; id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null; agreed_price?: number | null };
@@ -59,9 +60,17 @@ function Form({ onSent }: { onSent: (a: { id: string; targets: number | null }) 
   return (
     <>
       <BackBar /><T style={{ fontSize: 24, fontWeight: '800' }}>سيارتي تعطلت</T>
-      <Muted>راح نرسل طلبك لأقرب 3 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.</Muted>
-      <View style={{ gap: 6 }}><Muted>شنو المشكلة؟</Muted>
-        <Select label="شنو المشكلة؟" value={issueName(issue)} options={ISSUES.map((i) => i[1])} onChange={(v) => setIssue((ISSUES.find((i) => i[1] === v) ?? ISSUES[0])[0])} /></View>
+      <Muted>راح نرسل طلبك لأقرب 5 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.</Muted>
+      <View style={{ gap: 8 }}><Muted>شنو المشكلة؟</Muted>
+        <View style={[rtl.row, { flexWrap: 'wrap', gap: 8 }]}>
+          {ISSUES.map(([k]) => (
+            <Pressable key={k} onPress={() => setIssue(k)} accessibilityRole="button" accessibilityLabel={ISSUE_SHORT[k]} style={{ width: '23.5%', minWidth: 74, flexGrow: 1, alignItems: 'center', gap: 6, paddingVertical: 12, borderRadius: R.md, backgroundColor: issue === k ? 'rgba(255,201,60,0.16)' : C.surface2, borderWidth: 1.5, borderColor: issue === k ? C.accent : C.line }}>
+              <Icon name={k as IconName} size={34} />
+              <T style={{ fontSize: 12.5, fontWeight: issue === k ? '800' : '600', color: issue === k ? C.accent : C.text }}>{ISSUE_SHORT[k]}</T>
+            </Pressable>
+          ))}
+        </View>
+        <Muted style={{ fontSize: 12.5 }}>{issueName(issue)}</Muted></View>
       <View style={{ gap: 6 }}><Muted>وين تريد توصل؟ (اختياري)</Muted><TextInput value={dest} onChangeText={setDest} maxLength={80} placeholder="مثال: ورشة بالحي الصناعي" placeholderTextColor={C.muted} style={inp} /></View>
       <View style={{ gap: 6 }}><Muted>ملاحظة (اختياري)</Muted><TextInput value={note} onChangeText={setNote} maxLength={140} placeholder="مثال: السيارة على الطريق الدولي" placeholderTextColor={C.muted} style={inp} /></View>
       {!!err && <T style={{ color: C.danger }}>{err}</T>}

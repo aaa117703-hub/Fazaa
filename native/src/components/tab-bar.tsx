@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import { router } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
@@ -9,12 +9,11 @@ import { evt } from '@/lib/debuglog';
 import { tap } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
-type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const META: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'الرئيسية', icon: 'home' },
-  driver: { label: 'سائق', icon: 'car-sport' },
+  driver: { label: 'سائق', icon: 'driver' },
   packages: { label: 'العضوية', icon: 'diamond' },
-  profile: { label: 'حسابي', icon: 'person' },
+  profile: { label: 'حسابي', icon: 'profile' },
 };
 
 function Item({ label, icon, active, onPress, tint }: { label: string; icon: IconName; active: boolean; onPress: () => void; tint?: string }) {
@@ -28,7 +27,7 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
     <Pressable onPress={onPress} hitSlop={6} style={s.item} accessibilityRole="button" accessibilityLabel={label}>
       <Animated.View style={[s.orb, { opacity: lift, transform: [{ translateY: -17 }, { scale: orb }] }]} />
       <Animated.View style={{ transform: [{ translateY: y }] }}>
-        <Ionicons name={icon} size={24} color={active ? C.onAccent : tint ?? C.muted} />
+        <Icon name={icon} size={26} {...(active ? { mono: C.onAccent } : tint ? { mono: tint } : { color: '#F5F5F0' })} />
       </Animated.View>
       <T numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[s.label, { color: active ? C.accent : C.muted, fontWeight: active ? '800' : '600' }]}>{label}</T>
     </Pressable>

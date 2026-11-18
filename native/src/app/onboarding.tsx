@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
@@ -31,7 +31,7 @@ export default function Onboarding() {
           <Muted>تكدر تغيّرها بعدين من الإعدادات.</Muted>
           {LANGS.map(([k, name, sub]) => (
             <Pressable key={k} onPress={() => choose(k)} style={[rtl.row, { gap: 12, paddingVertical: 15, paddingHorizontal: 18, borderRadius: 99, borderWidth: 1.5, borderColor: pick === k ? C.accent : 'rgba(255,255,255,0.12)', backgroundColor: pick === k ? 'rgba(255,201,60,0.14)' : 'rgba(37,42,47,0.85)' }]}>
-              <Ionicons name={pick === k ? 'radio-button-on' : 'radio-button-off'} size={22} color={pick === k ? C.accent : C.muted} />
+              <Icon name={pick === k ? 'radio-on' : 'radio-off'} size={24} />
               <T style={{ fontWeight: '700', flex: 1 }}>{name}</T>
               <Muted>{sub}</Muted>
             </Pressable>

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 
 import { AuthBg, AuthBrand, glass } from '@/components/auth-art';
 import { Btn, Muted, T } from '@/components/ui';
@@ -72,9 +72,9 @@ export default function Login() {
 
   const title = mode === 'in' ? 'أهلاً بعودتك' : mode === 'up' ? 'حساب جديد' : 'نسيت كلمة المرور';
   const sub = mode === 'in' ? 'سجّل دخولك حتى تكمل.' : mode === 'up' ? 'أنشئ حسابك بدقيقة.' : 'اكتب إيميلك وراح نرسل لك رابط لتغيير كلمة المرور.';
-  const Field = ({ icon, children }: { icon: React.ComponentProps<typeof Ionicons>['name']; children: React.ReactNode }) => (
+  const Field = ({ icon, children }: { icon: IconName; children: React.ReactNode }) => (
     <View style={{ flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: 'rgba(37,42,47,0.85)', borderRadius: 99, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, minHeight: 54, gap: 10 }}>
-      <Ionicons name={icon} size={20} color={C.muted} />
+      <Icon name={icon} size={20} />
       {children}
     </View>
   );
@@ -88,12 +88,12 @@ export default function Login() {
             <AuthBrand />
             <T style={{ fontSize: 28, fontWeight: '800', marginTop: 10 }}>{title}</T>
             <Muted>{sub}</Muted>
-            {mode === 'up' && <Field icon="person-outline"><TextInput value={name} onChangeText={setName} placeholder="الاسم الثلاثي" placeholderTextColor={C.muted} style={bare} /></Field>}
-            <Field icon="mail-outline"><TextInput value={email} onChangeText={setEmail} placeholder="الإيميل" placeholderTextColor={C.muted} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={[bare, { writingDirection: 'ltr' }]} /></Field>
+            {mode === 'up' && <Field icon="profile"><TextInput value={name} onChangeText={setName} placeholder="الاسم الثلاثي" placeholderTextColor={C.muted} style={bare} /></Field>}
+            <Field icon="mail"><TextInput value={email} onChangeText={setEmail} placeholder="الإيميل" placeholderTextColor={C.muted} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={[bare, { writingDirection: 'ltr' }]} /></Field>
             {mode !== 'forgot' && (
-              <Field icon="lock-closed-outline">
+              <Field icon="lock">
                 <TextInput value={pass} onChangeText={setPass} placeholder="كلمة المرور (8 أحرف أو أكثر)" placeholderTextColor={C.muted} secureTextEntry={!showPass} autoCapitalize="none" style={bare} />
-                <Pressable onPress={() => setShowPass((v) => !v)} hitSlop={8}><Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={20} color={C.muted} /></Pressable>
+                <Pressable onPress={() => setShowPass((v) => !v)} hitSlop={8}><Icon name={showPass ? 'eyeoff' : 'eye'} size={20} /></Pressable>
               </Field>
             )}
             {mode === 'in' && <Pressable onPress={() => { setMode('forgot'); setErr(''); setInfo(''); }}><T style={{ color: C.accent, fontWeight: '700' }}>نسيت كلمة المرور؟</T></Pressable>}

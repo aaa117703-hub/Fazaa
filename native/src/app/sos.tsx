@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icon, type IconName } from '@/components/icon';
 import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
 import React from 'react';
@@ -10,8 +10,8 @@ import { warn } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
 const NUMS = [
-  { n: '104', label: 'الشرطة', icon: 'shield-checkmark' as const },
-  { n: '122', label: 'الإسعاف', icon: 'medkit' as const },
+  { n: '104', label: 'الشرطة', icon: 'verified' as const },
+  { n: '122', label: 'الإسعاف', icon: 'medical' as const },
   { n: '115', label: 'الإطفاء', icon: 'flame' as const },
 ];
 
@@ -27,7 +27,7 @@ export default function Sos() {
           onPress={() => { warn(); Linking.openURL('tel:' + x.n).catch(() => {}); }}>
           <Card style={[rtl.row, { gap: 14 }]}>
             <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.danger, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name={x.icon} size={24} color="#fff" />
+              <Icon name={x.icon} size={26} mono="#fff" />
             </View>
             <View style={{ flex: 1 }}>
               <T style={{ fontWeight: '800', fontSize: 17 }}>{x.label}</T>
