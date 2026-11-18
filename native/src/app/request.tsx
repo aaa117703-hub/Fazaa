@@ -3,7 +3,7 @@ import { CustomerOffers } from '@/components/bidding';
 import { CancelSheet, CUSTOMER_REASONS } from '@/components/cancel-reason';
 import { geoAlert, getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { dial } from '@/lib/contact';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, TextInput, View } from 'react-native';
@@ -32,15 +32,16 @@ const waNum = (p: string) => { let d = p.replace(/\D/g, ''); if (d.startsWith('0
 
 export default function Request() {
   const insets = useSafeAreaInsets();
+  const { craneId } = useLocalSearchParams<{ craneId?: string }>();
   const [active, setActive] = useState<{ id: string; targets: number | null } | null | undefined>(undefined);
   useEffect(() => { AsyncStorage.getItem(AK).then((v) => setActive(v ? JSON.parse(v) : null)).catch(() => setActive(null)); }, []);
   if (active === undefined) return <View style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center' }}><ActivityIndicator color={C.accent} /></View>;
   const wrap = (c: React.ReactNode) => <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: 22, paddingBottom: insets.bottom + 30, gap: 12 }} keyboardShouldPersistTaps="handled">{c}</ScrollView>;
-  if (!active) return wrap(<Form onSent={(a) => { AsyncStorage.setItem(AK, JSON.stringify(a)).catch(() => {}); setActive(a); }} />);
+  if (!active) return wrap(<Form craneId={craneId} onSent={(a) => { AsyncStorage.setItem(AK, JSON.stringify(a)).catch(() => {}); setActive(a); }} />);
   return wrap(<Track a={active} onReset={() => { AsyncStorage.removeItem(AK).catch(() => {}); setActive(null); }} />);
 }
 
-function Form({ onSent }: { onSent: (a: { id: string; targets: number | null }) => void }) {
+function Form({ craneId, onSent }: { craneId?: string; onSent: (a: { id: string; targets: number | null }) => void }) {
   const [issue, setIssue] = useState('tow');
   const [dest, setDest] = useState('');
   const [note, setNote] = useState('');
@@ -51,7 +52,7 @@ function Form({ onSent }: { onSent: (a: { id: string; targets: number | null }) 
     try {
       let p: { latitude: number; longitude: number };
       try { p = await getFix(); } catch (e) { setBusy(false); setErr('ما كدرنا نحدد موقعك. فعّل الموقع من إعدادات الجهاز وجرّب مرة ثانية.'); geoAlert(e, 'الطلب يحتاج موقعك حتى يوصل لأقرب سائق.'); return; }
-      const { data, error } = await supabase.rpc('create_request', { p_lat: p.latitude, p_lng: p.longitude, p_issue: issue, p_destination: dest.trim() || null, p_note: note.trim() || null });
+      const { data, error } = await supabase.rpc('create_request', { p_lat: p.latitude, p_lng: p.longitude, p_issue: issue, p_destination: dest.trim() || null, p_note: note.trim() || null, p_crane_id: craneId || null });
       if (error) throw error;
       const r = data as { request_id: string; targets: number };
       supabase.functions.invoke('notify', { body: { kind: 'new_request', request_id: r.request_id } }).catch(() => {});
@@ -61,7 +62,7 @@ function Form({ onSent }: { onSent: (a: { id: string; targets: number | null }) 
   return (
     <>
       <BackBar /><T style={{ fontSize: 24, fontWeight: '800' }}>سيارتي تعطلت</T>
-      <Muted>راح نرسل طلبك لأقرب 5 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.</Muted>
+      <Muted>{craneId ? 'راح يوصل طلبك لهذا الكرين مباشرة، وتتفاوض وياه على السعر داخل التطبيق.' : 'راح نرسل طلبك لأقرب 5 سائقين مناسبين لمشكلتك. أول واحد يقبل يتواصل وياك.'}</Muted>
       <View style={{ gap: 8 }}><Muted>شنو المشكلة؟</Muted>
         <View style={[rtl.row, { flexWrap: 'wrap', gap: 8 }]}>
           {ISSUES.map(([k]) => (

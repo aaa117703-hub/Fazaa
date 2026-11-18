@@ -31,7 +31,7 @@ export function Badge({ txt, color }: { txt: string; color: string }) {
   );
 }
 
-export function CraneCard({ c, d, onCall, onWa, onRoute, onOpen }: { c: Crane; d: number | null; onCall: () => void; onWa: () => void; onRoute: () => void; onOpen: () => void }) {
+export function CraneCard({ c, d, onCall, onWa, onRoute, onOpen, onRequest }: { c: Crane; d: number | null; onRequest?: () => void; onCall: () => void; onWa: () => void; onRoute: () => void; onOpen: () => void }) {
   const st = statusOf(c);
   const t = tierOf(c.tier);
   return (
@@ -57,8 +57,9 @@ export function CraneCard({ c, d, onCall, onWa, onRoute, onOpen }: { c: Crane; d
           </View>
         </View>
       </View>
+      {!!onRequest && !c.is_demo && <Btn label="اطلب هذا الكرين" onPress={onRequest} small />}
       <View style={[rtl.row, { gap: 8 }]}>
-        <Btn label="اتصال" kind={c.status === 'available' ? 'primary' : 'secondary'} onPress={onCall} style={{ flex: 2 }} small />
+        <Btn label="اتصال" kind="secondary" onPress={onCall} style={{ flex: 2 }} small />
         {!c.is_demo && <Btn label="واتساب" kind="secondary" onPress={onWa} style={{ flex: 1.4 }} small />}
         <Btn label="طريق" kind="secondary" onPress={onRoute} style={{ flex: 1.2 }} small />
       </View>

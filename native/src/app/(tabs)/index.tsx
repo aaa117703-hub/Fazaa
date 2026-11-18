@@ -188,7 +188,7 @@ export default function Home() {
         </View>
       )}
       renderItem={({ item: x, index }) => (
-        <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} /></FadeIn>
+        <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} onRequest={() => (session ? router.push({ pathname: '/request', params: { craneId: x.c.id } }) : go())} /></FadeIn>
       )}
     />
   );
