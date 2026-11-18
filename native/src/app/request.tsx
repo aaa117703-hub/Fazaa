@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomerOffers } from '@/components/bidding';
+import { CancelSheet, CUSTOMER_REASONS } from '@/components/cancel-reason';
 import { geoAlert, getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
@@ -22,7 +23,7 @@ const ISSUES: [string, string][] = [['tow', 'عطل كامل — أحتاج سح
 const ISSUE_SHORT: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح', accident: 'حادث', other: 'أخرى' };
 const issueName = (k: string) => (ISSUES.find((i) => i[0] === k) ?? [0, k])[1];
 
-type Req = { arrived_at?: string | null; id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null; agreed_price?: number | null };
+type Req = { cancel_reason?: string | null; cancelled_by?: string | null; arrived_at?: string | null; id: string; number?: number; status: string; issue: string; lat: number; lng: number; accepted_crane_id: string | null; destination?: string | null; agreed_price?: number | null };
 type Info = { id: string; name: string; type: string; verified: boolean; phone: string };
 type Trk = { lat: number | null; lng: number | null } | null;
 
@@ -84,6 +85,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
   const [r, setR] = useState<Req | null>(null);
   const [crane, setCrane] = useState<Info | null>(null);
   const [trk, setTrk] = useState<Trk>(null);
+  const [askCancel, setAskCancel] = useState(false);
   const prev = useRef('');
   const prevArr = useRef<boolean | null>(null);
   const poll = useCallback(async () => {
@@ -126,9 +128,10 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
       <Muted>{issueName(r.issue)}{r.destination ? ' · إلى: ' + r.destination : ''}</Muted>
     </>
   );
-  const cancel = async () => { const { error } = await supabase.rpc('cancel_request', { p_request_id: r.id }); if (error) Alert.alert('خطأ', 'تعذّر إلغاء الطلب.'); else onReset(); };
+  const cancel = async (reason: string) => { const { error } = await supabase.rpc('cancel_request', { p_request_id: r.id, p_reason: reason }); setAskCancel(false); if (error) Alert.alert('خطأ', 'تعذّر إلغاء الطلب.'); else onReset(); };
+  const sheet = <CancelSheet visible={askCancel} title="ليش تلغي الطلب؟" reasons={CUSTOMER_REASONS} onClose={() => setAskCancel(false)} onConfirm={cancel} />;
 
-  if (r.status === 'open') return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>نبحث لك عن كرين…</T><Muted>أرسلنا طلبك إلى {a.targets ?? 'أقرب'} كرين. الطلب ينتهي بعد 15 دقيقة إذا ما انقبل.</Muted><ActivityIndicator color={C.accent} /></Card><CustomerOffers requestId={r.id} onAccepted={() => { poll().catch(() => {}); }} /><Btn label="إلغاء الطلب" kind="danger" onPress={cancel} /><Btn label="إخفاء (الطلب يبقى شغال)" kind="secondary" onPress={() => router.back()} /></>);
+  if (r.status === 'open') return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>نبحث لك عن كرين…</T><Muted>أرسلنا طلبك إلى {a.targets ?? 'أقرب'} كرين. الطلب ينتهي بعد 15 دقيقة إذا ما انقبل.</Muted><ActivityIndicator color={C.accent} /></Card><CustomerOffers requestId={r.id} onAccepted={() => { poll().catch(() => {}); }} /><Btn label="إلغاء الطلب" kind="danger" onPress={() => setAskCancel(true)} />{sheet}<Btn label="إخفاء (الطلب يبقى شغال)" kind="secondary" onPress={() => router.back()} /></>);
   if (r.status === 'accepted') {
     const me = { latitude: r.lat, longitude: r.lng };
     const has = trk && trk.lat != null && trk.lng != null;
@@ -166,21 +169,24 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
         </Card>
         <Btn label="إبلاغ عن مشكلة" kind="secondary" onPress={() => report({ craneId: r.accepted_crane_id, requestId: r.id })} />
         <Btn label="حظر هذا السائق" kind="secondary" onPress={() => r.accepted_crane_id && askBlock(r.accepted_crane_id, crane?.name ?? 'السائق')} />
+        <Btn label="إلغاء الطلب" kind="danger" onPress={() => setAskCancel(true)} />
         <Btn label="إخفاء" kind="secondary" onPress={() => router.back()} />
+        {sheet}
       </>
     );
   }
   if (r.status === 'completed') return <>{head}<Rate r={r} crane={crane} onDone={onReset} /></>;
-  return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>{r.status === 'expired' ? 'انتهى وقت الطلب' : 'تم إلغاء الطلب'}</T><Muted>{r.status === 'expired' ? 'ما قبل أي كرين بالوقت المحدد. جرّب مرة ثانية أو اتصل بالكرينات من القائمة.' : 'تكدر ترسل طلب جديد بأي وقت.'}</Muted></Card><Btn label="طلب جديد" onPress={onReset} /><Btn label="إغلاق" kind="secondary" onPress={() => { onReset(); router.back(); }} /></>);
+  return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>{r.status === 'expired' ? 'انتهى وقت الطلب' : r.cancelled_by === 'crane' ? 'السائق ألغى الطلب' : 'تم إلغاء الطلب'}</T>{r.status === 'cancelled' && !!r.cancel_reason && <Muted>السبب: {r.cancel_reason}</Muted>}<Muted>{r.status === 'expired' ? 'ما قبل أي كرين بالوقت المحدد. جرّب مرة ثانية أو اتصل بالكرينات من القائمة.' : 'تكدر ترسل طلب جديد بأي وقت.'}</Muted></Card><Btn label="طلب جديد" onPress={onReset} /><Btn label="إغلاق" kind="secondary" onPress={() => { onReset(); router.back(); }} /></>);
 }
 
 function Rate({ r, crane, onDone }: { r: Req; crane: Info | null; onDone: () => void }) {
   const [v, setV] = useState(0);
   const [cm, setCm] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [err, setErr] = useState('');
   const send = async () => {
     const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from('ratings').insert({ request_id: r.id, crane_id: r.accepted_crane_id, customer_id: u.user?.id, stars: v, comment: cm.trim() || null });
+    const { error } = await supabase.from('ratings').insert({ request_id: r.id, crane_id: r.accepted_crane_id, customer_id: u.user?.id, stars: v, comment: [...tags, cm.trim()].filter(Boolean).join(' · ').slice(0, 140) || null });
     if (error) { setErr('تعذّر إرسال التقييم.'); return; }
     Alert.alert('شكراً', 'وصل تقييمك.'); onDone(); router.back();
   };
@@ -189,7 +195,16 @@ function Rate({ r, crane, onDone }: { r: Req; crane: Info | null; onDone: () => 
       <T style={{ fontWeight: '800', fontSize: 17 }}>انتهى الطلب</T>
       <Muted>كيف كانت خدمة {crane?.name ?? 'الكرين'}؟</Muted>
       <View style={[rtl.row, { justifyContent: 'center', gap: 6 }]}>{[1, 2, 3, 4, 5].map((n) => <Pressable key={n} onPress={() => setV(n)} hitSlop={8}><T style={{ fontSize: 38, color: C.warn }}>{n <= v ? '★' : '☆'}</T></Pressable>)}</View>
-      <TextInput value={cm} onChangeText={setCm} maxLength={140} placeholder="تعليق (اختياري)" placeholderTextColor={C.muted} style={inp} />
+      {v > 0 && (
+        <View style={[rtl.row, { flexWrap: 'wrap', gap: 8, justifyContent: 'center' }]}>
+          {(v >= 4 ? ['وصل بسرعة', 'محترم', 'سعر عادل', 'شغل نظيف'] : ['تأخر', 'السعر تغيّر', 'تعامل سيء', 'ما وصل']).map((t) => (
+            <Pressable key={t} onPress={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: R.pill, backgroundColor: tags.includes(t) ? C.accent : C.surface2 }}>
+              <T style={{ color: tags.includes(t) ? C.onAccent : C.text, fontWeight: '700', fontSize: 13 }}>{t}</T>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      <TextInput value={cm} onChangeText={setCm} maxLength={100} placeholder="تعليق (اختياري)" placeholderTextColor={C.muted} style={inp} />
       {!!err && <T style={{ color: C.danger }}>{err}</T>}
       <Btn label="إرسال التقييم" disabled={!v} onPress={send} />
       <Btn label="تخطّي" kind="secondary" onPress={() => { onDone(); router.back(); }} />

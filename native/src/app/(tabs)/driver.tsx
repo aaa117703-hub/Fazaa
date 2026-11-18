@@ -1,4 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CancelSheet, CRANE_REASONS } from '@/components/cancel-reason';
 import { DriverBid } from '@/components/bidding';
 import { Icon, type IconName } from '@/components/icon';
 import { geoAlert, getFix } from '@/lib/geo';
@@ -60,6 +62,19 @@ export default function Driver() {
   const [scanning, setScanning] = useState(false);
   const [stats, setStats] = useState({ today: 0, total: 0, rating: null as number | null, count: 0 });
   const [wk, setWk] = useState<Wk>(null);
+  const [earn, setEarn] = useState<Record<string, { jobs: number; total: number; priced: number }>>({});
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [welcomed, setWelcomed] = useState(true);
+  useEffect(() => { if (uid) AsyncStorage.getItem('sanad_welcome_' + uid).then((v) => setWelcomed(v === '1')).catch(() => {}); }, [uid]);
+  useEffect(() => {
+    if (!uid) return;
+    supabase.rpc('driver_earnings').then(({ data }) => {
+      const m: Record<string, { jobs: number; total: number; priced: number }> = {};
+      for (const x of (data ?? []) as { period: string; jobs: number; total: number; priced: number }[]) m[x.period] = { jobs: x.jobs, total: Number(x.total), priced: x.priced };
+      setEarn(m);
+    });
+  }, [uid, jobs.length, stats.total]);
+  const closeWelcome = () => { setWelcomed(true); if (uid) AsyncStorage.setItem('sanad_welcome_' + uid, '1').catch(() => {}); };
   const [editing, setEditing] = useState(false);
   const known = useRef<Record<string, boolean>>({});
   const busy = useRef(false);
@@ -180,6 +195,13 @@ export default function Driver() {
     }
     load();
   }
+  async function cancelJob(reason: string) {
+    const id = cancelId; if (!id) return;
+    const { error } = await supabase.rpc('crane_cancel_request', { p_request_id: id, p_reason: reason });
+    setCancelId(null);
+    if (error) Alert.alert('خطأ', 'تعذّر إلغاء الطلب.'); else { fastUntil.current = 0; Alert.alert('تم إلغاء الطلب'); }
+    load();
+  }
   async function scan(silent = false) {
     if (!crane || scanning) return;
     setScanning(true);
@@ -226,6 +248,7 @@ export default function Driver() {
 
   return wrap(
     <>
+      <CancelSheet visible={!!cancelId} title="ليش تلغي الطلب؟" reasons={CRANE_REASONS} onClose={() => setCancelId(null)} onConfirm={cancelJob} />
       <Muted>{crane.name} · {crane.type}{crane.governorate ? ' · ' + crane.governorate : ''}{crane.verified ? ' · موثق ✓' : ''}</Muted>
       <Card style={{ gap: 8 }}>
         <View style={[rtl.row, { justifyContent: 'space-between' }]}>
@@ -247,6 +270,30 @@ export default function Driver() {
       </Card>
       {!crane.listed && <Card style={{ backgroundColor: 'rgba(255,201,60,0.12)', borderColor: 'rgba(255,201,60,0.4)' }}><T style={{ color: C.warn }}>تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</T></Card>}
 
+      {!welcomed && (() => {
+        const have = new Set(docs.map((x) => x.kind)).size;
+        const steps: [string, boolean][] = [
+          ['سجّلت كرينك', true],
+          ['الاسم الثلاثي ورقم اللوحة', !!(ident?.doc_name && ident?.doc_plate)],
+          ['رفع الوثائق الست (' + have + '/6)', have >= 6],
+          ['مراجعة الإدارة والتوثيق', !!crane.listed],
+          ['اضغط «متاح» وابدأ تستلم طلبات', crane.status === 'available'],
+        ];
+        return (
+          <Card style={{ gap: 10, borderColor: 'rgba(255,201,60,0.5)' }}>
+            <T style={{ fontWeight: '800', fontSize: 19 }}>أهلاً بك في سند جايك 👋</T>
+            <Muted>خمس خطوات وتصير جاهز تستلم طلبات:</Muted>
+            {steps.map(([t, ok], i) => (
+              <View key={t} style={[rtl.row, { gap: 10 }]}>
+                <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? C.ok : C.surface2 }}><T style={{ color: ok ? C.onAccent : C.muted, fontWeight: '800', fontSize: 13 }}>{ok ? '✓' : String(i + 1)}</T></View>
+                <T style={{ flex: 1, color: ok ? C.muted : C.text, fontWeight: '700' }}>{t}</T>
+              </View>
+            ))}
+            <Muted style={{ fontSize: 13 }}>الأرباح تنحسب من الأسعار المتفق عليها داخل التطبيق. الزبائن يشوفون تقييمك، فخلي خدمتك نظيفة.</Muted>
+            <Btn label="فهمت، يلا نبدأ" onPress={closeWelcome} />
+          </Card>
+        );
+      })()}
       <Card style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>حالتك الحين</T>
         <View style={[rtl.row, { gap: 8 }]}>
@@ -289,12 +336,27 @@ export default function Driver() {
                 <Btn small kind="secondary" label="مسار لموقع الزبون" onPress={() => router.push({ pathname: '/route', params: { lat: String(r.lat), lng: String(r.lng), name: p?.full_name ?? 'الزبون' } })} />
                 {r.arrived_at ? <T style={{ color: C.ok, fontWeight: '800' }}>وصلت ✓</T> : <Btn small label="وصلت للزبون" style={{ backgroundColor: C.ok }} onPress={() => act('mark_arrived', r.id, 'تم إشعار الزبون بوصولك')} />}
                 <Btn small label="تم الإنجاز" onPress={() => act('complete_request', r.id, 'تم إنجاز الطلب')} />
+                <Btn small kind="ghost" label="إلغاء" onPress={() => setCancelId(r.id)} />
                 <Btn small kind="ghost" label="إبلاغ عن الزبون" onPress={() => report({ userId: r.customer_id, requestId: r.id })} />
               </View>
             </View>
           ))}
         </Card>
       )}
+
+      <Card style={{ gap: 10 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>أرباحك</T>
+        <View style={[rtl.row, { gap: 8 }]}>
+          {([['today', 'اليوم'], ['week', '7 أيام'], ['month', '30 يوم']] as const).map(([k, l]) => (
+            <View key={k} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, gap: 2, alignItems: 'center' }}>
+              <Muted style={{ fontSize: 12 }}>{l}</Muted>
+              <T style={{ fontWeight: '800', color: C.accent, fontSize: 15 }}>{(earn[k]?.total ?? 0).toLocaleString('en-US')}</T>
+              <Muted style={{ fontSize: 11.5 }}>{earn[k]?.jobs ?? 0} طلب</Muted>
+            </View>
+          ))}
+        </View>
+        <Muted style={{ fontSize: 12.5 }}>المبالغ بالدينار العراقي، من الطلبات المكتملة وبسعر متفق عليه داخل التطبيق. الإجمالي: {(earn.all?.total ?? 0).toLocaleString('en-US')} د.ع من {earn.all?.jobs ?? 0} طلب.</Muted>
+      </Card>
 
       <Card style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>إحصائياتك</T>
