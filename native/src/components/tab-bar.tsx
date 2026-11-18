@@ -63,7 +63,7 @@ export function TabBar(props: any) {
     );
     if (r.name === 'driver') {
       cells.push(
-        <Item key="sos" label="طوارئ" icon="alert-circle" active={false} tint={C.muted} onPress={() => router.push('/sos')} />,
+        <Item key="sos" label="طوارئ" icon="sos" active={false} onPress={() => router.push('/sos')} />,
       );
     }
   });
