@@ -11,6 +11,7 @@
       "bundleIdentifier": "com.sanadjaik.app",
       "supportsTablet": true,
       "infoPlist": {
+        "NSCameraUsageDescription": "نحتاج الكاميرا حتى تصوّر العطل وتحلله المساعد.",
         "NSPhotoLibraryUsageDescription": "نحتاج الوصول للصور لتغيير صورتك الشخصية ورفع وثائقك.",
         "NSLocationWhenInUseUsageDescription": "نستخدم موقعك لعرض أقرب كرين لسيارتك وإرسال طلبك للسائقين القريبين."
       }
