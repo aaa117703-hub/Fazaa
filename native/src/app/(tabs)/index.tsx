@@ -190,7 +190,7 @@ export default function Home() {
       data={list.slice(0, shown)}
       onEndReachedThreshold={0.6}
       onEndReached={() => { if (shown < list.length) setShown((n) => n + 20); }}
-      ListFooterComponent={shown < list.length ? <Btn label={'عرض المزيد (' + (list.length - shown) + ')'} kind="secondary" onPress={() => setShown((n) => n + 20)} /> : null}
+      ListFooterComponent={shown < list.length ? <Btn label={'عرض المزيد (' + (list.length - shown) + ')'} kind="secondary" onPress={() => setShown((n) => n + 20)} /> : undefined}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}
       refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => { if (pos) load(pos); }} />}
