@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
 type LL = { latitude: number; longitude: number };
+type Cust = { full_name: string | null; phone: string | null };
 type Req = { id: string; number: number | null; lat: number; lng: number; issue: string; destination: string | null; note: string | null; status: string; customer_id: string; agreed_price: number | null; arrived_at: string | null };
 const ISSUE: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
 
@@ -29,7 +30,7 @@ export default function Job() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const [r, setR] = useState<Req | null>(null);
-  const [cust, setCust] = useState<{ full_name: string | null; phone: string | null } | null>(null);
+  const [cust, setCust] = useState<Cust | null>(null);
   const [me, setMe] = useState<LL | null>(null);
   const [line, setLine] = useState<LL[] | null>(null);
   const [info, setInfo] = useState<{ km: number; min: number } | null>(null);
@@ -56,7 +57,7 @@ export default function Job() {
 
   useEffect(() => {
     if (!r?.customer_id || cust) return;
-    supabase.from('profiles').select('full_name,phone').eq('id', r.customer_id).maybeSingle().then(({ data }) => { if (data) setCust(data as typeof cust); });
+    supabase.from('profiles').select('full_name,phone').eq('id', r.customer_id).maybeSingle().then(({ data }) => { if (data) setCust(data as Cust); });
   }, [r?.customer_id, cust]);
 
   // موقع السائق الحي
