@@ -6,17 +6,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T } from '@/components/ui';
 import { evt } from '@/lib/debuglog';
+import { useAttentionCount } from '@/lib/orders';
 import { tap } from '@/lib/safe';
 import { C } from '@/lib/theme';
 
 const META: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'الرئيسية', icon: 'home' },
   driver: { label: 'سائق', icon: 'driver' },
+  orders: { label: 'الطلبات', icon: 'doc' },
   packages: { label: 'العضوية', icon: 'diamond' },
   profile: { label: 'حسابي', icon: 'profile' },
 };
 
-function Item({ label, icon, active, onPress, tint }: { label: string; icon: IconName; active: boolean; onPress: () => void; tint?: string }) {
+function Item({ label, icon, active, onPress, tint, badge }: { label: string; icon: IconName; active: boolean; onPress: () => void; tint?: string; badge?: number }) {
   const lift = useRef(new Animated.Value(active ? 1 : 0)).current;
   useEffect(() => {
     Animated.spring(lift, { toValue: active ? 1 : 0, useNativeDriver: true, friction: 6, tension: 120 }).start();
@@ -28,6 +30,7 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
       <Animated.View style={[s.orb, { opacity: lift, transform: [{ translateY: -17 }, { scale: orb }] }]} />
       <Animated.View style={{ transform: [{ translateY: y }] }}>
         <Icon name={icon} size={26} {...(active ? { mono: C.onAccent } : tint ? { mono: tint } : { color: '#F5F5F0' })} />
+        {!!badge && <View style={s.badge}><T style={s.badgeTxt}>{badge > 9 ? '9+' : String(badge)}</T></View>}
       </Animated.View>
       <T numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[s.label, { color: active ? C.accent : C.muted, fontWeight: active ? '800' : '600' }]}>{label}</T>
     </Pressable>
@@ -37,6 +40,7 @@ function Item({ label, icon, active, onPress, tint }: { label: string; icon: Ico
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function TabBar(props: any) {
   const { state } = props;
+  const attn = useAttentionCount();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const insets = useSafeAreaInsets();
   if (!(globalThis as any).__tbLogged) { (globalThis as any).__tbLogged = 1; evt('tabbar props:', Object.keys(props).join(',')); }
@@ -51,6 +55,7 @@ export function TabBar(props: any) {
         label={m.label}
         icon={m.icon}
         active={state.index === i}
+        badge={r.name === 'orders' ? attn : 0}
         onPress={() => {
           evt('tab:', m.label);
           tap();
@@ -61,11 +66,6 @@ export function TabBar(props: any) {
         }}
       />,
     );
-    if (r.name === 'driver') {
-      cells.push(
-        <Item key="sos" label="طوارئ" icon="sos" active={false} onPress={() => router.push('/sos')} />,
-      );
-    }
   });
   return (
     <View style={[s.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -87,4 +87,6 @@ const s = StyleSheet.create({
     shadowColor: C.accent, shadowOpacity: 0.7, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
   label: { fontSize: 11 },
+  badge: { position: 'absolute', top: -6, right: -10, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, backgroundColor: C.danger, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(28,32,36,0.98)' },
+  badgeTxt: { color: '#fff', fontSize: 10.5, fontWeight: '800', lineHeight: 13 },
 });

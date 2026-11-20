@@ -10,6 +10,7 @@ export default function TabsLayout() {
       screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: C.bg } }}>
       <Tabs.Screen name="index" />
       <Tabs.Screen name="driver" />
+      <Tabs.Screen name="orders" />
       <Tabs.Screen name="packages" />
       <Tabs.Screen name="profile" />
     </Tabs>

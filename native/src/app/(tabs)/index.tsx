@@ -131,7 +131,7 @@ export default function Home() {
         ) : (
           <Muted>{loading ? 'جاري البحث عن الكرينات…' : err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : 'ما لكينا كرين متاح هسه' + (filtered ? ' بهذا الفلتر' : '') + '. شوف القائمة وجرّب تتصل.'}</Muted>
         )}
-        <Btn label="أرسل طلب لأقرب 3 كرينات" onPress={request} />
+        <Btn label="أرسل طلب لأقرب 5 كرينات" onPress={request} />
         {best && <Btn label="أو اتصل مباشرة بأقرب كرين" kind="secondary" onPress={() => call(best.c, 'tel')} />}
       </Card>
       </FadeIn>
