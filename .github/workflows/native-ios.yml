@@ -22,7 +22,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: native/package-lock.json
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npx expo prebuild --platform ios
       - name: Build unsigned app
         working-directory: native/ios
