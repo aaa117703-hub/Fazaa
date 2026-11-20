@@ -27,6 +27,15 @@ const input = {
   textAlign: 'right' as const, borderWidth: 1, borderColor: C.line,
 };
 
+function Field({ icon, children }: { icon: IconName; children: React.ReactNode }) {
+  return (
+    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: 'rgba(37,42,47,0.85)', borderRadius: 99, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, minHeight: 54, gap: 10 }}>
+      <Icon name={icon} size={20} />
+      {children}
+    </View>
+  );
+}
+
 export default function Login() {
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'in' | 'up' | 'forgot'>('in');
@@ -72,12 +81,6 @@ export default function Login() {
 
   const title = mode === 'in' ? 'أهلاً بعودتك' : mode === 'up' ? 'حساب جديد' : 'نسيت كلمة المرور';
   const sub = mode === 'in' ? 'سجّل دخولك حتى تكمل.' : mode === 'up' ? 'أنشئ حسابك بدقيقة.' : 'اكتب إيميلك وراح نرسل لك رابط لتغيير كلمة المرور.';
-  const Field = ({ icon, children }: { icon: IconName; children: React.ReactNode }) => (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', backgroundColor: 'rgba(37,42,47,0.85)', borderRadius: 99, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 18, minHeight: 54, gap: 10 }}>
-      <Icon name={icon} size={20} />
-      {children}
-    </View>
-  );
   const bare = { ...input, flex: 1, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 };
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
