@@ -51,6 +51,7 @@ function Shell() {
         <Stack.Screen name="request" options={{ presentation: 'modal' }} />
         <Stack.Screen name="assist" options={{ presentation: 'modal' }} />
         <Stack.Screen name="route" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="job" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Screen name="settings" />
         <Stack.Screen name="legal" />
         <Stack.Screen name="admin" />

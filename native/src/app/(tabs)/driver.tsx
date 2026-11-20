@@ -80,6 +80,7 @@ export default function Driver() {
   const known = useRef<Record<string, boolean>>({});
   const busy = useRef(false);
   const fastUntil = useRef(0);
+  const openedJob = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     if (!uid || busy.current) return;
@@ -126,6 +127,7 @@ export default function Driver() {
       const pm = new Map(((pr.data ?? []) as (NonNullable<Job['p']> & { id: string })[]).map((x) => [x.id, x]));
       const js: Job[] = jr.map((r) => ({ r, p: (pm.get(r.customer_id) ?? null) as Job['p'] }));
       setJobs(js);
+      for (const j of js) { if (!openedJob.current.has(j.r.id) && !j.r.arrived_at) { openedJob.current.add(j.r.id); router.push({ pathname: '/job', params: { id: j.r.id } }); break; } }
     } catch { /* صامت: يعيد المحاولة بالدورة الجاية */ }
     busy.current = false;
     setLoading(false);
@@ -335,6 +337,7 @@ export default function Driver() {
               })()}
               <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
                 {!!p?.phone && <Btn small label="اتصل" style={{ backgroundColor: C.ok }} onPress={() => dial(p.full_name ?? 'الزبون', p.phone ?? '')} />}
+ <Btn small label="وضع التوجيه" onPress={() => router.push({ pathname: '/job', params: { id: r.id } })} />
                 <Btn small kind="secondary" label="مسار لموقع الزبون" onPress={() => router.push({ pathname: '/route', params: { lat: String(r.lat), lng: String(r.lng), name: p?.full_name ?? 'الزبون' } })} />
                 {r.arrived_at ? <T style={{ color: C.ok, fontWeight: '800' }}>وصلت ✓</T> : <Btn small label="وصلت للزبون" style={{ backgroundColor: C.ok }} onPress={() => act('mark_arrived', r.id, 'تم إشعار الزبون بوصولك')} />}
                 <Btn small label="تم الإنجاز" onPress={() => act('complete_request', r.id, 'تم إنجاز الطلب')} />
