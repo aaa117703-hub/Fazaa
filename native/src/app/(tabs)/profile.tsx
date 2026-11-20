@@ -12,6 +12,7 @@ import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { loadBlocks, unblock } from '@/lib/blocks';
 import { avatarUrl, GOVS } from '@/lib/data';
+import { shrink } from '@/lib/image';
 import { carSpec, carSpecText } from '@/lib/carspecs';
 import { PAGES } from '@/lib/site';
 import { supabase } from '@/lib/supabase';
@@ -69,9 +70,10 @@ export default function Profile() {
       if (!perm.granted) { Alert.alert('الصور مغلقة', 'فعّل الوصول للصور من إعدادات الجهاز.'); return; }
       const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.5, allowsEditing: true, aspect: [1, 1] });
       if (r.canceled || !r.assets[0]) return;
-      const buf = await (await fetch(r.assets[0].uri)).arrayBuffer();
+      const small = await shrink(r.assets[0].uri, { width: 480, format: 'webp', quality: 0.75 });
+      const buf = await (await fetch(small.uri)).arrayBuffer();
       const path = uid + '/avatar.jpg';
-      const up = await supabase.storage.from('avatars').upload(path, buf, { contentType: 'image/jpeg', upsert: true });
+      const up = await supabase.storage.from('avatars').upload(path, buf, { contentType: 'image/webp', upsert: true });
       if (up.error) throw up.error;
       const { error } = await supabase.from('profiles').upsert({ id: uid, avatar_path: path });
       if (error) throw error;

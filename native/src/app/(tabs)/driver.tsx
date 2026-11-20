@@ -4,6 +4,7 @@ import { CancelSheet, CRANE_REASONS } from '@/components/cancel-reason';
 import { DriverBid } from '@/components/bidding';
 import { Icon, type IconName } from '@/components/icon';
 import { geoAlert, getFix } from '@/lib/geo';
+import { shrink } from '@/lib/image';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { dial } from '@/lib/contact';
@@ -119,11 +120,11 @@ export default function Driver() {
         }
       }
       setIncoming(inc);
-      const js: Job[] = [];
-      for (const r of ((jb.data ?? []) as Job['r'][])) {
-        const { data: p } = await supabase.from('profiles').select('full_name,phone,car,car_weight_kg,car_length_m').eq('id', r.customer_id).maybeSingle();
-        js.push({ r, p: p as Job['p'] });
-      }
+      const jr = (jb.data ?? []) as Job['r'][];
+      const cids = [...new Set(jr.map((r) => r.customer_id))];
+      const pr = cids.length ? await supabase.from('profiles').select('id,full_name,phone,car,car_weight_kg,car_length_m').in('id', cids) : { data: [] };
+      const pm = new Map(((pr.data ?? []) as (NonNullable<Job['p']> & { id: string })[]).map((x) => [x.id, x]));
+      const js: Job[] = jr.map((r) => ({ r, p: (pm.get(r.customer_id) ?? null) as Job['p'] }));
       setJobs(js);
     } catch { /* صامت: يعيد المحاولة بالدورة الجاية */ }
     busy.current = false;
@@ -219,7 +220,8 @@ export default function Driver() {
       if (!perm.granted) { Alert.alert('الصور مغلقة', 'فعّل الوصول للصور من إعدادات الجهاز.'); return; }
       const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 });
       if (r.canceled || !r.assets[0]) return;
-      const buf = await (await fetch(r.assets[0].uri)).arrayBuffer();
+      const small = await shrink(r.assets[0].uri, { width: 1600, quality: 0.7 });
+      const buf = await (await fetch(small.uri)).arrayBuffer();
       const path = uid + '/' + kind + '-' + Date.now() + '.jpg';
       const up = await supabase.storage.from('driver-docs').upload(path, buf, { contentType: 'image/jpeg' });
       if (up.error) throw up.error;

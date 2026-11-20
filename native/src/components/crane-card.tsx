@@ -10,7 +10,7 @@ export function Avatar({ c, size = 52 }: { c: { name: string; avatar?: string | 
   const ring = c.verified ? C.ok : 'transparent';
   return (
     <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: c.verified ? 3 : 0, borderColor: ring, overflow: 'hidden', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center' }}>
-      {c.avatar ? <Image source={{ uri: avatarUrl(c.avatar) }} style={{ width: '100%', height: '100%' }} contentFit="cover" /> : <T style={{ fontSize: size * 0.42, fontWeight: '800', color: C.accent }}>{(c.name || '؟').trim().charAt(0)}</T>}
+      {c.avatar ? <Image source={{ uri: avatarUrl(c.avatar) }} style={{ width: '100%', height: '100%' }} contentFit="cover" cachePolicy="memory-disk" transition={150} recyclingKey={c.avatar} /> : <T style={{ fontSize: size * 0.42, fontWeight: '800', color: C.accent }}>{(c.name || '؟').trim().charAt(0)}</T>}
     </View>
   );
 }

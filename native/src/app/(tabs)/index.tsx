@@ -1,9 +1,10 @@
+import { SkeletonList } from '@/components/skeleton';
 import { Icon, type IconName } from '@/components/icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
@@ -35,12 +36,13 @@ export default function Home() {
   const [type, setType] = useState('');
   const [gov, setGov] = useState('');
   const [hasReq, setHasReq] = useState(false);
+  const [shown, setShown] = useState(20);
   const { blocks, reload: reloadBlocks } = useBlocks();
   useFocusEffect(useCallback(() => { reloadBlocks(); AsyncStorage.getItem('sanad_active_req').then((v) => setHasReq(!!v)).catch(() => {}); }, []));
 
   const load = useCallback(async (p: Pos) => {
     setLoading(true); setErr(false);
-    const { data, error } = await supabase.rpc('nearby_cranes', { p_lat: p.latitude, p_lng: p.longitude, p_radius_km: 2000, p_limit: 200 });
+    const { data, error } = await supabase.rpc('nearby_cranes', { p_lat: p.latitude, p_lng: p.longitude, p_radius_km: 2000, p_limit: 100 });
     if (error) {
       // بدون إنترنت: نعرض آخر قائمة محفوظة
       const raw = await AsyncStorage.getItem('sanad_cranes_cache').catch(() => null);
@@ -62,6 +64,14 @@ export default function Home() {
       setPos(p); setSrc('gps'); load(p);
     } catch (e) { geoAlert(e); }
   }, [load]);
+
+  useEffect(() => {
+    // نعرض آخر قائمة محفوظة فوراً (بدون شاشة فارغة) وبعدها نحدّثها من السيرفر
+    AsyncStorage.getItem('sanad_cranes_cache').then((raw) => {
+      try { const c = raw ? (JSON.parse(raw) as Crane[]) : []; if (c.length) { setCranes((x) => (x.length ? x : c)); setLoading(false); } } catch { /* */ }
+    }).catch(() => {});
+  }, []);
+  useEffect(() => { setShown(20); }, [onlyFree, type, gov, pos]);
 
   useEffect(() => {
     setPos(BAGHDAD); load(BAGHDAD);
@@ -177,11 +187,14 @@ export default function Home() {
     <FlatList
       style={{ backgroundColor: C.bg }}
       contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 10 }}
-      data={list}
+      data={list.slice(0, shown)}
+      onEndReachedThreshold={0.6}
+      onEndReached={() => { if (shown < list.length) setShown((n) => n + 20); }}
+      ListFooterComponent={shown < list.length ? <Btn label={'عرض المزيد (' + (list.length - shown) + ')'} kind="secondary" onPress={() => setShown((n) => n + 20)} /> : null}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}
       refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => { if (pos) load(pos); }} />}
-      ListEmptyComponent={loading ? <ActivityIndicator color={C.accent} style={{ marginTop: 24 }} /> : (
+      ListEmptyComponent={loading ? <SkeletonList n={4} /> : (
         <View style={{ alignItems: 'center', gap: 10, marginTop: 20 }}>
           <Muted style={{ textAlign: 'center' }}>{err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : filtered ? 'ما كو كرينات تطابق الفلتر.' : 'ما كو كرينات مسجّلة قريبة منك هسه.'}</Muted>
           {err ? <Btn label="إعادة المحاولة" kind="secondary" onPress={() => pos && load(pos)} /> : filtered ? <Btn label="إلغاء الفلاتر" kind="secondary" onPress={() => { setOnlyFree(false); setType(''); setGov(''); }} /> : null}

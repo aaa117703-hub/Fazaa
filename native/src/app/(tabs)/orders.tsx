@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/icon';
+import { SkeletonList } from '@/components/skeleton';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ago } from '@/lib/data';
@@ -141,7 +142,7 @@ export default function Orders() {
         ))}
       </View>
       <TextInput value={q} onChangeText={setQ} placeholder="ابحث برقم الطلب" placeholderTextColor={C.muted} keyboardType="number-pad" style={{ fontFamily: fontFor('400'), backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, textAlign: 'right', borderWidth: 1, borderColor: C.line }} />
-      {loading ? <ActivityIndicator color={C.accent} style={{ marginTop: 30 }} /> : list.length === 0 ? (
+      {loading ? <SkeletonList n={4} kind="row" /> : list.length === 0 ? (
         <Card style={{ gap: 8, alignItems: 'center' }}><T style={{ fontWeight: '800' }}>ما اكو طلبات هنا</T><Muted style={{ textAlign: 'center' }}>{tab === 'job' && isDriver ? 'الطلبات الواردة وشغلك السابق يظهر هنا.' : 'طلباتك الحالية والسابقة تظهر هنا مع التفاصيل.'}</Muted></Card>
       ) : list.map((o) => <OrderCard key={o.role + o.id} o={o} open={openId === o.role + o.id} onToggle={() => setOpenId(openId === o.role + o.id ? null : o.role + o.id)} onGo={() => go(o)} />)}
     </ScrollView>

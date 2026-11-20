@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { shrink } from '@/lib/image';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { BackBar } from '@/components/back-bar';
@@ -39,11 +40,13 @@ export default function Assist() {
     try {
       const perm = cam ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) { Alert.alert(cam ? 'الكاميرا مغلقة' : 'الصور مغلقة', 'فعّل الوصول من إعدادات الجهاز.'); return; }
-      const opt: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.35, base64: true };
+      const opt: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.8 };
       const r = cam ? await ImagePicker.launchCameraAsync(opt) : await ImagePicker.launchImageLibraryAsync(opt);
-      if (r.canceled || !r.assets[0]?.base64) return;
-      if (r.assets[0].base64.length > 2_900_000) { setErr('الصورة كبيرة. جرّب صورة ثانية.'); return; }
-      setErr(''); setPic({ uri: r.assets[0].uri, b64: r.assets[0].base64 });
+      if (r.canceled || !r.assets[0]) return;
+      const small = await shrink(r.assets[0].uri, { width: 1024, quality: 0.6, base64: true });
+      if (!small.base64) { setErr('تعذّر تجهيز الصورة. جرّب صورة ثانية.'); return; }
+      if (small.base64.length > 2_900_000) { setErr('الصورة كبيرة. جرّب صورة ثانية.'); return; }
+      setErr(''); setPic({ uri: small.uri, b64: small.base64 });
     } catch { setErr('تعذّر فتح الصورة. جرّب مرة ثانية.'); }
   }
   const photoMenu = () => Alert.alert('صوّر العطل', 'لمبة إنذار، إطار، تسريب، أضرار…', [
