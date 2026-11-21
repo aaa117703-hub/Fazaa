@@ -8,6 +8,7 @@ import { SkeletonList } from '@/components/skeleton';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ago } from '@/lib/data';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
@@ -47,6 +48,7 @@ export function OwnerFeed() {
       setDone((d.data ?? []) as Job[]);
     } finally { setLoading(false); }
   }, [uid]);
+  useLive(() => { load().catch(() => {}); });
   useEffect(() => { load().catch(() => setLoading(false)); const t = setInterval(() => load().catch(() => {}), 10000); return () => clearInterval(t); }, [load]);
 
   async function take(o: Open) {
@@ -92,7 +94,7 @@ export function OwnerFeed() {
             <Card key={j.id} style={{ gap: 8, borderColor: C.ok }}>
               <View style={[rtl.row, { gap: 10 }]}>
                 <Icon name={(ISSUE[j.issue] ? j.issue : 'other') as IconName} size={28} />
-                <T style={{ fontWeight: '800', flex: 1 }}>{j.number ? '#' + j.number + ' · ' : ''}{ISSUE[j.issue] ?? j.issue}</T>
+                <T style={{ fontWeight: '800', flex: 1 }}>{ISSUE[j.issue] ?? j.issue}</T>
                 <T style={{ color: C.ok, fontWeight: '800' }}>{money(j.agreed_price)}</T>
               </View>
               <Btn label={j.arrived_at ? 'أنهِ الطلب' : 'وضع التوجيه'} onPress={() => router.push({ pathname: '/job', params: { id: j.id } })} />
@@ -110,7 +112,7 @@ export function OwnerFeed() {
             <View style={[rtl.row, { gap: 10 }]}>
               <Icon name={(ISSUE[o.issue] ? o.issue : 'other') as IconName} size={30} />
               <View style={{ flex: 1, gap: 2 }}>
-                <T style={{ fontWeight: '800', fontSize: 16 }}>{o.number ? '#' + o.number + ' · ' : ''}{ISSUE[o.issue] ?? o.issue}</T>
+                <T style={{ fontWeight: '800', fontSize: 16 }}>{ISSUE[o.issue] ?? o.issue}</T>
                 <Muted style={{ fontSize: 12.5 }}>يبعد {Number(o.distance_km).toFixed(1)} كم · {ago(o.created_at)}</Muted>
               </View>
               {o.joined && <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: R.pill, backgroundColor: C.accent + '29' }}><T style={{ color: C.accent, fontWeight: '800', fontSize: 12.5 }}>{o.offers > 0 ? 'قدّمت عرض' : 'مفتوح'}</T></View>}
@@ -131,7 +133,7 @@ export function OwnerFeed() {
           <Card key={j.id} style={{ gap: 4 }}>
             <View style={[rtl.row, { gap: 10 }]}>
               <Icon name={(ISSUE[j.issue] ? j.issue : 'other') as IconName} size={24} />
-              <T style={{ fontWeight: '700', flex: 1 }}>{j.number ? '#' + j.number + ' · ' : ''}{ISSUE[j.issue] ?? j.issue}</T>
+              <T style={{ fontWeight: '700', flex: 1 }}>{ISSUE[j.issue] ?? j.issue}</T>
               <T style={{ color: C.ok, fontWeight: '800' }}>{money(j.agreed_price)}</T>
             </View>
             {!!j.completed_at && <Muted style={{ fontSize: 12.5 }}>{ago(j.completed_at)}</Muted>}

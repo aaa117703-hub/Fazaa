@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { ago, effTier, fmtDist, GOVS, TYPES, tierOf } from '@/lib/data';
 import { carSpec, carSpecText } from '@/lib/carspecs';
 import { report } from '@/lib/report';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 import { C, fontFor, R } from '@/lib/theme';
 import { CARS, CRANE_MAKES } from '@/lib/vehicles';
@@ -133,6 +134,7 @@ export default function Driver() {
     setLoading(false);
   }, [uid, selId]);
 
+  useLive(() => { load(); });
   useFocusEffect(useCallback(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]));
   useEffect(() => { if (!uid) { setLoading(false); setCrane(null); } }, [uid]);
 

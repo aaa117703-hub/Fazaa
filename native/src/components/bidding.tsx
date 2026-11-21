@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, TextInput, View } from 'react-native';
 
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 import { C, fontFor, R } from '@/lib/theme';
 
@@ -43,7 +44,8 @@ function useThread(requestId: string, craneId: string | null) {
     const { data } = await q;
     setOffers((data ?? []) as Offer[]);
   }, [requestId, craneId]);
-  useEffect(() => { load().catch(() => {}); const t = setInterval(() => load().catch(() => {}), 3000); return () => clearInterval(t); }, [load]);
+  useLive(() => { load().catch(() => {}); });
+  useEffect(() => { load().catch(() => {}); const t = setInterval(() => load().catch(() => {}), 4000); return () => clearInterval(t); }, [load]);
   return { offers, reload: load };
 }
 

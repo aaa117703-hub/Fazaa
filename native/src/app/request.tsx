@@ -15,6 +15,7 @@ import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { askBlock } from '@/lib/blocks';
 import { distKm } from '@/lib/data';
 import { report } from '@/lib/report';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 import { C, fontFor, R } from '@/lib/theme';
 
@@ -107,6 +108,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
     prev.current = q.status;
     setR(q);
   }, [a.id, onReset]);
+  useLive(() => { poll().catch(() => {}); });
   useEffect(() => { poll().catch(() => {}); const t = setInterval(() => poll().catch(() => {}), 5000); return () => clearInterval(t); }, [poll]);
 
   if (!r) return <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} />;

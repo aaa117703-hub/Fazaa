@@ -9,6 +9,7 @@ import { SkeletonList } from '@/components/skeleton';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ago } from '@/lib/data';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 import { C, fontFor, R } from '@/lib/theme';
 
@@ -30,7 +31,7 @@ function OrderCard({ o, open, onToggle, onGo }: { o: Row; open: boolean; onToggl
         <View style={[rtl.row, { gap: 10 }]}>
           <Icon name={(ISSUE[o.issue] ? o.issue : 'other') as IconName} size={30} />
           <View style={{ flex: 1, gap: 2 }}>
-            <T style={{ fontWeight: '800', fontSize: 16 }}>{o.number ? '#' + o.number + ' · ' : ''}{ISSUE[o.issue] ?? o.issue}</T>
+            <T style={{ fontWeight: '800', fontSize: 16 }}>{ISSUE[o.issue] ?? o.issue}</T>
             <Muted style={{ fontSize: 12.5 }}>{ago(o.created_at)}{o.who ? ' · ' + o.who : ''}</Muted>
           </View>
           <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: R.pill, backgroundColor: col + '29' }}><T style={{ color: col, fontWeight: '800', fontSize: 12.5 }}>{lbl}</T></View>
@@ -41,6 +42,7 @@ function OrderCard({ o, open, onToggle, onGo }: { o: Row; open: boolean; onToggl
             {!!o.destination && <Muted>إلى: {o.destination}</Muted>}
             {o.incoming && o.distance != null && <Muted>يبعد عنك {o.distance.toFixed(1)} كم</Muted>}
             <Muted>{o.role === 'me' ? 'السائق' : 'الزبون'}: {o.who || '—'}</Muted>
+            {!!o.number && <Muted>رقم الطلب: #{o.number}</Muted>}
             <Muted>التاريخ: {new Date(o.created_at).toLocaleString('ar-IQ')}</Muted>
             {o.status === 'cancelled' && <Muted>ألغاه: {o.cancelled_by === 'crane' ? 'السائق' : o.cancelled_by === 'customer' ? 'الزبون' : '—'}{o.reason ? ' · السبب: ' + o.reason : ''}</Muted>}
             {o.stars != null && <T style={{ color: C.warn, fontWeight: '800' }}>{'★'.repeat(o.stars)}{'☆'.repeat(5 - o.stars)} تقييم الزبون</T>}
@@ -104,6 +106,8 @@ export default function Orders() {
     } finally { setLoading(false); }
   }, [uid]);
   useFocusEffect(useCallback(() => { load().catch(() => setLoading(false)); const t = setInterval(() => load().catch(() => {}), 15000); return () => clearInterval(t); }, [load]));
+
+  useLive(() => { load().catch(() => {}); });
 
   const list = useMemo(() => {
     const src = tab === 'job' && isDriver ? jobs : mine;

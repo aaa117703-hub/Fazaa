@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 
 /** عدد الطلبات اللي تحتاج انتباهك: طلباتك الجارية كزبون + الواردة والجارية كسائق. */
@@ -36,12 +37,13 @@ export function useAttentionCount() {
   const { session } = useAuth();
   const uid = session?.user.id;
   const [n, setN] = useState(0);
+  useLive(() => { if (uid) countAttention(uid).then((v) => { setN(v); setIconBadge(v); }).catch(() => {}); }, !!uid);
   useEffect(() => {
     if (!uid) { setN(0); setIconBadge(0); return; }
     let live = true;
     const run = () => countAttention(uid).then((v) => { if (live) { setN(v); setIconBadge(v); } }).catch(() => {});
     run();
-    const t = setInterval(run, 12000);
+    const t = setInterval(run, 8000);
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') run(); });
     return () => { live = false; clearInterval(t); sub.remove(); };
   }, [uid]);

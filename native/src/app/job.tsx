@@ -11,6 +11,7 @@ import { Btn, Muted, T, rtl } from '@/components/ui';
 import { dial } from '@/lib/contact';
 import { fmtDist } from '@/lib/data';
 import { getFix } from '@/lib/geo';
+import { useLive } from '@/lib/live';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
@@ -48,6 +49,7 @@ export default function Job() {
     setR(data as Req);
   }, [id]);
 
+  useLive(() => { poll().catch(() => {}); });
   useEffect(() => {
     dead.current = false;
     poll().catch(() => {});
