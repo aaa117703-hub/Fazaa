@@ -2,9 +2,11 @@ import Constants from 'expo-constants';
 import { BackBar } from '@/components/back-bar';
 import { router } from 'expo-router';
 import React from 'react';
-import { Pressable, ScrollView, Switch, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { OwnerIntro } from '@/components/owner-intro';
+import { useAccount } from '@/lib/owner';
 import { PermissionRows } from '@/components/permission-rows';
 import { showSizePreview } from '@/components/size-preview';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
@@ -40,6 +42,9 @@ export default function Settings() {
   const insets = useSafeAreaInsets();
   const p = usePrefs();
   const admin = useIsAdmin();
+  const acct = useAccount();
+  const [intro, setIntro] = React.useState(false);
+  const pick = async (t: 'customer' | 'owner') => { if (!(await acct.setType(t))) Alert.alert('خطأ', 'تعذّر تغيير نوع الحساب.'); };
   return (
     <ScrollView style={{ backgroundColor: C.bg }} contentContainerStyle={{ padding: 16, paddingTop: 20, paddingBottom: insets.bottom + 40, gap: 12, maxWidth: 640, width: '100%', alignSelf: 'center' }}>
       <BackBar /><T style={{ fontSize: 26, fontWeight: '800' }}>الإعدادات</T>
@@ -52,6 +57,23 @@ export default function Settings() {
         <Stepper label="حجم الأزرار" steps={BTN_STEPS} value={p.btnStep} onChange={(n) => setPrefs({ btnStep: n })} />
         <Btn small kind="secondary" label="إعادة للحجم العادي" onPress={() => { setPrefs({ fontStep: 1, btnStep: 1 }); showSizePreview(); }} />
       </Card>
+
+      <Card style={{ gap: 10 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>نوع الحساب</T>
+        <View style={[rtl.row, { gap: 8 }]}>
+          {([['customer', 'زبون'], ['owner', 'صاحب كرين']] as const).map(([k, l]) => {
+            const on = acct.type === k;
+            return (
+              <Pressable key={k} disabled={acct.hasCrane} onPress={() => (k === 'owner' ? setIntro(true) : pick('customer'))} style={{ flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 99, borderWidth: 2, borderColor: on ? C.ok : C.line, backgroundColor: on ? 'rgba(52,199,89,0.14)' : C.surface2, opacity: acct.hasCrane && !on ? 0.4 : 1 }}>
+                {on && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: C.ok, alignItems: 'center', justifyContent: 'center' }}><T style={{ color: '#fff', fontWeight: '800', fontSize: 14, lineHeight: 18 }}>✓</T></View>}
+                <T style={{ fontWeight: '800', color: on ? C.ok : C.text }}>{l}</T>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Muted style={{ fontSize: 12.5 }}>{acct.hasCrane ? 'عندك كرين مسجّل، فحسابك صاحب كرين ولا يتغيّر.' : 'الزبون يشوف قائمة الكرينات. صاحب الكرين يشوف الطلبات المتاحة ويستلمها.'}</Muted>
+      </Card>
+      <OwnerIntro visible={intro} onAccept={() => { setIntro(false); pick('owner'); }} />
 
       <Card style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>الأذونات</T>

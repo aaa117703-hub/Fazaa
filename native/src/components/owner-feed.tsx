@@ -68,6 +68,13 @@ export function OwnerFeed() {
         <Btn small kind="secondary" label="المساعد" onPress={() => router.push('/assist')} />
         <Pressable onPress={() => router.push('/settings')} accessibilityLabel="الإعدادات" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Icon name="settings" size={24} /></Pressable>
       </View>
+      {!crane && !loading && (
+        <Card style={{ gap: 8, borderColor: C.accent }}>
+          <T style={{ fontWeight: '800', fontSize: 17 }}>سجّل كرينك حتى تبدأ</T>
+          <Muted>حسابك صاحب كرين. سجّل كرينك وارفع الوثائق من تبويب «سائق»، وبعد التوثيق تجيك الطلبات.</Muted>
+          <Btn label="سجّل كرينك" onPress={() => router.navigate('/driver' as never)} />
+        </Card>
+      )}
       {crane && (
         <Card style={{ gap: 6 }}>
           <View style={[rtl.row, { gap: 8 }]}>

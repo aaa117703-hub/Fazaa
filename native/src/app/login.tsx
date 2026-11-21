@@ -8,6 +8,7 @@ import { Icon, type IconName } from '@/components/icon';
 import { AuthBg, AuthBrand, glass } from '@/components/auth-art';
 import { Btn, Muted, T } from '@/components/ui';
 import { SITE } from '@/lib/site';
+import { OwnerIntro } from '@/components/owner-intro';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
@@ -46,6 +47,8 @@ export default function Login() {
   const [err, setErr] = useState('');
   const [info, setInfo] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [acct, setAcct] = useState<'customer' | 'owner'>('customer');
+  const [intro, setIntro] = useState(false);
 
   async function submit() {
     setErr(''); setInfo('');
@@ -65,7 +68,7 @@ export default function Login() {
         if (error) throw error;
         router.back();
       } else {
-        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: pass, options: { data: { full_name: name.trim() } } });
+        const { data, error } = await supabase.auth.signUp({ email: email.trim(), password: pass, options: { data: { full_name: name.trim(), account_type: acct } } });
         if (error) throw error;
         if (data.session) {
           if (name.trim()) await supabase.from('profiles').upsert({ id: data.session.user.id, full_name: name.trim() });
@@ -85,12 +88,29 @@ export default function Login() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
       <AuthBg />
+      <OwnerIntro visible={intro} onAccept={() => { setAcct('owner'); setIntro(false); }} />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24, paddingHorizontal: 18 }}>
         <View style={{ gap: 14, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
           <View style={[glass, { gap: 12 }]}>
             <AuthBrand />
             <T style={{ fontSize: 28, fontWeight: '800', marginTop: 10 }}>{title}</T>
             <Muted>{sub}</Muted>
+            {mode === 'up' && (
+              <View style={{ gap: 8 }}>
+                <Muted>نوع الحساب</Muted>
+                <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+                  {([['customer', 'زبون'], ['owner', 'صاحب كرين']] as const).map(([k, l]) => {
+                    const on = acct === k;
+                    return (
+                      <Pressable key={k} onPress={() => (k === 'owner' ? setIntro(true) : setAcct('customer'))} style={{ flex: 1, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 99, borderWidth: 2, borderColor: on ? C.ok : 'rgba(255,255,255,0.12)', backgroundColor: on ? 'rgba(52,199,89,0.14)' : 'rgba(37,42,47,0.85)' }}>
+                        {on && <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: C.ok, alignItems: 'center', justifyContent: 'center' }}><T style={{ color: '#fff', fontWeight: '800', fontSize: 14, lineHeight: 18 }}>✓</T></View>}
+                        <T style={{ fontWeight: '800', color: on ? C.ok : C.text }}>{l}</T>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
             {mode === 'up' && <Field icon="profile"><TextInput value={name} onChangeText={setName} placeholder="الاسم الثلاثي" placeholderTextColor={C.muted} style={bare} /></Field>}
             <Field icon="mail"><TextInput value={email} onChangeText={setEmail} placeholder="الإيميل" placeholderTextColor={C.muted} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={[bare, { writingDirection: 'ltr' }]} /></Field>
             {mode !== 'forgot' && (
