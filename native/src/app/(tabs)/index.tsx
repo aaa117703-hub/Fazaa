@@ -1,3 +1,4 @@
+import { OwnerFeed } from '@/components/owner-feed';
 import { useIsOwner } from '@/lib/owner';
 import { SkeletonList } from '@/components/skeleton';
 import { Icon, type IconName } from '@/components/icon';
@@ -184,6 +185,8 @@ export default function Home() {
       </View>
     </View>
   );
+
+  if (isOwner) return <OwnerFeed />;
 
   return (
     <FlatList

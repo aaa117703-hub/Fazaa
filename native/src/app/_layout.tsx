@@ -1,4 +1,5 @@
 import { router, Stack, usePathname } from 'expo-router';
+import { wasAsked } from '@/lib/permissions';
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { IBMPlexSansArabic_400Regular, IBMPlexSansArabic_500Medium, IBMPlexSansArabic_600SemiBold, IBMPlexSansArabic_700Bold, useFonts } from '@expo-google-fonts/ibm-plex-sans-arabic';
@@ -32,6 +33,11 @@ function Shell() {
   useEffect(() => {
     if (!splash && prefs.loaded && !prefs.onboarded && path !== '/onboarding') router.push('/onboarding');
   }, [splash, prefs.loaded, prefs.onboarded, path]);
+  // بعد الـ onboarding: شاشة الأذونات مرة وحدة
+  useEffect(() => {
+    if (splash || !prefs.loaded || !prefs.onboarded || path === '/onboarding' || path === '/permissions' || path === '/login') return;
+    wasAsked().then((a) => { if (!a) router.push('/permissions'); });
+  }, [splash, prefs.loaded, prefs.onboarded, path]);
   useEffect(() => { evt('route →', path); }, [path]);
   useEffect(() => { evt('auth ready =', ready); }, [ready]);
   return (
@@ -52,6 +58,7 @@ function Shell() {
         <Stack.Screen name="assist" options={{ presentation: 'modal' }} />
         <Stack.Screen name="route" options={{ presentation: 'modal' }} />
         <Stack.Screen name="job" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="permissions" options={{ presentation: 'modal', gestureEnabled: false }} />
         <Stack.Screen name="settings" />
         <Stack.Screen name="legal" />
         <Stack.Screen name="admin" />

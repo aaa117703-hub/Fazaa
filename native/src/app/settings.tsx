@@ -5,6 +5,7 @@ import React from 'react';
 import { Pressable, ScrollView, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PermissionRows } from '@/components/permission-rows';
 import { showSizePreview } from '@/components/size-preview';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useIsAdmin } from '@/lib/admin';
@@ -50,6 +51,11 @@ export default function Settings() {
         <Stepper label="حجم الخط" steps={FONT_STEPS} value={p.fontStep} onChange={(n) => setPrefs({ fontStep: n })} />
         <Stepper label="حجم الأزرار" steps={BTN_STEPS} value={p.btnStep} onChange={(n) => setPrefs({ btnStep: n })} />
         <Btn small kind="secondary" label="إعادة للحجم العادي" onPress={() => { setPrefs({ fontStep: 1, btnStep: 1 }); showSizePreview(); }} />
+      </Card>
+
+      <Card style={{ gap: 10 }}>
+        <T style={{ fontWeight: '800', fontSize: 17 }}>الأذونات</T>
+        <PermissionRows />
       </Card>
 
       <Card style={{ gap: 10 }}>
