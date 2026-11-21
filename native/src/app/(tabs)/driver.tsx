@@ -256,24 +256,6 @@ export default function Driver() {
     <>
       <CancelSheet visible={!!cancelId} title="ليش تلغي الطلب؟" reasons={CRANE_REASONS} onClose={() => setCancelId(null)} onConfirm={cancelJob} />
       <Muted>{crane.name} · {crane.type}{crane.governorate ? ' · ' + crane.governorate : ''}{crane.verified ? ' · موثق ✓' : ''}</Muted>
-      <Card style={{ gap: 8 }}>
-        <View style={[rtl.row, { justifyContent: 'space-between' }]}>
-          <T style={{ fontWeight: '800', fontSize: 17 }}>{fleet.length > 1 ? 'كرينات حسابك (' + fleet.length + ')' : 'حساب شركة؟'}</T>
-          {fleet.length < pkg.fleet && <Btn small kind="secondary" label="+ أضف كرين آخر" onPress={() => setAdding(true)} />}
-        </View>
-        {fleet.length > 1 ? (
-          <>
-            <View style={[rtl.row, { flexWrap: 'wrap', gap: 8 }]}>
-              {fleet.map((x) => (
-                <Pressable key={x.id} onPress={() => setSelId(x.id)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: R.pill, backgroundColor: x.id === crane.id ? C.accent : C.surface2 }}>
-                  <T style={{ color: x.id === crane.id ? C.onAccent : C.text, fontWeight: '700' }}>{x.name}</T>
-                </Pressable>
-              ))}
-            </View>
-            <Muted style={{ fontSize: 13 }}>الطلبات الواردة تصلك لكل كراناتك. الحالة والموقع والوثائق تخص الكرين المحدد.</Muted>
-          </>
-        ) : <Muted style={{ fontSize: 13 }}>عندك أكثر من كرين؟ أضفهم تحت حساب واحد.</Muted>}
-      </Card>
       {!crane.listed && <Card style={{ backgroundColor: 'rgba(255,201,60,0.12)', borderColor: 'rgba(255,201,60,0.4)' }}><T style={{ color: C.warn }}>تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</T></Card>}
 
       {!welcomed && (() => {
