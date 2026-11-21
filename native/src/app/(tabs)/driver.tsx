@@ -65,11 +65,13 @@ export default function Driver() {
   const [stats, setStats] = useState({ today: 0, total: 0, rating: null as number | null, count: 0 });
   const [wk, setWk] = useState<Wk>(null);
   const [earn, setEarn] = useState<Record<string, { jobs: number; total: number; priced: number }>>({});
+  const [bill, setBill] = useState<{ enabled: boolean; month_jobs: number; month_earned: number; month_fee: number; balance: number } | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [welcomed, setWelcomed] = useState(true);
   useEffect(() => { if (uid) AsyncStorage.getItem('sanad_welcome_' + uid).then((v) => setWelcomed(v === '1')).catch(() => {}); }, [uid]);
   useEffect(() => {
     if (!uid) return;
+    supabase.rpc('driver_billing_summary').then(({ data }) => { if (data) setBill(data as typeof bill); });
     supabase.rpc('driver_earnings').then(({ data }) => {
       const m: Record<string, { jobs: number; total: number; priced: number }> = {};
       for (const x of (data ?? []) as { period: string; jobs: number; total: number; priced: number }[]) m[x.period] = { jobs: x.jobs, total: Number(x.total), priced: x.priced };
@@ -346,6 +348,21 @@ export default function Driver() {
         </View>
         <Muted style={{ fontSize: 12.5 }}>المبالغ بالدينار العراقي، من الطلبات المكتملة وبسعر متفق عليه داخل التطبيق. الإجمالي: {(earn.all?.total ?? 0).toLocaleString('en-US')} د.ع من {earn.all?.jobs ?? 0} طلب.</Muted>
       </Card>
+
+      {bill && (
+        <Card style={{ gap: 8 }}>
+          <View style={[rtl.row, { gap: 8 }]}>
+            <T style={{ fontWeight: '800', fontSize: 17, flex: 1 }}>الرسوم</T>
+            <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: R.pill, backgroundColor: C.ok + '29' }}><T style={{ color: C.ok, fontWeight: '800', fontSize: 12.5 }}>{bill.enabled ? 'مفعّلة' : 'مجاني حالياً'}</T></View>
+          </View>
+          <Muted>خلال فترة الإطلاق ما تدفع شي. هذا حساب تجريبي يوضح لك شكل الرسوم مستقبلاً.</Muted>
+          <View style={[rtl.row, { gap: 8 }]}>
+            <View style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, alignItems: 'center', gap: 2 }}><Muted style={{ fontSize: 12 }}>طلبات هذا الشهر</Muted><T style={{ fontWeight: '800' }}>{bill.month_jobs}</T></View>
+            <View style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, alignItems: 'center', gap: 2 }}><Muted style={{ fontSize: 12 }}>أرباحك (متفق عليها)</Muted><T style={{ fontWeight: '800', color: C.accent }}>{bill.month_earned.toLocaleString('en-US')}</T></View>
+            <View style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, alignItems: 'center', gap: 2 }}><Muted style={{ fontSize: 12 }}>رسوم لو مفعّلة</Muted><T style={{ fontWeight: '800' }}>{bill.month_fee.toLocaleString('en-US')}</T></View>
+          </View>
+        </Card>
+      )}
 
       <Card style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>إحصائياتك</T>
