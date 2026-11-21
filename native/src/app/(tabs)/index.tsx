@@ -1,3 +1,4 @@
+import { useIsOwner } from '@/lib/owner';
 import { SkeletonList } from '@/components/skeleton';
 import { Icon, type IconName } from '@/components/icon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -36,6 +37,7 @@ export default function Home() {
   const [type, setType] = useState('');
   const [gov, setGov] = useState('');
   const [hasReq, setHasReq] = useState(false);
+  const isOwner = useIsOwner();
   const [shown, setShown] = useState(20);
   const { blocks, reload: reloadBlocks } = useBlocks();
   useFocusEffect(useCallback(() => { reloadBlocks(); AsyncStorage.getItem('sanad_active_req').then((v) => setHasReq(!!v)).catch(() => {}); }, []));
@@ -141,7 +143,7 @@ export default function Home() {
         ) : (
           <Muted>{loading ? 'جاري البحث عن الكرينات…' : err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : 'ما لكينا كرين متاح هسه' + (filtered ? ' بهذا الفلتر' : '') + '. شوف القائمة وجرّب تتصل.'}</Muted>
         )}
-        <Btn label="أرسل طلب لأقرب 5 كرينات" onPress={request} />
+        {!isOwner && <Btn label="أرسل طلب لأقرب 5 كرينات" onPress={request} />}
         {best && <Btn label="أو اتصل مباشرة بأقرب كرين" kind="secondary" onPress={() => call(best.c, 'tel')} />}
       </Card>
       </FadeIn>
@@ -201,7 +203,7 @@ export default function Home() {
         </View>
       )}
       renderItem={({ item: x, index }) => (
-        <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} onRequest={() => (session ? router.push({ pathname: '/request', params: { craneId: x.c.id } }) : go())} /></FadeIn>
+        <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} onRequest={isOwner ? undefined : () => (session ? router.push({ pathname: '/request', params: { craneId: x.c.id } }) : go())} /></FadeIn>
       )}
     />
   );
