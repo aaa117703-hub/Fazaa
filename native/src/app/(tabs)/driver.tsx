@@ -37,7 +37,7 @@ const ISSUE_ICON: Record<string, string> = { tow: 'tow', battery: 'battery', tir
 type Target = { request_id: string; crane_id: string; distance_km: number; requests: { id: string; number: number | null; issue: string; destination: string | null; note: string | null; status: string; created_at: string } | null };
 type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null; agreed_price?: number | null }; p: { full_name: string | null; phone: string | null; car: string | null; car_weight_kg?: number | null; car_length_m?: number | null } | null };
 type Doc = { id: string; kind: string; status: string; note: string | null };
-type Wk = { locked?: boolean; views: number; calls: number; requests: number; accepted: number } | null;
+type Wk = { locked?: boolean; views: number; calls: number; requests?: number; accepted?: number } | null;
 
 const inp = { fontFamily: fontFor('400'), backgroundColor: C.surface2, color: C.text, borderRadius: R.md, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, textAlign: 'right' as const, borderWidth: 1, borderColor: C.line };
 const cleanPhone = (s: string) => s.replace(/\D/g, '').replace(/^00964/, '0').replace(/^964/, '0');
@@ -367,13 +367,13 @@ export default function Driver() {
 
       {wk && (
         <Card style={{ gap: 10 }}>
-          <T style={{ fontWeight: '800', fontSize: 17 }}>{wk.locked ? 'إحصائيات الأسبوع' : 'إحصائيات آخر 7 أيام'}</T>
-          <View style={[rtl.row, { gap: 6, opacity: wk.locked ? 0.4 : 1 }]}>
-            {([[wk.locked ? '٠٠' : wk.views, 'مشاهدات'], [wk.locked ? '٠٠' : wk.calls, 'اتصالات'], [wk.locked ? '٠٠' : wk.requests, 'وصلتك'], [wk.locked ? '٠٠' : wk.accepted, 'قبلتها']] as [string | number, string][]).map(([v, l]) => (
+          <T style={{ fontWeight: '800', fontSize: 17 }}>إحصائيات آخر 7 أيام</T>
+          <View style={[rtl.row, { gap: 6 }]}>
+            {([[wk.views, 'مشاهدات'], [wk.calls, 'اتصالات'], [wk.locked ? '—' : wk.requests ?? 0, 'وصلتك'], [wk.locked ? '—' : wk.accepted ?? 0, 'قبلتها']] as [string | number, string][]).map(([v, l]) => (
               <View key={l} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 8, alignItems: 'center' }}><T style={{ fontSize: 18, fontWeight: '800' }}>{v}</T><Muted style={{ fontSize: 11 }}>{l}</Muted></View>
             ))}
           </View>
-          {wk.locked && <><Muted>شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالعضوية الأساسية وأعلى.</Muted><Btn small label="شوف العضوية" onPress={() => router.push('/packages')} /></>}
+          {wk.locked && <><Muted>هذي مشاهدات واتصالات ملفك. عدد الطلبات اللي وصلتك وقبلتها يظهر بالعضوية الأساسية وأعلى.</Muted><Btn small label="شوف العضوية" onPress={() => router.push('/packages')} /></>}
         </Card>
       )}
 

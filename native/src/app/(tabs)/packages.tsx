@@ -13,7 +13,6 @@ import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
 const PRIO = ['عادية', 'أعلى قليلاً', 'عالية', 'الأعلى'];
-const PIN = ['عادي', 'عادي', 'كبير', 'الأكبر'];
 
 export default function Membership() {
   const insets = useSafeAreaInsets();
@@ -74,13 +73,10 @@ export default function Membership() {
           {TIERS.map((t) => <T key={t.id} style={{ flex: 1, textAlign: 'center', color: t.color, fontWeight: '800', fontSize: 12 }}>{t.name}</T>)}
         </View>
         {([
-          ['نطاق الطلبات', TIERS.map((t) => t.radius + ' كم')],
-          ['أولوية الطلب', PRIO],
-          ['حجم الدبوس', PIN],
-          ['الموصى بهم', ['—', '—', '✓', '✓']],
-          ['إحصائيات أسبوعية', ['—', '✓', '✓', '✓']],
           ['طلبات مكتملة/شهر', ['—', ...TIERS.slice(1).map((t) => (t.quota == null ? 'بلا حد' : String(t.quota)))]],
           ['الطلب الإضافي', ['—', ...TIERS.slice(1).map((t) => (t.extra ? t.extra.toLocaleString('en-US') : '—'))]],
+          ['أولوية الطلب', PRIO],
+          ['الموصى بهم', ['—', '—', '✓', '✓']],
         ] as [string, string[]][]).map(([l, v]) => (
           <View key={l} style={[rtl.row, { paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line }]}>
             <Muted style={{ flex: 1.5, fontSize: 12 }}>{l}</Muted>
@@ -88,6 +84,7 @@ export default function Membership() {
           </View>
         ))}
       </Card>
+      <Card style={{ backgroundColor: 'rgba(61,214,140,0.10)', borderColor: 'rgba(61,214,140,0.35)' }}><T style={{ color: C.ok, fontSize: 14 }}>ضمانة أول شهر: إذا اشتركت بباقة مدفوعة وما انكمل لك أي طلب بأول شهر، نمدد اشتراكك شهر مجاناً.</T></Card>
       <Muted>{ios ? 'للاشتراك تواصل معنا عبر واتساب، وتُفعَّل عضويتك من الإدارة.' : 'لا يوجد دفع إلكتروني. تواصل معنا عبر واتساب، وبعد الاتفاق تُفعّل الإدارة عضويتك.'}</Muted>
     </ScrollView>
   );

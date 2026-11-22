@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BackBar } from '@/components/back-bar';
@@ -10,7 +10,7 @@ import { tierOf } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { C, R } from '@/lib/theme';
 
-type Plan = { tier: string; price: number; free_period: boolean; free_until: string | null; quota: number | null; unlimited: boolean; used: number; over: number; extra_fee: number; shadow_extra: number };
+type Plan = { tier: string; price: number; free_period: boolean; free_until: string | null; quota: number | null; unlimited: boolean; used: number; over: number; extra_fee: number; shadow_extra: number; sub_expires_at: string | null; guarantee_eligible: boolean; guarantee_used: boolean };
 type Row = { id: string; price: number | null; amount: number; status: string; created_at: string; requests?: { number: number | null } | null };
 const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
 const fmtDate = (iso: string) => { const d = new Date(iso); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
@@ -38,6 +38,15 @@ export default function Wallet() {
     }, () => {}).finally(() => setLoading(false));
   }, [session]));
 
+  const [gBusy, setGBusy] = useState(false);
+  const claim = async () => {
+    setGBusy(true);
+    const { error } = await supabase.rpc('claim_guarantee');
+    setGBusy(false);
+    if (error) { Alert.alert('خطأ', 'تعذّر تفعيل الضمانة.'); return; }
+    Alert.alert('تم', 'مدّدنا اشتراكك شهر مجاناً.');
+    const { data } = await supabase.rpc('my_plan'); if (data) setPlan(data as Plan);
+  };
   const t = tierOf(plan?.tier);
   const pct = plan && plan.quota ? Math.min(1, plan.used / plan.quota) : 0;
   const days = plan?.free_until ? Math.max(0, Math.ceil((Date.parse(plan.free_until) - Date.now()) / 86400000)) : 0;
@@ -75,6 +84,14 @@ export default function Wallet() {
             <Muted style={{ fontSize: 12 }}>يُحسب الطلب عند اكتماله وتأكيد الزبون. الطلب الملغي أو المتنازع عليه ما ينحسب.</Muted>
             <Btn label="شوف الباقات" kind="secondary" onPress={() => router.push('/packages')} />
           </Card>
+
+          {plan.guarantee_eligible && (
+            <Card style={{ gap: 8, borderColor: C.ok, backgroundColor: C.ok + '14' }}>
+              <T style={{ fontWeight: '800', fontSize: 16 }}>ضمانة أول شهر</T>
+              <Muted>ما انكمل لك أي طلب بأول شهر مدفوع. تكدر تمدد اشتراكك شهر مجاناً، لمرة واحدة.</Muted>
+              <Btn label="مدّد اشتراكي شهر" onPress={claim} disabled={gBusy} />
+            </Card>
+          )}
 
           <Card style={{ gap: 8 }}>
             <View style={[rtl.row, { gap: 8 }]}>
