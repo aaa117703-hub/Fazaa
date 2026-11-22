@@ -19,7 +19,7 @@ type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-exp
 
 
 const ago = (s?: string | null) => { if (!s) return '—'; const d = Math.floor((Date.now() - Date.parse(s)) / 864e5); return d <= 0 ? 'اليوم' : d === 1 ? 'أمس' : 'قبل ' + d + ' يوم'; };
-const TN: Record<string, string> = { bronze: 'أساسي', silver: 'فضي', gold: 'ذهبي', diamond: 'شركات' };
+const TN: Record<string, string> = { bronze: 'مجاني', silver: 'أساسية', gold: 'متوسطة', diamond: 'مميزة' };
 const waUrl = (ph: string, msg?: string) => 'https://wa.me/964' + ph.replace(/^0/, '') + (msg ? '?text=' + encodeURIComponent(msg) : '');
 const UF: Record<string, [string, (u: Row) => boolean]> = {
   all: ['الكل', () => true], drivers: ['سواق', (u) => !!u.crane_id], customers: ['زبائن', (u) => !u.crane_id],

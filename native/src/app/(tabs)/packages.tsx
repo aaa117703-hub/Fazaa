@@ -12,7 +12,7 @@ import { effTier, TIERS } from '@/lib/data';
 import { supabase } from '@/lib/supabase';
 import { C } from '@/lib/theme';
 
-const PRIO = ['عادية', 'قبل الأساسي', 'عالية', 'الأعلى'];
+const PRIO = ['عادية', 'أعلى قليلاً', 'عالية', 'الأعلى'];
 const PIN = ['عادي', 'عادي', 'كبير', 'الأكبر'];
 
 export default function Membership() {
@@ -30,7 +30,7 @@ export default function Membership() {
       <T style={{ fontSize: 26, fontWeight: '800' }}>العضوية</T>
       <Muted>للسائقين فقط. الزبون يستخدم سند جايك مجاناً دائماً.</Muted>
       <Card style={{ backgroundColor: 'rgba(61,214,140,0.10)', borderColor: 'rgba(61,214,140,0.35)' }}>
-        <T style={{ color: C.ok, fontSize: 14 }}>كل ترقية تعطيك طلبات أكثر وظهور أكبر. وشارة «موثّق» مجانية لكل سائق يرفع وثائقه.</T>
+        <T style={{ color: C.ok, fontSize: 14 }}>كل ترقية تعطيك طلبات أكثر وظهور أكبر. خلال فترة الإطلاق كل السائقين على الباقة المجانية بـ10 طلبات مكتملة بالشهر، وشارة «موثّق» مجانية لمن يرفع وثائقه.</T>
       </Card>
       {TIERS.map((p, i) => {
         const current = cur === p.id;
@@ -79,7 +79,8 @@ export default function Membership() {
           ['حجم الدبوس', PIN],
           ['الموصى بهم', ['—', '—', '✓', '✓']],
           ['إحصائيات أسبوعية', ['—', '✓', '✓', '✓']],
-          ['عدد الكرينات', TIERS.map((t) => String(t.fleet))],
+          ['طلبات مكتملة/شهر', ['—', ...TIERS.slice(1).map((t) => (t.quota == null ? 'بلا حد' : String(t.quota)))]],
+          ['الطلب الإضافي', ['—', ...TIERS.slice(1).map((t) => (t.extra ? t.extra.toLocaleString('en-US') : '—'))]],
         ] as [string, string[]][]).map(([l, v]) => (
           <View key={l} style={[rtl.row, { paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line }]}>
             <Muted style={{ flex: 1.5, fontSize: 12 }}>{l}</Muted>

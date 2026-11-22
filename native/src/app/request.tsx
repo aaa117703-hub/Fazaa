@@ -132,6 +132,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
     </>
   );
   const cancel = async (reason: string) => { const { error } = await supabase.rpc('cancel_request', { p_request_id: r.id, p_reason: reason }); setAskCancel(false); if (error) Alert.alert('خطأ', 'تعذّر إلغاء الطلب.'); else onReset(); };
+  const confirmDone = async (id: string, done: boolean) => { const { error } = await supabase.rpc('customer_confirm', { p_request_id: id, p_done: done }); if (error) Alert.alert('خطأ', 'تعذّر تأكيد الطلب.'); };
   const sheet = <CancelSheet visible={askCancel} title="ليش تلغي الطلب؟" reasons={CUSTOMER_REASONS} onClose={() => setAskCancel(false)} onConfirm={cancel} />;
 
   if (r.status === 'open') return (<>{head}<Card style={{ gap: 6 }}><T style={{ fontWeight: '800', fontSize: 17 }}>نبحث لك عن كرين…</T><Muted>أرسلنا طلبك إلى {a.targets ?? 'أقرب'} كرين. الطلب ينتهي بعد 15 دقيقة إذا ما انقبل.</Muted><ActivityIndicator color={C.accent} /></Card><CustomerOffers requestId={r.id} onAccepted={() => { poll().catch(() => {}); }} /><Btn label="إلغاء الطلب" kind="danger" onPress={() => setAskCancel(true)} />{sheet}<Btn label="إخفاء (الطلب يبقى شغال)" kind="secondary" onPress={() => router.back()} /></>);
@@ -170,6 +171,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
             </>
           )}
         </Card>
+        <Btn label="تمت الخدمة ✓" onPress={() => confirmDone(r.id, true)} />
         <Btn label="إبلاغ عن مشكلة" kind="secondary" onPress={() => report({ craneId: r.accepted_crane_id, requestId: r.id })} />
         <Btn label="حظر هذا السائق" kind="secondary" onPress={() => r.accepted_crane_id && askBlock(r.accepted_crane_id, crane?.name ?? 'السائق')} />
         <Btn label="إلغاء الطلب" kind="danger" onPress={() => setAskCancel(true)} />
@@ -196,6 +198,7 @@ function Rate({ r, crane, onDone }: { r: Req; crane: Info | null; onDone: () => 
   return (
     <Card style={{ gap: 10 }}>
       <T style={{ fontWeight: '800', fontSize: 17 }}>انتهى الطلب</T>
+      <Pressable onPress={() => supabase.rpc('customer_confirm', { p_request_id: r.id, p_done: false }).then(() => Alert.alert('وصلتنا ملاحظتك', 'ما راح يُحسب هذا الطلب على السائق، وراجعناه.'), () => {})}><Muted style={{ textDecorationLine: 'underline' }}>الخدمة ما تمت فعلياً؟ اضغط هنا</Muted></Pressable>
       <Muted>كيف كانت خدمة {crane?.name ?? 'الكرين'}؟</Muted>
       <View style={[rtl.row, { justifyContent: 'center', gap: 6 }]}>{[1, 2, 3, 4, 5].map((n) => <Pressable key={n} onPress={() => setV(n)} hitSlop={8}><T style={{ fontSize: 38, color: C.warn }}>{n <= v ? '★' : '☆'}</T></Pressable>)}</View>
       {v > 0 && (

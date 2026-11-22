@@ -60,6 +60,7 @@ function Shell() {
         <Stack.Screen name="job" options={{ presentation: 'fullScreenModal' }} />
         <Stack.Screen name="permissions" options={{ presentation: 'modal', gestureEnabled: false }} />
         <Stack.Screen name="settings" />
+        <Stack.Screen name="wallet" />
         <Stack.Screen name="legal" />
         <Stack.Screen name="admin" />
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />

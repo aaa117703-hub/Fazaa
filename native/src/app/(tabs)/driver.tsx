@@ -349,20 +349,12 @@ export default function Driver() {
         <Muted style={{ fontSize: 12.5 }}>المبالغ بالدينار العراقي، من الطلبات المكتملة وبسعر متفق عليه داخل التطبيق. الإجمالي: {(earn.all?.total ?? 0).toLocaleString('en-US')} د.ع من {earn.all?.jobs ?? 0} طلب.</Muted>
       </Card>
 
-      {bill && (
-        <Card style={{ gap: 8 }}>
-          <View style={[rtl.row, { gap: 8 }]}>
-            <T style={{ fontWeight: '800', fontSize: 17, flex: 1 }}>الرسوم</T>
-            <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: R.pill, backgroundColor: C.ok + '29' }}><T style={{ color: C.ok, fontWeight: '800', fontSize: 12.5 }}>{bill.enabled ? 'مفعّلة' : 'مجاني حالياً'}</T></View>
-          </View>
-          <Muted>خلال فترة الإطلاق ما تدفع شي. هذا حساب تجريبي يوضح لك شكل الرسوم مستقبلاً.</Muted>
-          <View style={[rtl.row, { gap: 8 }]}>
-            <View style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, alignItems: 'center', gap: 2 }}><Muted style={{ fontSize: 12 }}>طلبات هذا الشهر</Muted><T style={{ fontWeight: '800' }}>{bill.month_jobs}</T></View>
-            <View style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, alignItems: 'center', gap: 2 }}><Muted style={{ fontSize: 12 }}>أرباحك (متفق عليها)</Muted><T style={{ fontWeight: '800', color: C.accent }}>{bill.month_earned.toLocaleString('en-US')}</T></View>
-            <View style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 12, alignItems: 'center', gap: 2 }}><Muted style={{ fontSize: 12 }}>رسوم لو مفعّلة</Muted><T style={{ fontWeight: '800' }}>{bill.month_fee.toLocaleString('en-US')}</T></View>
-          </View>
+      <Pressable onPress={() => router.push('/wallet' as never)}>
+        <Card style={[rtl.row, { gap: 10 }]}>
+          <View style={{ flex: 1 }}><T style={{ fontWeight: '800', fontSize: 17 }}>اشتراكي ومحفظتي</T><Muted style={{ fontSize: 12.5 }}>{bill ? (bill.enabled ? 'الرسوم مفعّلة' : 'فترة إطلاق مجانية') + ' · ' + bill.month_jobs + ' طلب هذا الشهر' : 'الباقة والاستهلاك وسجل الرسوم'}</Muted></View>
+          <Icon name="back" size={20} />
         </Card>
-      )}
+      </Pressable>
 
       <Card style={{ gap: 10 }}>
         <T style={{ fontWeight: '800', fontSize: 17 }}>إحصائياتك</T>
@@ -381,7 +373,7 @@ export default function Driver() {
               <View key={l} style={{ flex: 1, backgroundColor: C.surface2, borderRadius: R.md, padding: 8, alignItems: 'center' }}><T style={{ fontSize: 18, fontWeight: '800' }}>{v}</T><Muted style={{ fontSize: 11 }}>{l}</Muted></View>
             ))}
           </View>
-          {wk.locked && <><Muted>شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالعضوية الفضية وأعلى.</Muted><Btn small label="شوف العضوية" onPress={() => router.push('/packages')} /></>}
+          {wk.locked && <><Muted>شوف كم زبون شاف ملفك واتصل بيك وكم طلب وصلك. تفتح بالعضوية الأساسية وأعلى.</Muted><Btn small label="شوف العضوية" onPress={() => router.push('/packages')} /></>}
         </Card>
       )}
 

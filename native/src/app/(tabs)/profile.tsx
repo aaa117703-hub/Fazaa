@@ -10,6 +10,7 @@ import { CarPicker, carOk, CarVal, OTHER } from '@/components/car-picker';
 import { Select } from '@/components/select';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { useIsOwner } from '@/lib/owner';
 import { loadBlocks, unblock } from '@/lib/blocks';
 import { avatarUrl, GOVS } from '@/lib/data';
 import { shrink } from '@/lib/image';
@@ -40,6 +41,7 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const uid = session?.user.id;
+  const isOwner = useIsOwner();
   const [p, setP] = useState<Prof | null>(null);
   const [reqs, setReqs] = useState<ReqRow[] | null>(null);
   const [blocked, setBlocked] = useState<[string, string][]>([]);
@@ -244,6 +246,15 @@ export default function Profile() {
           );
         })}
       </View>
+
+      {isOwner && (
+        <Pressable onPress={() => router.push('/wallet' as never)}>
+          <Card style={[rtl.row, { gap: 10 }]}>
+            <Icon name="diamond" size={26} mono={C.accent} />
+            <View style={{ flex: 1 }}><T style={{ fontWeight: '800', fontSize: 17 }}>اشتراكي ومحفظتي</T><Muted style={{ fontSize: 12.5 }}>الباقة، الطلبات المكتملة، وسجل الرسوم</Muted></View>
+          </Card>
+        </Pressable>
+      )}
 
       {blocked.length > 0 && (
         <Card style={{ gap: 8 }}>
