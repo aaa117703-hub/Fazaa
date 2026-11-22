@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Share, TextIn
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CarPicker, carOk, CarVal, OTHER } from '@/components/car-picker';
+import { CancelSheet, DELETE_REASONS } from '@/components/cancel-reason';
 import { Select } from '@/components/select';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -46,6 +47,7 @@ export default function Profile() {
   const [reqs, setReqs] = useState<ReqRow[] | null>(null);
   const [blocked, setBlocked] = useState<[string, string][]>([]);
   const [edit, setEdit] = useState(false);
+  const [askDel, setAskDel] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [gov, setGov] = useState('');
@@ -132,11 +134,12 @@ export default function Profile() {
       await Share.share({ message: JSON.stringify({ email: session?.user.email, profile: p, requests: r.data, calls: c.data }, null, 2) });
     } catch { Alert.alert('تعذّر', 'ما كدرنا نجهّز بياناتك.'); }
   }
-  function confirmDelete() {
-    Alert.alert('حذف حسابك نهائياً؟', 'راح نحذف حسابك وبياناتك وطلباتك من الخادم. ما يمكن التراجع.', [
-      { text: 'إلغاء', style: 'cancel' },
+  function confirmDelete(reason: string) {
+    setAskDel(false);
+    Alert.alert('تأكيد الحذف النهائي', 'راح نحذف حسابك وبياناتك وطلباتك من الخادم. ما يمكن التراجع.', [
+      { text: 'رجوع', style: 'cancel' },
       { text: 'نعم، احذف', style: 'destructive', onPress: async () => {
-        const { error } = await supabase.rpc('delete_my_account');
+        const { error } = await supabase.rpc('delete_my_account', { p_reason: reason });
         if (error) { Alert.alert('تعذّر الحذف', 'جرّب مرة ثانية.'); return; }
         await supabase.auth.signOut();
       } },
@@ -186,6 +189,9 @@ export default function Profile() {
       {!!err && <T style={{ color: C.danger }}>{err}</T>}
       {busy ? <ActivityIndicator color={C.accent} /> : <Btn label="حفظ" onPress={save} />}
       <Btn label="إلغاء" kind="secondary" onPress={() => setEdit(false)} />
+      <View style={{ height: 24 }} />
+      <Btn label="حذف حسابي" kind="secondary" onPress={() => setAskDel(true)} />
+      <CancelSheet visible={askDel} title="ليش تريد تحذف حسابك؟" reasons={DELETE_REASONS} confirmLabel="متابعة" onClose={() => setAskDel(false)} onConfirm={confirmDelete} />
     </Card>,
   );
 
@@ -271,8 +277,6 @@ export default function Profile() {
       <Legal />
       <Btn label="تنزيل بياناتي" kind="secondary" onPress={exportMine} />
       <Btn label="تسجيل خروج" kind="secondary" onPress={() => supabase.auth.signOut()} />
-      <View style={{ height: 22 }} />
-      <Btn label="حذف حسابي وكل بياناتي" kind="danger" onPress={confirmDelete} />
       <Muted style={{ textAlign: 'center' }}>سند جايك</Muted>
     </>,
   );

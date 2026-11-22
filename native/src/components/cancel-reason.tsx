@@ -5,10 +5,11 @@ import { Btn, Muted, T, rtl } from '@/components/ui';
 import { C, fontFor, R } from '@/lib/theme';
 
 export const CUSTOMER_REASONS = ['لقيت مساعدة ثانية', 'السعر مرتفع', 'السائق تأخر', 'تغيّر الوضع، ما أحتاج', 'غلطت بالطلب', 'سبب آخر'];
+export const DELETE_REASONS = ['ما أحتاج التطبيق', 'ما لقيت سائقين أو طلبات', 'مشكلة مع سائق أو زبون', 'عندي حساب ثاني', 'قلق على خصوصيتي', 'سبب آخر'];
 export const CRANE_REASONS = ['عطل بسيارتي', 'الزبون ما يرد', 'الموقع بعيد', 'اختلفنا على السعر', 'الزبون ألغى بالاتصال', 'سبب آخر'];
 
 /** Bottom sheet: pick a reason, optional note, confirm. */
-export function CancelSheet({ visible, title, reasons, onClose, onConfirm }: { visible: boolean; title: string; reasons: string[]; onClose: () => void; onConfirm: (reason: string) => Promise<void> | void }) {
+export function CancelSheet({ visible, title, reasons, onClose, onConfirm, confirmLabel }: { visible: boolean; title: string; reasons: string[]; confirmLabel?: string; onClose: () => void; onConfirm: (reason: string) => Promise<void> | void }) {
   const [pick, setPick] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -30,7 +31,7 @@ export function CancelSheet({ visible, title, reasons, onClose, onConfirm }: { v
             </Pressable>
           ))}
           {other && <TextInput value={note} onChangeText={setNote} maxLength={120} placeholder="اكتب السبب (اختياري)" placeholderTextColor={C.muted} style={{ fontFamily: fontFor('400'), backgroundColor: C.surface2, color: C.text, borderRadius: R.md, padding: 12, fontSize: 15, textAlign: 'right' }} />}
-          <Btn label={busy ? '...' : 'تأكيد الإلغاء'} kind="danger" disabled={!pick || busy} onPress={go} />
+          <Btn label={busy ? '...' : (confirmLabel ?? 'تأكيد الإلغاء')} kind="danger" disabled={!pick || busy} onPress={go} />
           <Btn label="رجوع" kind="secondary" onPress={onClose} />
         </View>
       </View>
