@@ -25,7 +25,7 @@ export function StarsView({ value, size = 16 }: { value: number; size?: number }
 
 /** اسحب بإصبعك على النجوم من اليمين لليسار حتى تحدد التقييم (بخطوات نصف نجمة). */
 export function StarPicker({ value, onChange, size = 42 }: { value: number; onChange: (v: number) => void; size?: number }) {
-  const box = useRef<View>(null);
+  const box = useRef<React.ComponentRef<typeof View>>(null);
   const geo = useRef({ right: 0, w: 1 });
   const cb = useRef(onChange); cb.current = onChange;
   const pan = useMemo(() => {
@@ -39,7 +39,7 @@ export function StarPicker({ value, onChange, size = 42 }: { value: number; onCh
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (e) => {
         const px = e.nativeEvent.pageX;
-        box.current?.measureInWindow((x, _y, w) => { geo.current = { right: x + w, w: w || 1 }; upd(px); });
+        box.current?.measureInWindow((x: number, _y: number, w: number) => { geo.current = { right: x + w, w: w || 1 }; upd(px); });
       },
       onPanResponderMove: (e) => upd(e.nativeEvent.pageX),
     });
