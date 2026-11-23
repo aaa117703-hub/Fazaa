@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomerOffers } from '@/components/bidding';
+import { StarPicker } from '@/components/stars';
 import { CancelSheet, CUSTOMER_REASONS } from '@/components/cancel-reason';
 import { geoAlert, getFix } from '@/lib/geo';
 import { BackBar } from '@/components/back-bar';
@@ -48,6 +49,8 @@ function Form({ craneId, onSent }: { craneId?: string; onSent: (a: { id: string;
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [guide, setGuide] = useState<{ min: number; max: number } | null>(null);
+  useEffect(() => { let off = false; setGuide(null); supabase.rpc('price_guide', { p_issue: issue }).then((x) => { if (!off && x.data && (x.data as { min?: number }).min) setGuide(x.data as { min: number; max: number }); }, () => {}); return () => { off = true; }; }, [issue]);
   const send = async () => {
     setBusy(true); setErr('');
     try {
@@ -73,7 +76,8 @@ function Form({ craneId, onSent }: { craneId?: string; onSent: (a: { id: string;
             </Pressable>
           ))}
         </View>
-        <Muted style={{ fontSize: 12.5 }}>{issueName(issue)}</Muted></View>
+        <Muted style={{ fontSize: 12.5 }}>{issueName(issue)}</Muted>
+        {!!guide && <Card style={{ gap: 2 }}><T style={{ fontWeight: '800' }}>سعر استرشادي: {guide.min.toLocaleString('en-US')} – {guide.max.toLocaleString('en-US')} د.ع</T><Muted style={{ fontSize: 12 }}>تقدير من أسعار طلبات سابقة، والسعر النهائي تتفق عليه مع السائق.</Muted></Card>}</View>
       <View style={{ gap: 6 }}><Muted>وين تريد توصل؟ (اختياري)</Muted><TextInput value={dest} onChangeText={setDest} maxLength={80} placeholder="مثال: ورشة بالحي الصناعي" placeholderTextColor={C.muted} style={inp} /></View>
       <View style={{ gap: 6 }}><Muted>ملاحظة (اختياري)</Muted><TextInput value={note} onChangeText={setNote} maxLength={140} placeholder="مثال: السيارة على الطريق الدولي" placeholderTextColor={C.muted} style={inp} /></View>
       {!!err && <T style={{ color: C.danger }}>{err}</T>}
@@ -88,6 +92,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
   const [crane, setCrane] = useState<Info | null>(null);
   const [trk, setTrk] = useState<Trk>(null);
   const [askCancel, setAskCancel] = useState(false);
+  const [shareTok, setShareTok] = useState('');
   const prev = useRef('');
   const prevArr = useRef<boolean | null>(null);
   const poll = useCallback(async () => {
@@ -110,6 +115,9 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
   }, [a.id, onReset]);
   useLive(() => { poll().catch(() => {}); });
   useEffect(() => { poll().catch(() => {}); const t = setInterval(() => poll().catch(() => {}), 5000); return () => clearInterval(t); }, [poll]);
+
+  const accepted = r?.status === 'accepted';
+  useEffect(() => { if (accepted) supabase.rpc('make_request_link', { p_request: a.id }).then((x) => { if (typeof x.data === 'string') setShareTok(x.data); }, () => {}); }, [accepted, a.id]);
 
   if (!r) return <ActivityIndicator color={C.accent} style={{ marginTop: 40 }} />;
   const SC: Record<string, [string, string]> = { open: [C.warn, 'قيد البحث'], accepted: [C.ok, 'مؤكد'], completed: ['#60A5FA', 'مكتمل'], cancelled: [C.danger, 'ملغي'], expired: [C.danger, 'منتهي'] };
@@ -140,7 +148,7 @@ function Track({ a, onReset }: { a: { id: string; targets: number | null }; onRe
     const me = { latitude: r.lat, longitude: r.lng };
     const has = trk && trk.lat != null && trk.lng != null;
     const d = has ? distKm(me, { lat: trk!.lat!, lng: trk!.lng! }) : null;
-    const wa = crane?.phone ? 'https://wa.me/' + waNum(crane.phone) + '?text=' + encodeURIComponent('السلام عليكم، أنا صاحب الطلب #' + (r.number ?? '') + '.\nموقعي: https://maps.google.com/?q=' + r.lat + ',' + r.lng) : '';
+    const wa = crane?.phone ? 'https://wa.me/' + waNum(crane.phone) + '?text=' + encodeURIComponent('السلام عليكم، أنا صاحب الطلب المرقم #' + (r.number ?? '') + '.' + (shareTok ? '\nموقعي (يفتح داخل سند جايك): https://fazaa.aaa117703.workers.dev/r.html?t=' + shareTok : '')) : '';
     return (
       <>{head}
         <Card style={{ gap: 8, backgroundColor: 'rgba(61,214,140,0.10)', borderColor: 'rgba(61,214,140,0.35)' }}>
@@ -200,10 +208,10 @@ function Rate({ r, crane, onDone }: { r: Req; crane: Info | null; onDone: () => 
       <T style={{ fontWeight: '800', fontSize: 17 }}>انتهى الطلب</T>
       <Pressable onPress={() => supabase.rpc('customer_confirm', { p_request_id: r.id, p_done: false }).then(() => Alert.alert('وصلتنا ملاحظتك', 'ما راح يُحسب هذا الطلب على السائق، وراجعناه.'), () => {})}><Muted style={{ textDecorationLine: 'underline' }}>الخدمة ما تمت فعلياً؟ اضغط هنا</Muted></Pressable>
       <Muted>كيف كانت خدمة {crane?.name ?? 'الكرين'}؟</Muted>
-      <View style={[rtl.row, { justifyContent: 'center', gap: 6 }]}>{[1, 2, 3, 4, 5].map((n) => <Pressable key={n} onPress={() => setV(n)} hitSlop={8}><T style={{ fontSize: 38, color: C.warn }}>{n <= v ? '★' : '☆'}</T></Pressable>)}</View>
+      <StarPicker value={v} onChange={setV} />
       {v > 0 && (
         <View style={[rtl.row, { flexWrap: 'wrap', gap: 8, justifyContent: 'center' }]}>
-          {(v >= 4 ? ['وصل بسرعة', 'محترم', 'سعر عادل', 'شغل نظيف'] : ['تأخر', 'السعر تغيّر', 'تعامل سيء', 'ما وصل']).map((t) => (
+          {(v >= 3.5 ? ['وصل بسرعة', 'محترم', 'سعر عادل', 'شغل نظيف'] : ['تأخر', 'السعر تغيّر', 'تعامل سيء', 'ما وصل']).map((t) => (
             <Pressable key={t} onPress={() => setTags((x) => (x.includes(t) ? x.filter((y) => y !== t) : [...x, t]))} style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: R.pill, backgroundColor: tags.includes(t) ? C.accent : C.surface2 }}>
               <T style={{ color: tags.includes(t) ? C.onAccent : C.text, fontWeight: '700', fontSize: 13 }}>{t}</T>
             </Pressable>

@@ -1,3 +1,4 @@
+import { StarsView } from '@/components/stars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -45,7 +46,7 @@ function OrderCard({ o, open, onToggle, onGo }: { o: Row; open: boolean; onToggl
             {!!o.number && <Muted>رقم الطلب: #{o.number}</Muted>}
             <Muted>التاريخ: {new Date(o.created_at).toLocaleString('ar-IQ')}</Muted>
             {o.status === 'cancelled' && <Muted>ألغاه: {o.cancelled_by === 'crane' ? 'السائق' : o.cancelled_by === 'customer' ? 'الزبون' : '—'}{o.reason ? ' · السبب: ' + o.reason : ''}</Muted>}
-            {o.stars != null && <T style={{ color: C.warn, fontWeight: '800' }}>{'★'.repeat(o.stars)}{'☆'.repeat(5 - o.stars)} تقييم الزبون</T>}
+            {o.stars != null && <View style={[rtl.row, { gap: 8, alignItems: 'center' }]}><StarsView value={Number(o.stars)} size={15} /><T style={{ color: C.warn, fontWeight: '800' }}>{Number(o.stars).toFixed(1)} تقييم الزبون</T></View>}
             {live && <Btn small label={o.role === 'job' ? (o.incoming ? 'افتح وقبّل' : 'تفاصيل الشغل') : 'تفاصيل الطلب'} onPress={onGo} style={{ marginTop: 4 }} />}
           </View>
         )}

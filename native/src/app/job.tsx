@@ -155,7 +155,11 @@ export default function Job() {
       ) : (
         <View style={sheet}>
           <View style={[rtl.row, { gap: 8 }]}>
-            <T style={{ fontSize: 18, fontWeight: '800', flex: 1 }}>{name}{r.number ? ' · #' + r.number : ''}</T>
+            <View pointerEvents="none" style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(255,201,60,0.16)', borderWidth: 1, borderColor: 'rgba(255,201,60,0.55)', borderRadius: R.pill, paddingHorizontal: 14, paddingVertical: 6 }}>
+              <T style={{ fontSize: 16, fontWeight: '800', color: C.accent }}>{name}</T>
+              {!!r.number && <T style={{ fontSize: 16, fontWeight: '800', color: C.accent }}>· #{r.number}</T>}
+            </View>
+            <View style={{ flex: 1 }} />
             {!!r.agreed_price && <T style={{ color: C.ok, fontWeight: '800' }}>{r.agreed_price.toLocaleString('en-US')} د.ع</T>}
           </View>
           <Muted>{ISSUE[r.issue] ?? r.issue}{r.destination ? ' · إلى: ' + r.destination : ''}{r.note ? ' · ' + r.note : ''}</Muted>

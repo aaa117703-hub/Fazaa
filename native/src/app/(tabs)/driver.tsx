@@ -2,6 +2,8 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CancelSheet, CRANE_REASONS } from '@/components/cancel-reason';
 import { DriverBid } from '@/components/bidding';
+import { PulseBtn } from '@/components/pulse-btn';
+import { newRequestAlert } from '@/lib/alerts';
 import { Icon, type IconName } from '@/components/icon';
 import { geoAlert, getFix } from '@/lib/geo';
 import { shrink } from '@/lib/image';
@@ -26,10 +28,10 @@ import { CARS, CRANE_MAKES } from '@/lib/vehicles';
 
 const ISSUE: Record<string, string> = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
 const GROUPS: [string, [string, string][]][] = [
-  ['البطاقة الموحدة', [['id_front', 'الوجه الأمامي'], ['id_back', 'الوجه الخلفي']]],
-  ['سنوية السيارة', [['vehicle_front', 'الوجه الأمامي'], ['vehicle_back', 'الوجه الخلفي']]],
   ['إجازة السوق (الرخصة)', [['license_front', 'الوجه الأمامي'], ['license_back', 'الوجه الخلفي']]],
+  ['سنوية السيارة', [['vehicle_front', 'الوجه الأمامي'], ['vehicle_back', 'الوجه الخلفي']]],
 ];
+const isDoc4 = (k: string) => k.startsWith('license_') || k.startsWith('vehicle_');
 const DST: Record<string, [string, string]> = { pending: [C.warn, 'قيد المراجعة'], approved: [C.ok, 'مقبول'], rejected: [C.danger, 'مرفوض'] };
 
 type CraneRow = { id: string; name: string; type: string; status: string; lat: number; lng: number; governorate: string | null; listed: boolean; verified: boolean; tier: string | null; sub_expires_at?: string | null; crane_make: string | null; crane_model: string | null; updated_at: string };
@@ -56,10 +58,6 @@ export default function Driver() {
   const [incoming, setIncoming] = useState<Target[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
-  const [ident, setIdent] = useState<{ doc_name: string | null; doc_plate: string | null } | null>(null);
-  const [idName, setIdName] = useState<string | null>(null);
-  const [idPlate, setIdPlate] = useState<string | null>(null);
-  const [idErr, setIdErr] = useState('');
   const [chk, setChk] = useState<{ status: string; message: string | null } | null>(null);
   const [scanning, setScanning] = useState(false);
   const [stats, setStats] = useState({ today: 0, total: 0, rating: null as number | null, count: 0 });
@@ -67,6 +65,7 @@ export default function Driver() {
   const [earn, setEarn] = useState<Record<string, { jobs: number; total: number; priced: number }>>({});
   const [bill, setBill] = useState<{ enabled: boolean; month_jobs: number; month_earned: number; month_fee: number; balance: number } | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [openReq, setOpenReq] = useState<Record<string, boolean>>({});
   const [welcomed, setWelcomed] = useState(true);
   useEffect(() => { if (uid) AsyncStorage.getItem('sanad_welcome_' + uid).then((v) => setWelcomed(v === '1')).catch(() => {}); }, [uid]);
   useEffect(() => {
@@ -96,7 +95,7 @@ export default function Driver() {
       setCrane(c);
       const ids = fl.map((x) => x.id);
       if (!c) { setIncoming([]); setJobs([]); return; }
-      const [ct, calls, rs, tg, jb, dc, w, idn, ck] = await Promise.all([
+      const [ct, calls, rs, tg, jb, dc, w, ck] = await Promise.all([
         supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle(),
         supabase.from('calls').select('created_at').eq('crane_id', c.id).order('created_at', { ascending: false }).limit(500),
         supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', c.id).maybeSingle(),
@@ -104,11 +103,9 @@ export default function Driver() {
         supabase.from('requests').select('*').in('accepted_crane_id', ids).eq('status', 'accepted').order('accepted_at', { ascending: false }),
         supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).is('purged_at', null).order('created_at', { ascending: false }),
         supabase.rpc('my_crane_stats', {}),
-        supabase.from('crane_identity').select('doc_name,doc_plate').eq('crane_id', c.id).maybeSingle(),
         supabase.from('doc_checks').select('status,message').eq('crane_id', c.id).maybeSingle(),
       ]);
       setChk((ck.data as { status: string; message: string | null } | null) ?? null);
-      setIdent((idn.data as { doc_name: string | null; doc_plate: string | null } | null) ?? null);
       setPhone((ct.data as { phone?: string } | null)?.phone ?? '');
       const cl = (calls.data ?? []) as { created_at: string }[];
       const day = new Date().toDateString();
@@ -120,7 +117,10 @@ export default function Driver() {
       for (const t of inc) {
         if (!known.current[t.request_id]) {
           known.current[t.request_id] = true;
-          if (Object.keys(known.current).length > inc.length) Alert.alert('طلب جديد قريب منك!', 'افتح الطلبات الواردة وقبّل.');
+          if (Object.keys(known.current).length > inc.length) {
+            const num = t.requests?.number ? ' #' + t.requests.number : '';
+            newRequestAlert('طلب جديد قريب منك' + num, 'اضغط «تابع وقبول الطلب» حتى تشوف التفاصيل وتقدم سعرك.').then((shown) => { if (!shown) Alert.alert('طلب جديد قريب منك!', 'افتح الطلبات الواردة وقبّل.'); });
+          }
         }
       }
       setIncoming(inc);
@@ -234,18 +234,9 @@ export default function Driver() {
       for (const o of docs.filter((x) => x.kind === kind && x.status === 'rejected')) await supabase.from('driver_documents').delete().eq('id', o.id);
       const { error } = await supabase.from('driver_documents').insert({ crane_id: crane!.id, owner_id: uid, kind, path });
       if (error) throw error;
-      const have = new Set(docs.map((x) => x.kind)); have.add(kind);
-      if (have.size >= 6 && (ident?.doc_name && ident?.doc_plate)) { Alert.alert('تم الرفع', 'نفحص وثائقك الحين…'); scan(); } else { Alert.alert('تم الرفع', 'كمّل باقي الوثائق حتى نفحصها.'); load(); }
+      const have = new Set(docs.map((x) => x.kind).filter(isDoc4)); if (isDoc4(kind)) have.add(kind);
+      if (have.size >= 4) { Alert.alert('تم الرفع', 'نفحص وثائقك الحين…'); scan(); } else { Alert.alert('تم الرفع', 'كمّل باقي الوثائق حتى نفحصها.'); load(); }
     } catch { Alert.alert('تعذّر الرفع', 'جرّب صورة ثانية أو أعد المحاولة.'); }
-  }
-  async function saveIdentity() {
-    const name = (idName ?? ident?.doc_name ?? '').trim().replace(/\s+/g, ' '), plate = (idPlate ?? ident?.doc_plate ?? '').trim();
-    if (name.split(' ').length < 3 || name.length < 5) return setIdErr('اكتب الاسم الثلاثي كامل.');
-    if (plate.length < 3) return setIdErr('اكتب رقم اللوحة.');
-    setIdErr('');
-    const { error } = await supabase.from('crane_identity').upsert({ crane_id: crane!.id, owner_id: uid, doc_name: name, doc_plate: plate }, { onConflict: 'crane_id' });
-    if (error) { setIdErr('تعذّر الحفظ. جرّب مرة ثانية.'); return; }
-    setIdName(null); setIdPlate(null); Alert.alert('تم حفظ بياناتك'); await load(); if (new Set(docs.map((x) => x.kind)).size >= 6) scan(true);
   }
   function remove() {
     Alert.alert('حذف تسجيلك كسائق؟', 'راح يختفي كرينك من القائمة والخريطة.', [
@@ -261,18 +252,17 @@ export default function Driver() {
       {!crane.listed && <Card style={{ backgroundColor: 'rgba(255,201,60,0.12)', borderColor: 'rgba(255,201,60,0.4)' }}><T style={{ color: C.warn }}>تسجيلك قيد مراجعة الإدارة. ما يظهر للزبائن لين تتم الموافقة.</T></Card>}
 
       {!welcomed && (() => {
-        const have = new Set(docs.map((x) => x.kind)).size;
+        const have = new Set(docs.map((x) => x.kind).filter(isDoc4)).size;
         const steps: [string, boolean][] = [
           ['سجّلت كرينك', true],
-          ['الاسم الثلاثي ورقم اللوحة', !!(ident?.doc_name && ident?.doc_plate)],
-          ['رفع الوثائق الست (' + have + '/6)', have >= 6],
+          ['رفع الوثائق الأربع (' + have + '/4)', have >= 4],
           ['مراجعة الإدارة والتوثيق', !!crane.listed],
           ['اضغط «متاح» وابدأ تستلم طلبات', crane.status === 'available'],
         ];
         return (
           <Card style={{ gap: 10, borderColor: 'rgba(255,201,60,0.5)' }}>
             <T style={{ fontWeight: '800', fontSize: 19 }}>أهلاً بك في سند جايك 👋</T>
-            <Muted>خمس خطوات وتصير جاهز تستلم طلبات:</Muted>
+            <Muted>أربع خطوات وتصير جاهز تستلم طلبات:</Muted>
             {steps.map(([t, ok], i) => (
               <View key={t} style={[rtl.row, { gap: 10 }]}>
                 <View style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? C.ok : C.surface2 }}><T style={{ color: ok ? C.onAccent : C.muted, fontWeight: '800', fontSize: 13 }}>{ok ? '✓' : String(i + 1)}</T></View>
@@ -303,8 +293,12 @@ export default function Driver() {
               <View style={[rtl.row, { gap: 8 }]}><Icon name={(ISSUE_ICON[r.issue] ?? 'other') as IconName} size={28} /><T style={{ fontWeight: '800', flex: 1 }}>{r.number ? '#' + r.number + ' · ' : ''}{ISSUE[r.issue] ?? r.issue}</T><Muted>{fmtDist(+t.distance_km)} · {ago(r.created_at)}</Muted></View>
               {!!r.destination && <Muted>إلى: {r.destination}</Muted>}
               {!!r.note && <Muted>{r.note}</Muted>}
-              <DriverBid requestId={r.id} craneId={t.crane_id} onAccepted={() => { fastUntil.current = Date.now() + 2 * 3600000; load(); }} />
-              <View style={[rtl.row, { gap: 8 }]}><Btn label="قبول بدون سعر (نتفق بالاتصال)" kind="secondary" style={{ flex: 1 }} onPress={() => act('accept_request', r.id, 'قبلت الطلب. تواصل مع الزبون.')} /><Btn label="تجاهل" kind="secondary" onPress={() => act('decline_request', r.id)} /></View>
+              {!openReq[r.id] ? <PulseBtn label="تابع وقبول الطلب" onPress={() => setOpenReq((o) => ({ ...o, [r.id]: true }))} /> : (
+                <>
+                  <DriverBid requestId={r.id} craneId={t.crane_id} onAccepted={() => { fastUntil.current = Date.now() + 2 * 3600000; load(); }} />
+                  <View style={[rtl.row, { gap: 8 }]}><Btn label="قبول بدون سعر (نتفق بالاتصال)" kind="secondary" style={{ flex: 1 }} onPress={() => act('accept_request', r.id, 'قبلت الطلب. تواصل مع الزبون.')} /><Btn label="تجاهل" kind="secondary" onPress={() => act('decline_request', r.id)} /></View>
+                </>
+              )}
             </View>); })}
         </Card>
       )}
@@ -378,10 +372,10 @@ export default function Driver() {
       )}
 
       {(() => {
-        const done = new Set(docs.map((x) => x.kind)).size, hasId = !!(ident?.doc_name && ident?.doc_plate);
-        const pct = crane.verified ? 100 : Math.round(((done + (hasId ? 2 : 0)) / 8) * 100);
+        const done = new Set(docs.map((x) => x.kind).filter(isDoc4)).size;
+        const pct = crane.verified ? 100 : Math.round((done / 4) * 100);
         const state: [string, string, string] = crane.verified ? [C.ok, 'موثّق', 'اسمك ورقم لوحتك ظاهرين للزبائن مع شارة «موثّق». حذفنا صور وثائقك بعد التوثيق حفاظاً على خصوصيتك.']
-          : done === 6 && hasId ? [C.info, chk?.status === 'match' ? 'مطابقة، بانتظار الإدارة' : 'قيد المراجعة', chk?.status === 'match' ? 'وثائقك مطابقة لبياناتك. الإدارة تأكد التوثيق قريباً.' : 'نفحص وثائقك وبعدها الإدارة تراجعها.'] : [C.accent, 'غير مكتمل', 'أكمل بياناتك وارفع الوثائق الست حتى تحصل على شارة «موثّق».'];
+          : done === 4 ? [C.info, chk?.status === 'match' ? 'مطابقة، بانتظار الإدارة' : 'قيد المراجعة', chk?.status === 'match' ? 'وثائقك مطابقة لبياناتك. الإدارة تأكد التوثيق قريباً.' : 'نفحص وثائقك وبعدها الإدارة تراجعها.'] : [C.accent, 'غير مكتمل', 'ارفع صور إجازة السوق وسنوية السيارة (أمام وخلف) حتى تحصل على شارة «موثّق».'];
         return (
           <Card style={{ gap: 12 }}>
             <View style={[rtl.row, { gap: 12 }]}>
@@ -397,18 +391,9 @@ export default function Driver() {
                 <T style={{ fontSize: 13, lineHeight: 21 }}>{chk.message}</T>
               </View>
             )}
-            {!crane.verified && done === 6 && hasId && <Btn small kind="secondary" label={scanning ? 'جاري الفحص…' : 'افحص وثائقي الحين'} onPress={() => scan()} />}
+            {!crane.verified && done === 4 && <Btn small kind="secondary" label={scanning ? 'جاري الفحص…' : 'افحص وثائقي الحين'} onPress={() => scan()} />}
             <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 }}>
-              <T style={{ fontWeight: '700' }}>① بياناتك الرسمية</T>
-              <Muted>الاسم الثلاثي (مثل البطاقة)</Muted>
-              <TextInput value={idName ?? ident?.doc_name ?? ''} onChangeText={setIdName} placeholder="مثال: علي حسين محمد" placeholderTextColor={C.muted} maxLength={100} style={inp} />
-              <Muted>رقم لوحة السيارة</Muted>
-              <TextInput value={idPlate ?? ident?.doc_plate ?? ''} onChangeText={setIdPlate} placeholder="مثال: بغداد 12345 أ" placeholderTextColor={C.muted} maxLength={30} style={inp} />
-              {!!idErr && <T style={{ color: C.danger }}>{idErr}</T>}
-              <Btn small label="حفظ البيانات" onPress={saveIdentity} />
-            </View>
-            <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 12 }}>
-              <T style={{ fontWeight: '700' }}>② الوثائق ({done}/6)</T>
+              <T style={{ fontWeight: '700' }}>الوثائق ({done}/4)</T>
               {GROUPS.map(([title, slots]) => (
                 <View key={title} style={{ gap: 6 }}>
                   <T style={{ fontWeight: '700', color: C.accent }}>{title}</T>

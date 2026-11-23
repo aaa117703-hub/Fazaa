@@ -1,3 +1,4 @@
+import { StarsView } from '@/components/stars';
 import { router, useLocalSearchParams } from 'expo-router';
 import { BackBar } from '@/components/back-bar';
 import * as Location from 'expo-location';
@@ -66,7 +67,7 @@ export default function CraneProfile() {
         <View style={{ alignSelf: 'stretch', gap: 8 }}>
           <T style={{ fontWeight: '800', fontSize: 16 }}>آخر التقييمات</T>
           {p.reviews.map((r, i) => (
-            <Card key={i} style={{ gap: 4 }}><T style={{ color: C.warn }}>{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}</T><T>{r.comment}</T></Card>
+            <Card key={i} style={{ gap: 4 }}><StarsView value={Number(r.stars)} size={15} /><T>{r.comment}</T></Card>
           ))}
         </View>
       )}

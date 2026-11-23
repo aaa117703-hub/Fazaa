@@ -254,6 +254,24 @@ export default function Profile() {
       </View>
 
       {isOwner && (
+        <Pressable onPress={() => router.push('/official-data' as never)}>
+          <Card style={[rtl.row, { gap: 10 }]}>
+            <Icon name="doc" size={26} mono={C.accent} />
+            <View style={{ flex: 1 }}><T style={{ fontWeight: '800', fontSize: 17 }}>بياناتي الرسمية</T><Muted style={{ fontSize: 12.5 }}>الاسم الثلاثي ورقم اللوحة لمطابقة الوثائق</Muted></View>
+          </Card>
+        </Pressable>
+      )}
+
+      {isOwner && (
+        <Pressable onPress={() => router.push('/my-ratings' as never)}>
+          <Card style={[rtl.row, { gap: 10 }]}>
+            <Icon name="star" size={26} mono={C.accent} />
+            <View style={{ flex: 1 }}><T style={{ fontWeight: '800', fontSize: 17 }}>تقييماتي</T><Muted style={{ fontSize: 12.5 }}>متوسط تقييمك وتعليقات الزبائن</Muted></View>
+          </Card>
+        </Pressable>
+      )}
+
+      {isOwner && (
         <Pressable onPress={() => router.push('/wallet' as never)}>
           <Card style={[rtl.row, { gap: 10 }]}>
             <Icon name="diamond" size={26} mono={C.accent} />

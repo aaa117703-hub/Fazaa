@@ -13,11 +13,11 @@ export const STALE_MS = 3 * 3600 * 1000;
 export const TIERS = [
   { id: 'bronze', name: 'مجاني', tag: 'للبداية', price: 0, unit: 'مجاناً', color: '#8C949B', fleet: 1, radius: 40, quota: 0, extra: 3000,
     features: ['ظهور بالقائمة واتصال مباشر', 'ملف شخصي وتقييم', '10 طلبات مكتملة بالشهر خلال فترة الإطلاق'] },
-  { id: 'silver', name: 'أساسية', tag: 'تصلك الطلبات أسرع', price: 19000, unit: 'دينار / شهر', color: '#D9DADC', fleet: 1, radius: 50, quota: 6, extra: 3000,
+  { id: 'silver', name: 'أساسية', tag: 'تصلك الطلبات أسرع', price: 19000, unit: 'دينار / شهر', color: '#D9DADC', fleet: 1, radius: 40, quota: 6, extra: 3000,
     features: ['6 طلبات مكتملة بالشهر', 'أولوية أعلى قليلاً', 'شارة «أساسية»'] },
-  { id: 'gold', name: 'متوسطة', tag: 'للسائق النشيط', price: 29000, unit: 'دينار / شهر', color: '#FFC93C', fleet: 1, radius: 65, quota: 12, extra: 2000,
+  { id: 'gold', name: 'متوسطة', tag: 'للسائق النشيط', price: 29000, unit: 'دينار / شهر', color: '#FFC93C', fleet: 1, radius: 40, quota: 12, extra: 2000,
     features: ['12 طلب مكتمل بالشهر', 'أولوية عالية', 'شارة «متوسطة» وقسم «الموصى بهم»'] },
-  { id: 'diamond', name: 'مميزة', tag: 'بدون أي حد', price: 35000, unit: 'دينار / شهر', color: '#5AA9FF', fleet: 1, radius: 80, quota: null as number | null, extra: 0,
+  { id: 'diamond', name: 'مميزة', tag: 'بدون أي حد', price: 35000, unit: 'دينار / شهر', color: '#5AA9FF', fleet: 1, radius: 40, quota: null as number | null, extra: 0,
     features: ['طلبات مكتملة بدون حد', 'أعلى أولوية', 'شارة «مميزة» وأول «الموصى بهم»', 'دعم مباشر عبر واتساب'] },
 ];
 // العضوية الفعّالة: المنتهية ترجع «أساسي»

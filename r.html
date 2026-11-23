@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>طلب سند جايك</title>
+<style>
+  :root{--bg:#0b0f14;--card:#141b24;--line:#233041;--text:#eef3f8;--mut:#8fa0b3;--acc:#ffc93c;--ok:#3dd68c}
+  @media (prefers-color-scheme:light){:root{--bg:#f4f6f9;--card:#fff;--line:#dde3ea;--text:#111a24;--mut:#5b6b7c;--acc:#c98a00;--ok:#14935a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+  .c{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:12px}
+  h1{margin:0;font-size:22px}
+  .pill{align-self:flex-start;background:rgba(255,201,60,.16);color:var(--acc);font-weight:800;border-radius:999px;padding:4px 14px}
+  .m{color:var(--mut);font-size:14px;line-height:1.7}
+  a.b{display:block;text-align:center;text-decoration:none;font-weight:800;border-radius:14px;padding:14px;font-size:16px}
+  a.p{background:var(--acc);color:#1a1300}
+  a.s{border:1px solid var(--line);color:var(--text)}
+  .err{color:#ff6b6b;font-weight:700}
+</style>
+</head>
+<body>
+<div class="c" id="c"><div class="m">جاري التحميل…</div></div>
+<script>
+(function(){
+  var API='https://hwlpzlfimplzkdleaclw.supabase.co', KEY='sb_publishable_8MXXYiGMYODBil-jcNuwWg_fwrowc_a';
+  var ISSUE={tow:'سحب',battery:'بطارية',tire:'إطار',fuel:'وقود',locked:'مفاتيح داخل السيارة',accident:'حادث',other:'أخرى'};
+  var c=document.getElementById('c');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]})}
+  var t=(new URLSearchParams(location.search).get('t')||'').replace(/[^a-z0-9]/gi,'');
+  function fail(){c.innerHTML='<h1>الرابط غير صالح</h1><div class="m err">انتهت صلاحية الرابط أو الطلب مغلق. اطلب من الزبون رابطاً جديداً من التطبيق.</div>'}
+  if(t.length<20){fail();return}
+  fetch(API+'/rest/v1/rpc/request_by_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({p_token:t})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      if(!d||!d.id){fail();return}
+      var maps='https://www.google.com/maps/dir/?api=1&destination='+d.lat+','+d.lng;
+      var app='sanadjaik://job?id='+encodeURIComponent(d.id);
+      c.innerHTML='<div class="pill">طلب #'+esc(d.number)+'</div>'
+        +'<h1>'+esc(ISSUE[d.issue]||d.issue)+'</h1>'
+        +(d.destination?'<div class="m">الوجهة: '+esc(d.destination)+'</div>':'')
+        +'<div class="m">هذا رابط خاص بالطلب ويشتغل لفترة محدودة. افتح الموقع داخل تطبيق سند جايك أو بتطبيق الخرائط.</div>'
+        +'<a class="b p" href="'+app+'">افتح بتطبيق سند جايك</a>'
+        +'<a class="b s" href="'+maps+'" rel="noopener">افتح بالخرائط</a>';
+    }).catch(fail);
+})();
+</script>
+</body>
+</html>
