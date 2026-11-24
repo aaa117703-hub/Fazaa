@@ -2,7 +2,7 @@ import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { ArchLoader } from '@/components/arch-loader';
+import { HookLoader } from '@/components/logo-mark';
 import { C, R } from '@/lib/theme';
 
 const TIPS = [
@@ -100,7 +100,7 @@ export function UpdateGate() {
             <View style={{ alignItems: 'center' }}>
               <Pressable onPress={bump} style={s.art}>
                 <Animated.View style={{ transform: [{ scale: pulse }], alignItems: 'center', justifyContent: 'center' }}>
-                  <ArchLoader pct={pct} size={150} />
+                  <HookLoader pct={pct} size={150} />
                 </Animated.View>
               </Pressable>
               <Text style={s.pct}>{pct}<Text style={s.pctS}>%</Text></Text>

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { Mark } from '@/components/logo-mark';
 import { T } from '@/components/ui';
 import { C } from '@/lib/theme';
 
@@ -48,11 +49,8 @@ export function AuthBg() {
 
 export function LogoMark({ size = 46 }: { size?: number }) {
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.34, backgroundColor: '#14171A', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-      <Svg width={size * 0.66} height={size * 0.66} viewBox="0 0 100 100">
-        <Path d="M19 86V51a31 31 0 0 1 62 0V86" fill="none" stroke={C.accent} strokeWidth="15" strokeLinecap="round" />
-        <Path d="M35.5 73L50 57.5L64.5 73" fill="none" stroke="#F5F5F0" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-      </Svg>
+    <View style={{ width: size, height: size, borderRadius: size * 0.28, backgroundColor: '#14171A', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+      <Mark size={size - 2} />
     </View>
   );
 }

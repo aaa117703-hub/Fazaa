@@ -1,27 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 
-import { C } from '@/lib/theme';
+import { Diamond, Hook } from '@/components/logo-mark';
+import { C, fontFor } from '@/lib/theme';
 
-// افتتاحية سند جايك (نفس الموقع): القوس يترسم، السهم يطلع، النقطة تنط من داخل السهم
-// لبداية القوس وتطلع عليه مع نسبة التحميل، وكلمة SANAD JAIK تترسم هندسياً.
-const AP = Animated.createAnimatedComponent(Path);
-const AC = Animated.createAnimatedComponent(Circle);
-const ARCH = 'M19 86V51a31 31 0 0 1 62 0V86';
-const AL = 35 + Math.PI * 31 + 35;
-const DUR = 2500;
+// افتتاحية سند جايك — قصة الخدمة بثلاث ثوانٍ:
+// موقعك (الألماسة) ينبض بالعتمة → الخطاف ينزل على حبل ويتأرجح → يلتقطك بضربة (اهتزاز + موجة)
+// → يرفعك ويستقر شعاراً → «سند جايك» على الطريق. كلها native driver.
+const DUR = 3400;
+const T0 = { drop: 300, catch: 1100, lift: 1500, word: 1950, sub: 2250 };
 
-function at(d: number): [number, number] {
-  if (d <= 35) return [19, 86 - d];
-  if (d <= 35 + Math.PI * 31) { const a = Math.PI - (d - 35) / 31; return [50 + 31 * Math.cos(a), 51 - 31 * Math.sin(a)]; }
-  return [81, 51 + (d - 35 - Math.PI * 31)];
-}
-const LETTERS: [number, string, boolean][] = [
-  [0, 'M28 5H5V22H27V39H4', false], [42, 'M3 42L16 4L29 42M9 28H23', false], [84, 'M4 42V4L28 42V4', false], [126, 'M3 42L16 4L29 42M9 28H23', false],
-  [168, 'M4 4V42H15A13 13 0 0 0 28 29V17A13 13 0 0 0 15 4Z', false],
-  [236, 'M26 4V29A13 13 0 0 1 13 42H4', true], [278, 'M3 42L16 4L29 42M9 28H23', true], [320, 'M16 4V42', true], [362, 'M4 4V42M27 4L4 26M13 18L28 42', true],
-];
+const clampAt = (v: number) => v / DUR;
 
 export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }) {
   const { width, height } = useWindowDimensions();
@@ -30,13 +20,25 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
   const [finished, setFinished] = useState(false);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
-  const size = Math.min(width * 0.42, 180);
-  const wordW = Math.min(width * 0.62, 300);
+
+  const M = Math.min(width * 0.62, 260);
+  const u = M / 120;
+  const dia = 22.7 * u; // قطر الألماسة
+  const extra = M * 0.7; // مساحة الكلمة تحت الشعار
+  const boxH = M + extra;
+  const off = extra / 2; // بداية الشعار: الألماسة بمنتصف الشاشة مثل سبلاش النظام
+  const offX = 5 * u;
+  const pivotX = (97 - 60) * u; // رأس الخطاف (مكان تعليق الحبل) نسبة لمركز المربع
+  const pivotY = (17 - 60) * u;
+  const cableLen = height;
 
   useEffect(() => {
-    Animated.timing(t, { toValue: 1, duration: DUR, easing: Easing.linear, useNativeDriver: false }).start(() => setFinished(true));
+    Animated.timing(t, { toValue: 1, duration: DUR, easing: Easing.linear, useNativeDriver: true }).start(() => setFinished(true));
+    const buzz = (style: Haptics.ImpactFeedbackStyle) => { try { Haptics.impactAsync(style).catch(() => {}); } catch { /* */ } };
+    const a = setTimeout(() => buzz(Haptics.ImpactFeedbackStyle.Heavy), T0.catch);
+    const b = setTimeout(() => buzz(Haptics.ImpactFeedbackStyle.Light), T0.lift + 420);
+    return () => { clearTimeout(a); clearTimeout(b); };
   }, [t]);
-  // حماية نهائية: مهما صار، السبلاش يختفي ويترك اللمس
   useEffect(() => {
     const id = setTimeout(() => doneRef.current(), DUR + 3000);
     return () => clearTimeout(id);
@@ -48,44 +50,101 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
     return () => clearTimeout(id);
   }, [finished, ready, out]);
 
-  // الخط الزمني (يُضغط على 2.5 ثانية)
-  const k = (a: number, b: number, from: number, to: number, easing?: (x: number) => number) =>
-    t.interpolate({ inputRange: [a / 3, b / 3], outputRange: [from, to], extrapolate: 'clamp', easing });
-  const ease = Easing.out(Easing.cubic);
-  const archOff = k(0.15, 1.5, AL, 0, ease);
-  const chevOp = k(1.3, 1.7, 0, 1);
-  const scale = k(0, 1.6, 0.82, 1, Easing.out(Easing.back(1.4)));
-  const logoOp = k(0, 0.5, 0, 1);
-  const wordOp = k(1.7, 2.4, 0, 1);
-  const wordY = k(1.7, 2.4, 10, 0, ease);
-  // النقطة تطلع على القوس
-  const dot = useMemo(() => {
-    const ins: number[] = [], xs: number[] = [], ys: number[] = [], os: number[] = [];
-    const push = (sec: number, x: number, y: number, o: number) => { ins.push(sec / 3); xs.push(x); ys.push(y); os.push(o); };
-    push(0, 50, 67, 0); push(1.2, 50, 67, 0); push(1.5, 50, 67, 1);
-    for (let i = 1; i <= 24; i++) { const q = i / 24, p = at(q * AL), e = 1 - Math.pow(1 - q, 2); const pe = at(e * AL); void p; push(1.5 + 1.4 * q, pe[0], pe[1], 1); }
-    push(3, at(AL)[0], at(AL)[1], 1);
-    const m = (arr: number[]) => t.interpolate({ inputRange: ins, outputRange: arr, extrapolate: 'clamp' });
-    return { cx: m(xs), cy: m(ys), op: m(os) };
-  }, [t]);
+  // مساعدات الخط الزمني (بالملّي ثانية)
+  const seg = (a: number, b: number, from: number, to: number, easing?: (x: number) => number) =>
+    t.interpolate({ inputRange: [clampAt(a), clampAt(b)], outputRange: [from, to], extrapolate: 'clamp', easing });
+  const keys = (pts: [number, number][]) =>
+    t.interpolate({ inputRange: pts.map((p) => clampAt(p[0])), outputRange: pts.map((p) => p[1]), extrapolate: 'clamp' });
+
+  // الخطاف: نزول متسارع + ارتداد «بلعة» عند الالتقاط
+  const dropY = Animated.add(
+    seg(T0.drop, T0.catch, -(height / 2 + M), 0, Easing.in(Easing.quad)),
+    keys([[T0.catch, 0], [T0.catch + 110, 14], [T0.catch + 300, -3], [T0.catch + 460, 0]]),
+  );
+  const swing = t.interpolate({
+    inputRange: [T0.drop, 520, 780, 960, T0.catch].map(clampAt),
+    outputRange: ['16deg', '-11deg', '6deg', '-2deg', '0deg'],
+    extrapolate: 'clamp',
+  });
+  const hookOp = seg(T0.drop - 50, T0.drop + 10, 0, 1);
+
+  // الحبل ينسحب لفوق بعد الرفع
+  const cableOp = seg(T0.lift, T0.lift + 350, 1, 0);
+
+  // الرفع: الشعار كله يطلع من مكان الالتقاط لمكانه النهائي مع تجاوز بسيط
+  const back = Easing.out(Easing.back(1.7));
+  const liftY = seg(T0.lift, T0.lift + 750, off, 0, back);
+  const liftX = seg(T0.lift, T0.lift + 750, offX, 0, back);
+  const liftS = keys([[T0.lift, 1], [T0.lift + 300, 1.07], [T0.lift + 800, 1]]);
+
+  // الألماسة: نبض الموقع ثم ضربة الالتقاط
+  const diaS = keys([[0, 1], [250, 1.22], [500, 1], [750, 1.22], [1000, 1], [T0.catch, 0.88], [T0.catch + 150, 1.5], [T0.catch + 420, 1]]);
+
+  // موجات النبض (قبل الالتقاط) وموجة الصدمة (عند الالتقاط)
+  const ring = (a: number, b: number, from: number, to: number, o: number) => ({
+    transform: [{ scale: seg(a, b, from, to, Easing.out(Easing.quad)) }],
+    opacity: t.interpolate({ inputRange: [clampAt(a), clampAt(a + 60), clampAt(b)], outputRange: [0, o, 0], extrapolate: 'clamp' }),
+  });
+  const r1 = ring(60, 820, 1, 6, 0.55);
+  const r2 = ring(420, 1200, 1, 6, 0.4);
+  const shock = ring(T0.catch, T0.catch + 650, 1, 11, 0.9);
+  const glowS = seg(T0.catch, T0.catch + 700, 0.3, 1.5, Easing.out(Easing.cubic));
+  const glowO = keys([[T0.catch - 10, 0], [T0.catch + 90, 0.5], [T0.catch + 700, 0]]);
+
+  // اهتزاز الشاشة عند الالتقاط
+  const shake = keys([[T0.catch, 0], [T0.catch + 50, -7], [T0.catch + 100, 7], [T0.catch + 160, -4], [T0.catch + 220, 3], [T0.catch + 300, 0]]);
+
+  // الطريق + الكلمة
+  const dashes = [0, 1, 2, 3, 4, 5, 6];
+  const wordOp = seg(T0.word, T0.word + 500, 0, 1);
+  const wordY = seg(T0.word, T0.word + 600, 18, 0, Easing.out(Easing.cubic));
+  const subOp = seg(T0.sub, T0.sub + 450, 0, 1);
+
+  const ringBase = { position: 'absolute' as const, left: -dia / 2, top: -dia / 2, width: dia, height: dia, borderRadius: dia / 2, borderColor: C.accent, borderWidth: 2 };
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, s.root, { opacity: out }]} pointerEvents={finished && ready ? 'none' : 'auto'}>
-      <Animated.View style={{ width: size, height: size, opacity: logoOp, transform: [{ scale }] }}>
-        <Svg viewBox="0 0 100 100" width={size} height={size}>
-          <AP d={ARCH} fill="none" stroke={C.accent} strokeWidth={15} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={[AL, AL]} strokeDashoffset={archOff as unknown as number} />
-          <AP d="M35.5 73L50 57.5L64.5 73" fill="none" stroke="#F5F5F0" strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" opacity={chevOp as unknown as number} />
-          <AC cx={dot.cx as unknown as number} cy={dot.cy as unknown as number} r={5.2} fill="#F5F5F0" opacity={dot.op as unknown as number} />
-        </Svg>
-      </Animated.View>
-      <Animated.View style={{ marginTop: 22, opacity: wordOp, transform: [{ translateY: wordY }], width: wordW, height: (wordW * 72) / 410 }}>
-        <Svg viewBox="-6 -14 410 72" width={wordW} height={(wordW * 72) / 410}>
-          {LETTERS.map(([x, d, o], i) => (
-            <Path key={i} d={d} transform={`translate(${x} 0)`} fill="none" stroke={o ? C.accent : '#F5F5F0'} strokeWidth={6.5} strokeLinecap="butt" strokeLinejoin="miter" strokeMiterlimit={2.2} />
-          ))}
-          <Rect x={-6} y={-11} width={6} height={6} fill={C.accent} />
-          <Rect x={398} y={49} width={6} height={6} fill={C.accent} />
-        </Svg>
+      <Animated.View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', transform: [{ translateX: shake }] }]}>
+        {/* موجات النبض والصدمة: مركزها موقع الألماسة بمنتصف الشاشة */}
+        <View style={{ position: 'absolute', left: width / 2, top: height / 2, width: 0, height: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <Animated.View style={{ position: 'absolute', left: -M * 0.45, top: -M * 0.45, width: M * 0.9, height: M * 0.9, borderRadius: M * 0.45, backgroundColor: C.accent, opacity: glowO, transform: [{ scale: glowS }] }} />
+          <Animated.View style={[ringBase, r1]} />
+          <Animated.View style={[ringBase, r2]} />
+          <Animated.View style={[ringBase, { borderWidth: 4 }, shock]} />
+        </View>
+
+        <View style={{ width: M, height: boxH, alignItems: 'center' }}>
+          <Animated.View style={{ width: M, height: M, transform: [{ translateX: liftX }, { translateY: liftY }, { scale: liftS }] }}>
+            {/* الخطاف + الحبل: مجموعة تتأرجح من رأس الخطاف */}
+            <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: M, height: M, opacity: hookOp, transform: [{ translateY: dropY }, { translateX: pivotX }, { translateY: pivotY }, { rotate: swing }, { translateX: -pivotX }, { translateY: -pivotY }] }}>
+              <Animated.View style={{ position: 'absolute', left: M / 2 + pivotX - 2.2 * u, top: M / 2 + pivotY - cableLen, width: 4.4 * u, height: cableLen, backgroundColor: C.accent, opacity: cableOp }} />
+              <Hook size={M} />
+            </Animated.View>
+            {/* الألماسة فوق الخطاف */}
+            <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: M, height: M, transform: [{ scale: diaS }] }}>
+              <Diamond size={M} />
+            </Animated.View>
+          </Animated.View>
+
+          {/* الطريق: خط متقطع يمشي */}
+          <View style={{ position: 'absolute', top: M + M * 0.04, flexDirection: 'row-reverse', gap: M * 0.04 }}>
+            {dashes.map((i) => {
+              const a = T0.lift + 250 + i * 70;
+              return (
+                <Animated.View key={i} style={{ width: M * 0.07, height: 3, borderRadius: 2, backgroundColor: i === 0 ? C.accent : 'rgba(245,245,240,0.22)', opacity: seg(a, a + 260, 0, 1), transform: [{ translateX: seg(a, a + 360, M * 0.12, 0, Easing.out(Easing.cubic)) }] }} />
+              );
+            })}
+          </View>
+
+          <View style={{ position: 'absolute', top: M + M * 0.12, alignItems: 'center' }}>
+            <Animated.Text style={{ color: '#F5F5F0', fontFamily: fontFor('700'), fontSize: M * 0.2, lineHeight: M * 0.3, opacity: wordOp, transform: [{ translateY: wordY }] }}>
+              سند جايك
+            </Animated.Text>
+            <Animated.Text style={{ color: C.accent, fontFamily: fontFor('600'), fontSize: 13, letterSpacing: 6, opacity: subOp, marginTop: 2 }}>
+              SANAD JAIK
+            </Animated.Text>
+          </View>
+        </View>
       </Animated.View>
     </Animated.View>
   );
