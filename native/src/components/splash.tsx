@@ -51,9 +51,9 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
   const boxH = M + extra;
   const off = extra / 2; // بداية الشعار: الألماسة بمنتصف الشاشة مثل سبلاش النظام
   const offX = 5 * u;
-  // نقطة تعليق الخطاف (رأسه) داخل مربع الشعار، بعد الإزاحة (-1، -5) للشبكة 120
-  const Px = 96 * u;
-  const Py = 17 * u;
+  // نقطة تعليق السلسلة: داخل جسم الخطاف (أعلى الساق) حتى تبين مربوطة، والسلسلة تنزل خلف الخطاف
+  const Px = 88 * u;
+  const Py = 19 * u;
   const chainLen = height * 1.4 + M; // السلسلة تطلع لفوق خارج الشاشة
   const linkL = 14 * u;
 
