@@ -2,7 +2,8 @@ import { StarsView } from '@/components/stars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { usePullHook } from '@/components/pull-hook';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/icon';
@@ -130,8 +131,11 @@ export default function Orders() {
 
   if (!session) return <View style={{ flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 12 }}><T style={{ fontSize: 22, fontWeight: '800' }}>الطلبات</T><Muted>سجّل دخول حتى تشوف طلباتك.</Muted><Btn label="دخول / حساب جديد" onPress={() => router.push('/login')} /></View>;
 
+  const pull = usePullHook(() => load());
+
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} refreshControl={<RefreshControl refreshing={false} onRefresh={() => { load().catch(() => {}); }} tintColor={C.accent} />}
+    <>
+    <ScrollView style={{ backgroundColor: C.bg, flex: 1 }} {...pull.scrollProps}
       contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 16, paddingBottom: 40, gap: 10 }} keyboardShouldPersistTaps="handled">
       <T style={{ fontSize: 26, fontWeight: '800', color: C.accent }}>الطلبات</T>
       {isDriver && (
@@ -151,5 +155,7 @@ export default function Orders() {
         <Card style={{ gap: 8, alignItems: 'center' }}><T style={{ fontWeight: '800' }}>ما اكو طلبات هنا</T><Muted style={{ textAlign: 'center' }}>{tab === 'job' && isDriver ? 'الطلبات الواردة وشغلك السابق يظهر هنا.' : 'طلباتك الحالية والسابقة تظهر هنا مع التفاصيل.'}</Muted></Card>
       ) : list.map((o) => <OrderCard key={o.role + o.id} o={o} open={openId === o.role + o.id} onToggle={() => setOpenId(openId === o.role + o.id ? null : o.role + o.id)} onGo={() => go(o)} />)}
     </ScrollView>
+    {pull.overlay}
+    </>
   );
 }

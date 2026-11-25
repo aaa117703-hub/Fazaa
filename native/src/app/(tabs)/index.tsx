@@ -6,7 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
+import { usePullHook } from '@/components/pull-hook';
+import { Alert, FlatList, Pressable, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
@@ -186,9 +187,12 @@ export default function Home() {
     </View>
   );
 
+  const pull = usePullHook(() => (pos ? load(pos) : undefined));
+
   if (isOwner) return <OwnerFeed />;
 
   return (
+    <>
     <FlatList
       style={{ backgroundColor: C.bg }}
       contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 12, paddingBottom: 130, gap: 10 }}
@@ -198,7 +202,7 @@ export default function Home() {
       ListFooterComponent={shown < list.length ? <Btn label={'عرض المزيد (' + (list.length - shown) + ')'} kind="secondary" onPress={() => setShown((n) => n + 20)} /> : undefined}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}
-      refreshControl={<RefreshControl refreshing={loading} tintColor={C.accent} onRefresh={() => { if (pos) load(pos); }} />}
+      {...pull.scrollProps}
       ListEmptyComponent={loading ? <SkeletonList n={4} /> : (
         <View style={{ alignItems: 'center', gap: 10, marginTop: 20 }}>
           <Muted style={{ textAlign: 'center' }}>{err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : filtered ? 'ما كو كرينات تطابق الفلتر.' : 'ما كو كرينات مسجّلة قريبة منك هسه.'}</Muted>
@@ -209,5 +213,7 @@ export default function Home() {
         <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} onRequest={isOwner ? undefined : () => (session ? router.push({ pathname: '/request', params: { craneId: x.c.id } }) : go())} /></FadeIn>
       )}
     />
+    {pull.overlay}
+    </>
   );
 }

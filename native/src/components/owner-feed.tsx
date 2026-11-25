@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { usePullHook } from '@/components/pull-hook';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/icon';
@@ -62,8 +63,11 @@ export function OwnerFeed() {
 
   const total = done.reduce((a, x) => a + (x.agreed_price ?? 0), 0);
 
+  const pull = usePullHook(() => load());
+
   return (
-    <ScrollView style={{ backgroundColor: C.bg }} refreshControl={<RefreshControl refreshing={false} onRefresh={() => { load().catch(() => {}); }} tintColor={C.accent} />}
+    <>
+    <ScrollView style={{ backgroundColor: C.bg, flex: 1 }} {...pull.scrollProps}
       contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 16, paddingBottom: 120, gap: 12 }}>
       <View style={[rtl.row, { gap: 8 }]}>
         <T style={{ fontSize: 26, fontWeight: '800', color: C.accent, flex: 1 }}>الطلبات</T>
@@ -141,5 +145,7 @@ export function OwnerFeed() {
         ))}
       </View>
     </ScrollView>
+    {pull.overlay}
+    </>
   );
 }
