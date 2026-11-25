@@ -18,7 +18,7 @@ import { CarPicker, carOk, CarVal } from '@/components/car-picker';
 import { Select } from '@/components/select';
 import { Btn, Card, Muted, T, rtl } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { ago, effTier, fmtDist, GOVS, TYPES, tierOf } from '@/lib/data';
+import { ago, distKm, effTier, fmtDist, GOVS, TYPES, tierOf } from '@/lib/data';
 import { carSpec, carSpecText } from '@/lib/carspecs';
 import { report } from '@/lib/report';
 import { useLive } from '@/lib/live';
@@ -37,6 +37,7 @@ const DST: Record<string, [string, string]> = { pending: [C.warn, 'قيد الم
 type CraneRow = { id: string; name: string; type: string; status: string; lat: number; lng: number; governorate: string | null; listed: boolean; verified: boolean; tier: string | null; sub_expires_at?: string | null; crane_make: string | null; crane_model: string | null; updated_at: string };
 const ISSUE_ICON: Record<string, string> = { tow: 'tow', battery: 'battery', tire: 'tire', fuel: 'fuel', locked: 'locked', accident: 'accident', other: 'other' };
 type Target = { request_id: string; crane_id: string; distance_km: number; requests: { id: string; number: number | null; issue: string; destination: string | null; note: string | null; status: string; created_at: string } | null };
+type Trip = { id: string; number: number | null; issue: string; lat: number; lng: number; dest_lat: number | null; dest_lng: number | null; destination: string | null; accepted_crane_id: string | null; completed_at: string | null; agreed_price: number | null };
 type Job = { r: { id: string; lat: number; lng: number; issue: string; customer_id: string; arrived_at?: string | null; agreed_price?: number | null }; p: { full_name: string | null; phone: string | null; car: string | null; car_weight_kg?: number | null; car_length_m?: number | null } | null };
 type Doc = { id: string; kind: string; status: string; note: string | null };
 type Wk = { locked?: boolean; views: number; calls: number; requests?: number; accepted?: number } | null;
@@ -57,6 +58,7 @@ export default function Driver() {
   const [phone, setPhone] = useState('');
   const [incoming, setIncoming] = useState<Target[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [chk, setChk] = useState<{ status: string; message: string | null } | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -95,7 +97,7 @@ export default function Driver() {
       setCrane(c);
       const ids = fl.map((x) => x.id);
       if (!c) { setIncoming([]); setJobs([]); return; }
-      const [ct, calls, rs, tg, jb, dc, w, ck] = await Promise.all([
+      const [ct, calls, rs, tg, jb, dc, w, ck, hist] = await Promise.all([
         supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle(),
         supabase.from('calls').select('created_at').eq('crane_id', c.id).order('created_at', { ascending: false }).limit(500),
         supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', c.id).maybeSingle(),
@@ -104,7 +106,9 @@ export default function Driver() {
         supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).is('purged_at', null).order('created_at', { ascending: false }),
         supabase.rpc('my_crane_stats', {}),
         supabase.from('doc_checks').select('status,message').eq('crane_id', c.id).maybeSingle(),
+        supabase.from('requests').select('id,number,issue,lat,lng,dest_lat,dest_lng,destination,accepted_crane_id,completed_at,agreed_price').in('accepted_crane_id', ids).eq('status', 'completed').order('completed_at', { ascending: false }).limit(30),
       ]);
+      setTrips((hist.data ?? []) as Trip[]);
       setChk((ck.data as { status: string; message: string | null } | null) ?? null);
       setPhone((ct.data as { phone?: string } | null)?.phone ?? '');
       const cl = (calls.data ?? []) as { created_at: string }[];
@@ -300,6 +304,23 @@ export default function Driver() {
                 </>
               )}
             </View>); })}
+        </Card>
+      )}
+
+      {trips.length > 0 && (
+        <Card style={{ gap: 10 }}>
+          <T style={{ fontWeight: '800', fontSize: 17 }}>الرحلات المنجزة</T>
+          {trips.map((t) => {
+            const cn = fleet.find((f) => f.id === t.accepted_crane_id)?.name ?? 'كرين';
+            const km = t.dest_lat != null && t.dest_lng != null ? distKm({ latitude: t.lat, longitude: t.lng }, { lat: t.dest_lat, lng: t.dest_lng }) : null;
+            return (
+              <View key={t.id} style={{ gap: 4, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10 }}>
+                <T style={{ fontWeight: '800' }}>{cn}{t.number ? ' · #' + t.number : ''}</T>
+                <Muted style={{ fontSize: 13 }}>من: موقع الزبون{'  ←  '}إلى: {t.destination ?? 'غير محدد'}</Muted>
+                <T style={{ color: C.accent, fontWeight: '700' }}>{km != null ? 'المسافة: ' + fmtDist(km) : 'المسافة: —'}{t.agreed_price ? '  ·  ' + t.agreed_price.toLocaleString('en-US') + ' د.ع' : ''}</T>
+              </View>
+            );
+          })}
         </Card>
       )}
 

@@ -60,6 +60,12 @@ function Form({ craneId, onSent }: { craneId?: string; onSent: (a: { id: string;
       if (error) throw error;
       const r = data as { request_id: string; targets: number };
       supabase.functions.invoke('notify', { body: { kind: 'new_request', request_id: r.request_id } }).catch(() => {});
+      // الوجهة نص: نحوّلها لإحداثيات بالخلفية (إذا فشل، الطلب يمشي عادي والمسافة تبين «—»)
+      if (dest.trim()) {
+        supabase.functions.invoke('geocode', { body: { text: dest.trim() } })
+          .then(({ data }) => { const g = data as { lat?: number; lng?: number } | null; if (g && typeof g.lat === 'number' && typeof g.lng === 'number') return supabase.rpc('set_request_destination', { p_request_id: r.request_id, p_lat: g.lat, p_lng: g.lng }); })
+          .catch(() => {});
+      }
       onSent({ id: r.request_id, targets: r.targets });
     } catch (e) { setErr((e as { message?: string })?.message?.includes('limit') ? 'طلبات كثيرة. انتظر شوي.' : 'تعذّر إرسال الطلب. جرّب مرة ثانية.'); setBusy(false); }
   };
