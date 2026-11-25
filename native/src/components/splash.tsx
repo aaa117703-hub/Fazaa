@@ -1,17 +1,40 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
 import { Diamond, Hook } from '@/components/logo-mark';
 import { C, fontFor } from '@/lib/theme';
 
-// افتتاحية سند جايك — قصة الخدمة بثلاث ثوانٍ:
-// موقعك (الألماسة) ينبض بالعتمة → الخطاف ينزل على حبل ويتأرجح → يلتقطك بضربة (اهتزاز + موجة)
+// افتتاحية سند جايك، قصة الخدمة بثلاث ثوانٍ:
+// موقعك (الألماسة) ينبض → الخطاف ينزل على سلسلة ويتأرجح → يلتقطك بضربة (اهتزاز + موجة)
 // → يرفعك ويستقر شعاراً → «سند جايك» على الطريق. كلها native driver.
 const DUR = 3400;
 const T0 = { drop: 300, catch: 1100, lift: 1500, word: 1950, sub: 2250 };
 
 const clampAt = (v: number) => v / DUR;
+
+// سلسلة: حلقات متناوبة (عمودية وأفقية) تبدأ من رأس الخطاف وتطلع لفوق
+function Chain({ u, length }: { u: number; length: number }) {
+  const lw = 6.2 * u; // عرض الحلقة
+  const ll = 14 * u; // طول الحلقة
+  const step = 9 * u; // المسافة بين الحلقات
+  const sw = 2.3 * u; // سُمك الحديد
+  const n = Math.ceil(length / step) + 1;
+  const links: React.ReactNode[] = [];
+  for (let i = 0; i < n; i++) {
+    const c = length - ll / 2 - i * step; // مركز الحلقة (الأسفل يلتقط الخطاف)
+    if (c < -ll) break;
+    links.push(
+      i % 2 === 0 ? (
+        <Rect key={i} x={ll / 2 - lw / 2} y={c - ll / 2} width={lw} height={ll} rx={lw / 2} fill="none" stroke={C.accent} strokeWidth={sw} />
+      ) : (
+        <Rect key={i} x={0} y={c - lw / 2} width={ll} height={lw} rx={lw / 2} fill="none" stroke={C.accent} strokeWidth={sw} />
+      ),
+    );
+  }
+  return <Svg width={ll} height={length}>{links}</Svg>;
+}
 
 export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }) {
   const { width, height } = useWindowDimensions();
@@ -28,9 +51,11 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
   const boxH = M + extra;
   const off = extra / 2; // بداية الشعار: الألماسة بمنتصف الشاشة مثل سبلاش النظام
   const offX = 5 * u;
-  const pivotX = (97 - 60) * u; // رأس الخطاف (مكان تعليق الحبل) نسبة لمركز المربع
-  const pivotY = (17 - 60) * u;
-  const cableLen = height;
+  // نقطة تعليق الخطاف (رأسه) داخل مربع الشعار، بعد الإزاحة (-1، -5) للشبكة 120
+  const Px = 96 * u;
+  const Py = 17 * u;
+  const chainLen = height * 1.4 + M; // السلسلة تطلع لفوق خارج الشاشة
+  const linkL = 14 * u;
 
   useEffect(() => {
     Animated.timing(t, { toValue: 1, duration: DUR, easing: Easing.linear, useNativeDriver: true }).start(() => setFinished(true));
@@ -50,7 +75,7 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
     return () => clearTimeout(id);
   }, [finished, ready, out]);
 
-  // مساعدات الخط الزمني (بالملّي ثانية)
+  // مساعدات الخط الزمني
   const seg = (a: number, b: number, from: number, to: number, easing?: (x: number) => number) =>
     t.interpolate({ inputRange: [clampAt(a), clampAt(b)], outputRange: [from, to], extrapolate: 'clamp', easing });
   const keys = (pts: [number, number][]) =>
@@ -61,6 +86,7 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
     seg(T0.drop, T0.catch, -(height / 2 + M), 0, Easing.in(Easing.quad)),
     keys([[T0.catch, 0], [T0.catch + 110, 14], [T0.catch + 300, -3], [T0.catch + 460, 0]]),
   );
+  // التأرجح يتناقص حول رأس الخطاف
   const swing = t.interpolate({
     inputRange: [T0.drop, 520, 780, 960, T0.catch].map(clampAt),
     outputRange: ['16deg', '-11deg', '6deg', '-2deg', '0deg'],
@@ -68,8 +94,8 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
   });
   const hookOp = seg(T0.drop - 50, T0.drop + 10, 0, 1);
 
-  // الحبل ينسحب لفوق بعد الرفع
-  const cableOp = seg(T0.lift, T0.lift + 350, 1, 0);
+  // السلسلة تنسحب لفوق بعد الرفع
+  const chainOp = seg(T0.lift, T0.lift + 350, 1, 0);
 
   // الرفع: الشعار كله يطلع من مكان الالتقاط لمكانه النهائي مع تجاوز بسيط
   const back = Easing.out(Easing.back(1.7));
@@ -115,10 +141,14 @@ export function Splash({ onDone, ready }: { onDone: () => void; ready: boolean }
 
         <View style={{ width: M, height: boxH, alignItems: 'center' }}>
           <Animated.View style={{ width: M, height: M, transform: [{ translateX: liftX }, { translateY: liftY }, { scale: liftS }] }}>
-            {/* الخطاف + الحبل: مجموعة تتأرجح من رأس الخطاف */}
-            <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: M, height: M, opacity: hookOp, transform: [{ translateY: dropY }, { translateX: pivotX }, { translateY: pivotY }, { rotate: swing }, { translateX: -pivotX }, { translateY: -pivotY }] }}>
-              <Animated.View style={{ position: 'absolute', left: M / 2 + pivotX - 2.2 * u, top: M / 2 + pivotY - cableLen, width: 4.4 * u, height: cableLen, backgroundColor: C.accent, opacity: cableOp }} />
-              <Hook size={M} />
+            {/* الخطاف والسلسلة: نقطة الدوران هي رأس الخطاف، فتتأرجح السلسلة معه */}
+            <Animated.View style={{ position: 'absolute', left: Px, top: Py, width: 0, height: 0, opacity: hookOp, transform: [{ translateY: dropY }, { rotate: swing }] }}>
+              <Animated.View style={{ position: 'absolute', left: -linkL / 2, top: -chainLen, width: linkL, height: chainLen, opacity: chainOp }}>
+                <Chain u={u} length={chainLen} />
+              </Animated.View>
+              <View style={{ position: 'absolute', left: -Px, top: -Py, width: M, height: M }}>
+                <Hook size={M} />
+              </View>
             </Animated.View>
             {/* الألماسة فوق الخطاف */}
             <Animated.View style={{ position: 'absolute', left: 0, top: 0, width: M, height: M, transform: [{ scale: diaS }] }}>
