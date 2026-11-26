@@ -6,7 +6,7 @@
 
   let el, watchId = null, beat = null, poller = null, lastPush = 0;
   let fleet = [], adding = false, selId = (function () { try { return localStorage.getItem('sanad_crane_sel'); } catch (e) { return null; } })();
-  let crane = null, docs = [], ident = null, draft = {}, pushOn = false, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
+  let crane = null, docs = [], chk = null, scanning = false, ident = null, draft = {}, pushOn = false, phone = '', stats = { today: 0, total: 0, rating: null, count: 0 }, incoming = [], jobs = [], known = {}, busy = false;
 
   const uid = () => F.sb.uid();
 
@@ -17,15 +17,17 @@
     if (!crane) { incoming = []; jobs = []; return; }
     const id = crane.id;
     const ids = fleet.map((x) => x.id).join(',');
-    const [ct, callsRaw, rs, tg, jb, dc, idn] = await Promise.all([
+    const [ct, callsRaw, rs, tg, jb, dc, idn, ck] = await Promise.all([
       F.sb.q('crane_contacts', 'select=phone&crane_id=eq.' + id),
       F.sb.q('calls', 'select=created_at&crane_id=eq.' + id + '&order=created_at.desc&limit=500'),
       F.sb.q('crane_rating_summary', 'select=rating_avg,rating_count&crane_id=eq.' + id),
       F.sb.q('request_targets', 'select=request_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)&crane_id=in.(' + ids + ')&status=eq.sent&order=sent_at.desc&limit=20'),
       F.sb.q('requests', 'select=*&accepted_crane_id=in.(' + ids + ')&status=eq.accepted&order=accepted_at.desc'),
-      F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&order=created_at.desc'),
-      F.sb.q('crane_identity', 'select=doc_name,doc_plate&crane_id=eq.' + id).catch(() => [])
+      F.sb.q('driver_documents', 'select=id,kind,status,note,created_at&crane_id=eq.' + id + '&purged_at=is.null&order=created_at.desc'),
+      F.sb.q('crane_identity', 'select=doc_name,doc_plate&crane_id=eq.' + id).catch(() => []),
+      F.sb.q('doc_checks', 'select=status,message&crane_id=eq.' + id).catch(() => [])
     ]);
+    chk = ck && ck[0] || null;
     docs = dc || [];
     ident = idn && idn[0] || null;
     pushOn = F.push ? await F.push.enabled() : false;
@@ -82,7 +84,7 @@
         pushLoc(crane.lat, crane.lng);
       }, () => {}, { enableHighAccuracy: true, maximumAge: 20000, timeout: 20000 });
     }
-    beat = setInterval(() => { if (crane && crane.status === 'available') pushLoc(crane.lat, crane.lng); }, 60000);
+    beat = setInterval(() => { if (crane && crane.status === 'available') pushLoc(crane.lat, crane.lng); }, 60000); // يجدّد «متاح» وإلا يتحول مشغول تلقائياً بعد خمول
   }
   function stopWatch() {
     if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
@@ -250,16 +252,37 @@
     const hasId = ident && ident.doc_name && ident.doc_plate;
     const state = crane.verified ? ['ok', 'موثّق', 'اسمك ورقم لوحتك ظاهرين للزبائن مع شارة «موثّق».']
       : (done === all && hasId ? ['wait', 'قيد المراجعة', 'الإدارة تراجع وثائقك وبياناتك. غالباً خلال يوم.'] : ['todo', 'غير مكتمل', 'أكمل بياناتك وارفع الوثائق الست حتى تحصل على شارة «موثّق».']);
-    const pct = Math.round(((done + (hasId ? 2 : 0)) / (all + 2)) * 100);
+    const pct = crane.verified ? 100 : Math.round(((done + (hasId ? 2 : 0)) / (all + 2)) * 100);
     return '<div class="card dv"><div class="dv-head"><div class="dv-ring" style="--p:' + pct + '"><span>' + pct + '%</span></div>' +
       '<div><h2 style="margin:0">' + F.icon('shield') + ' التوثيق</h2><span class="dv-state ' + state[0] + '">' + state[1] + '</span></div></div>' +
-      '<p class="muted small">' + state[2] + ' الصور خاصة ولا يشوفها الزبائن.</p>' +
+      '<p class="muted small">' + state[2] + ' الصور خاصة ولا يشوفها الزبائن' + (crane.verified ? '، وانحذفت بعد التوثيق.' : '، وتنحذف تلقائياً بعد التوثيق.') + '</p>' + chkHtml() +
       '<div class="dv-sec"><div class="dv-t"><i>1</i> بياناتك الرسمية</div>' +
         '<div class="field"><label>الاسم الثلاثي (مثل البطاقة)</label><input id="dv-name" value="' + F.esc(draft.name != null ? draft.name : (ident && ident.doc_name || '')) + '" maxlength="100" placeholder="مثال: علي حسين محمد"></div>' +
         '<div class="field"><label>رقم لوحة السيارة</label><input id="dv-plate" value="' + F.esc(draft.plate != null ? draft.plate : (ident && ident.doc_plate || '')) + '" maxlength="30" placeholder="مثال: بغداد 12345 أ"></div>' +
         '<div class="err" id="dv-err"></div><button class="btn sm" data-saveid="1">حفظ البيانات</button></div>' +
       '<div class="dv-sec"><div class="dv-t"><i>2</i> الوثائق (' + done + '/' + all + ')</div>' +
       GROUPS.map((g) => '<div class="dv-grp"><div class="dv-gt">' + F.icon(DOC_ICON[g[0]] || 'doc') + ' ' + g[0] + '</div><div class="doc-grid">' + g[1].map(docSlot).join('') + '</div></div>').join('') + '</div></div>';
+  }
+
+  // فحص الوثائق تلقائياً: يقارن المكتوب بالمقروء ويرجع رسالة واضحة
+  async function scan(silent) {
+    if (!crane || scanning) return;
+    scanning = true;
+    try {
+      const r = await F.sb.fn('verify-docs', { action: 'scan', crane_id: crane.id });
+      if (!silent && r && r.message) F.toast(r.message, r.status === 'match' ? 'ok' : undefined);
+      else if (!silent && r && r.error === 'not_configured') F.toast('الفحص الآلي غير مفعّل حالياً. الإدارة تراجع وثائقك يدوياً.');
+      else if (!silent && r && r.error === 'limit') F.toast(r.message || 'وصلت الحد اليومي للفحص.');
+    } catch (e) { /* الفحص يتكرر لاحقاً */ }
+    scanning = false;
+    await refresh();
+  }
+  const CHK = { match: ['green', 'وثائقك تطابق بياناتك'], mismatch: ['red', 'فيه عدم تطابق'], unreadable: ['amber', 'الصور غير واضحة'], error: ['amber', 'تعذّر الفحص'] };
+  function chkHtml() {
+    if (crane.verified || !chk || !CHK[chk.status]) return '';
+    const c = CHK[chk.status];
+    return '<div class="warn" style="border-color:var(--' + (c[0] === 'green' ? 'ok' : c[0] === 'red' ? 'danger' : 'warn') + ',#888)"><b>' + c[1] + '</b>' + (chk.message ? '<div class="small mt-s">' + F.esc(chk.message) + '</div>' : '') +
+      '<button class="btn sm secondary mt-s" data-scan="1">' + (scanning ? 'جاري الفحص…' : 'افحص وثائقي الحين') + '</button></div>';
   }
 
   async function saveIdentity(el) {
@@ -270,7 +293,7 @@
     err.textContent = '';
     try {
       await F.sb.q('crane_identity', 'on_conflict=crane_id', { method: 'POST', body: { crane_id: crane.id, owner_id: uid(), doc_name: name, doc_plate: plate }, prefer: 'resolution=merge-duplicates,return=minimal' });
-      draft = {}; F.toast('تم حفظ بياناتك', 'ok'); await refresh();
+      draft = {}; F.toast('تم حفظ بياناتك', 'ok'); await refresh(); if (docs.length >= 6) scan(true);
     } catch (e) { err.textContent = F.errMsg(e); }
   }
 
@@ -312,7 +335,8 @@
         for (const o of old) await F.sb.q('driver_documents', 'id=eq.' + o.id, { method: 'DELETE' }).catch(() => {});
         await F.sb.q('driver_documents', '', { method: 'POST', body: { crane_id: crane.id, owner_id: uid(), kind: kind, path: path } });
         F.toast('تم الرفع. بانتظار المراجعة.', 'ok');
-        refresh();
+        await refresh();
+        if (docs.filter((x, i, a) => a.findIndex((y) => y.kind === x.kind) === i).length >= 6 && ident && ident.doc_name) scan(true);
       } catch (e) { F.toast(F.errMsg(e), 'err'); }
     };
     inp.click();
@@ -421,6 +445,7 @@
         else if ((b = g('data-repc'))) { const [rid, uid2] = b.dataset.repc.split('|'); F.request.report(null, { userId: uid2, requestId: rid }); }
         else if ((b = g('data-up'))) pickDoc(b.dataset.up);
         else if ((b = g('data-saveid'))) saveIdentity(el);
+        else if ((b = g('data-scan'))) scan(false);
         else if ((b = g('data-push'))) {
           (b.dataset.push === 'on' ? F.push.enable() : F.push.disable())
             .then(() => { F.toast(b.dataset.push === 'on' ? 'تم تفعيل الإشعارات' : 'تم إيقاف الإشعارات', 'ok'); refresh(); })
