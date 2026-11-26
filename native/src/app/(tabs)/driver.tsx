@@ -84,6 +84,7 @@ export default function Driver() {
   const known = useRef<Record<string, boolean>>({});
   const busy = useRef(false);
   const fastUntil = useRef(0);
+  const goingRef = useRef(false); // قفل «متاح»: يمنع تكرار الضغط وتراكم التنبيهات
   const openedJob = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
@@ -183,13 +184,17 @@ export default function Driver() {
   const pkg = tierOf(effTier(crane));
 
   async function goAvailable() {
-    let p: { latitude: number; longitude: number };
-    try { p = await getFix(); } catch (e) { geoAlert(e, 'تحتاج موقعك حتى تظهر للزبائن.'); return; }
+    if (goingRef.current) return;
+    goingRef.current = true;
     try {
-      const { data, error } = await supabase.from('cranes').update({ status: 'available', lat: p.latitude, lng: p.longitude }).eq('id', crane!.id).select().single();
-      if (error) throw error;
-      setCrane(data as CraneRow);
-    } catch { Alert.alert('تعذّر', 'ما كدرنا نحدّث حالتك. تأكد من الإنترنت وجرّب مرة ثانية.'); }
+      let p: { latitude: number; longitude: number };
+      try { p = await getFix(); } catch (e) { geoAlert(e, 'تحتاج موقعك حتى تظهر للزبائن.'); return; }
+      try {
+        const { data, error } = await supabase.from('cranes').update({ status: 'available', lat: p.latitude, lng: p.longitude }).eq('id', crane!.id).select().single();
+        if (error) throw error;
+        setCrane(data as CraneRow);
+      } catch { Alert.alert('تعذّر', 'ما كدرنا نحدّث حالتك. تأكد من الإنترنت وجرّب مرة ثانية.'); }
+    } finally { goingRef.current = false; }
   }
   async function goBusy() {
     const { data, error } = await supabase.from('cranes').update({ status: 'busy' }).eq('id', crane!.id).select().single();

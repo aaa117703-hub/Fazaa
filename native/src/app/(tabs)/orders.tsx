@@ -129,9 +129,9 @@ export default function Orders() {
     router.push('/request');
   };
 
+  const [refreshing, setRefreshing] = useState(false);
   if (!session) return <View style={{ flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: 'center', gap: 12 }}><T style={{ fontSize: 22, fontWeight: '800' }}>الطلبات</T><Muted>سجّل دخول حتى تشوف طلباتك.</Muted><Btn label="دخول / حساب جديد" onPress={() => router.push('/login')} /></View>;
 
-  const [refreshing, setRefreshing] = useState(false);
   const doRefresh = async () => { setRefreshing(true); try { await load(); } catch { /* */ } finally { setRefreshing(false); } };
 
   return (
