@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { usePullHook } from '@/components/pull-hook';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { StripeRing } from '@/components/stripe-ring';
+import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/icon';
@@ -63,17 +63,19 @@ export function OwnerFeed() {
 
   const total = done.reduce((a, x) => a + (x.agreed_price ?? 0), 0);
 
-  const pull = usePullHook(() => load());
+  const [refreshing, setRefreshing] = useState(false);
+  const doRefresh = async () => { setRefreshing(true); try { await load(); } catch { /* */ } finally { setRefreshing(false); } };
 
   return (
     <>
-    <ScrollView style={{ backgroundColor: C.bg, flex: 1 }} {...pull.scrollProps}
+    <ScrollView style={{ backgroundColor: C.bg }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={doRefresh} tintColor="transparent" colors={['transparent']} progressBackgroundColor="transparent" />}
       contentContainerStyle={{ maxWidth: 640, width: '100%', alignSelf: 'center', padding: 16, paddingTop: insets.top + 16, paddingBottom: 120, gap: 12 }}>
       <View style={[rtl.row, { gap: 8 }]}>
         <T style={{ fontSize: 26, fontWeight: '800', color: C.accent, flex: 1 }}>الطلبات</T>
         <Btn small kind="secondary" label="المساعد" onPress={() => router.push('/assist')} />
         <Pressable onPress={() => router.push('/settings')} accessibilityLabel="الإعدادات" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Icon name="settings" size={24} /></Pressable>
       </View>
+      <Btn label="بحث عن سيارات بحاجة إلى سحب" onPress={doRefresh} />
       {!crane && !loading && (
         <Card style={{ gap: 8, borderColor: C.accent }}>
           <T style={{ fontWeight: '800', fontSize: 17 }}>سجّل كرينك حتى تبدأ</T>
@@ -145,7 +147,7 @@ export function OwnerFeed() {
         ))}
       </View>
     </ScrollView>
-    {pull.overlay}
+    <StripeRing visible={refreshing} />
     </>
   );
 }

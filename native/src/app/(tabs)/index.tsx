@@ -6,8 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePullHook } from '@/components/pull-hook';
-import { Alert, FlatList, Pressable, ScrollView, Share, View } from 'react-native';
+import { StripeRing } from '@/components/stripe-ring';
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CraneCard, statusOf } from '@/components/crane-card';
@@ -103,7 +103,6 @@ export default function Home() {
   const call = (c: Crane, how: 'tel' | 'wa') => contact(c, how, src === 'default' ? null : pos, !!session, go);
   const route = (c: Crane) => router.push({ pathname: '/route', params: { lat: String(c.lat), lng: String(c.lng), name: c.name } });
   const best = list.find((x) => x.c.status === 'available');
-  const recommended = list.filter((x) => x.c.status === 'available' && (x.c.tier === 'gold' || x.c.tier === 'diamond')).slice(0, 8);
   const filtered = onlyFree || !!type || !!gov;
   const request = () => (session ? router.push('/request') : go());
   const shareLoc = () => {
@@ -156,24 +155,6 @@ export default function Home() {
         <Btn label="أرسل موقعي" kind="secondary" small onPress={shareLoc} style={{ flexGrow: 1 }} />
       </View>
 
-      {recommended.length > 0 && (
-        <FadeIn delay={150}>
-          <T style={{ fontSize: 18, fontWeight: '800', marginBottom: 8 }}>الموصى بهم</T>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 2 }}>
-            {recommended.map(({ c, d }) => (
-              <Pressable key={c.id} onPress={() => router.push('/crane/' + c.id)} style={{ width: 200, padding: 12, borderRadius: R.md, backgroundColor: C.surface, borderWidth: 1.5, borderColor: c.tier === 'diamond' ? C.info : C.accent, gap: 4 }}>
-                <T style={{ fontWeight: '800', fontSize: 15 }} numberOfLines={1}>{c.name}</T>
-                <Muted numberOfLines={1}>{c.type}{c.governorate ? ' · ' + c.governorate : ''}</Muted>
-                <View style={[rtl.row, { justifyContent: 'space-between' }]}>
-                  <T style={{ color: C.accent, fontWeight: '700', fontSize: 13 }}>{c.rating_avg ? '★ ' + Number(c.rating_avg).toFixed(1) : 'جديد'}</T>
-                  <Muted style={{ fontSize: 12 }}>{fmtDist(d)}</Muted>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </FadeIn>
-      )}
-
       {pos && <HomeMap pos={pos} src={src} cranes={list.map((x) => x.c)} />}
 
       <View style={[rtl.row, { gap: 8, flexWrap: 'wrap' }]}>
@@ -187,7 +168,8 @@ export default function Home() {
     </View>
   );
 
-  const pull = usePullHook(() => (pos ? load(pos) : undefined));
+  const [refreshing, setRefreshing] = useState(false);
+  const doRefresh = async () => { setRefreshing(true); try { if (pos) await load(pos); } catch { /* */ } finally { setRefreshing(false); } };
 
   if (isOwner) return <OwnerFeed />;
 
@@ -202,7 +184,7 @@ export default function Home() {
       ListFooterComponent={shown < list.length ? <Btn label={'عرض المزيد (' + (list.length - shown) + ')'} kind="secondary" onPress={() => setShown((n) => n + 20)} /> : undefined}
       keyExtractor={(x) => x.c.id}
       ListHeaderComponent={header}
-      {...pull.scrollProps}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={doRefresh} tintColor="transparent" colors={['transparent']} progressBackgroundColor="transparent" />}
       ListEmptyComponent={loading ? <SkeletonList n={4} /> : (
         <View style={{ alignItems: 'center', gap: 10, marginTop: 20 }}>
           <Muted style={{ textAlign: 'center' }}>{err ? 'تعذّر تحميل الكرينات. تأكد من الإنترنت.' : filtered ? 'ما كو كرينات تطابق الفلتر.' : 'ما كو كرينات مسجّلة قريبة منك هسه.'}</Muted>
@@ -213,7 +195,7 @@ export default function Home() {
         <FadeIn delay={Math.min(index, 8) * 60}><CraneCard c={x.c} d={x.d} onCall={() => call(x.c, 'tel')} onWa={() => call(x.c, 'wa')} onRoute={() => route(x.c)} onOpen={() => router.push('/crane/' + x.c.id)} onRequest={isOwner ? undefined : () => (session ? router.push({ pathname: '/request', params: { craneId: x.c.id } }) : go())} /></FadeIn>
       )}
     />
-    {pull.overlay}
+    <StripeRing visible={refreshing} />
     </>
   );
 }

@@ -106,6 +106,7 @@ export default function Settings() {
         <View style={[rtl.row, { justifyContent: 'space-between' }]}><T>التغطية الحالية</T><Muted>كل محافظات العراق</Muted></View>
         {admin && <Btn label="لوحة الإدارة" onPress={() => router.push('/admin')} />}
         <Btn kind="secondary" label="دليل «سيارتي تعطلت»" onPress={() => router.push('/guide')} />
+        <Btn kind="secondary" label="الإحصائيات" onPress={() => router.push('/stats')} />
         <Btn kind="secondary" label="سياسة الخصوصية" onPress={() => router.push('/legal?k=privacy')} />
         <Btn kind="secondary" label="شروط الاستخدام" onPress={() => router.push('/legal?k=terms')} />
         <Btn kind="secondary" label="تواصل مع الدعم" onPress={() => router.push('/legal?k=support')} />
