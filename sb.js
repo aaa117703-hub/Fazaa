@@ -252,6 +252,19 @@
 
   F.sb = { updateEmail: updateEmail, forgotPassword: forgotPassword, updatePassword: updatePassword, isRecovery: () => recovery, avatarUrl: function (p, v) { return p ? API + '/storage/v1/object/public/avatars/' + p + (v ? '?v=' + v : '') : ''; }, fn: fn, upload: upload, signedUrl: signedUrl, q: q, rpc: rpc, count: count, signUp: signUp, signIn: signIn, sendOtp: sendOtp, verifyOtp: verifyOtp, signOut: signOut, saveProfile: saveProfile, init: init, uid: () => sess && sess.user && sess.user.id, API: API };
 
+  /* ---------- سجل الأخطاء: ينرسل لقاعدة البيانات حتى تشوفه الإدارة (حد أقصى 5 لكل جلسة، بدون تكرار) ---------- */
+  (function () {
+    let sent = 0; const seen = {};
+    function report(msg, ctx) {
+      msg = String(msg || '').slice(0, 580);
+      if (!msg || seen[msg] || sent >= 5 || /Script error|ResizeObserver|Failed to fetch|NetworkError|Load failed/i.test(msg)) return;
+      seen[msg] = 1; sent++;
+      q('error_log', '', { method: 'POST', body: { platform: 'web', msg: msg, ctx: String(ctx || '').slice(0, 1400) } }).catch(() => {});
+    }
+    window.addEventListener('error', (e) => report(e.message, (e.filename || '') + ':' + (e.lineno || '')));
+    window.addEventListener('unhandledrejection', (e) => report(e.reason && (e.reason.message || e.reason), e.reason && e.reason.stack));
+  })();
+
   /* ---------- الكرينات ---------- */
   F.fetchCranes = async function (lat, lng) {
     const rows = await rpc('nearby_cranes', { p_lat: lat, p_lng: lng, p_radius_km: 2000, p_limit: 100 });
