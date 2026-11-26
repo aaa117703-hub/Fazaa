@@ -21,10 +21,15 @@ export default function StatsScreen() {
   const [err, setErr] = useState(false);
 
   useEffect(() => {
-    supabase.rpc('public_stats').then(({ data: d, error }) => {
-      if (error) setErr(true);
-      else setData(d as Stats);
-    }).catch(() => setErr(true));
+    (async () => {
+      try {
+        const { data: d, error } = await supabase.rpc('public_stats');
+        if (error) setErr(true);
+        else setData(d as Stats);
+      } catch {
+        setErr(true);
+      }
+    })();
   }, []);
 
   const maxGov = Math.max(1, ...(data?.governorates ?? []).map((g) => g.n));
