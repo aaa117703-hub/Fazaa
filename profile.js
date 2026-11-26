@@ -63,9 +63,21 @@
     F.$('#p-delete', el).onclick = deleteMine;
     const ST = { open: 'قيد البحث', accepted: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي', expired: 'منتهي' };
     const ISS = { tow: 'سحب', battery: 'بطارية', tire: 'إطار', fuel: 'وقود', locked: 'مفاتيح مقفلة', accident: 'حادث', other: 'أخرى' };
-    F.sb.q('requests', 'select=number,issue,status,created_at&order=created_at.desc&limit=10').then((rows) => {
+    const ICO = { tow: '🚚', battery: '🔋', tire: '🛞', fuel: '⛽', locked: '🔑', accident: '⚠️', other: '❓' };
+    const COL = { open: '#5AA9FF', accepted: '#FFC93C', completed: '#10B981', cancelled: '#8C949B', expired: '#8C949B' };
+    const MON = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
+    const when = (iso) => { const d = new Date(iso), h = d.getHours(); return d.getDate() + ' ' + MON[d.getMonth()] + ' · ' + ((h % 12) || 12) + ':' + String(d.getMinutes()).padStart(2, '0') + (h >= 12 ? ' م' : ' ص'); };
+    F.sb.q('requests', 'select=number,issue,status,created_at,destination,cranes(name)&order=created_at.desc&limit=15').then((rows) => {
       const box = F.$('#p-reqs', el); if (!box) return;
-      box.innerHTML = rows.length ? '<ul class="list">' + rows.map((x) => '<li><span><b>#' + (x.number || '') + '</b> ' + (ISS[x.issue] || '') + '</span><span class="muted small">' + (ST[x.status] || x.status) + ' · ' + F.ago(Date.parse(x.created_at)) + '</span></li>').join('') + '</ul>' : 'ما عندك طلبات بعد.';
+      box.innerHTML = rows.length ? rows.map((x) => {
+        const c = COL[x.status] || '#8C949B';
+        return '<div class="req-card"><div class="req-top"><span class="req-ico" style="background:' + c + '22">' + (ICO[x.issue] || '❓') + '</span>' +
+          '<div class="req-main"><b>' + (ISS[x.issue] || 'طلب مساعدة') + '</b><div class="muted small">' + when(x.created_at) + '</div></div>' +
+          '<span class="req-st" style="color:' + c + ';background:' + c + '22">' + (ST[x.status] || x.status) + '</span></div>' +
+          (x.cranes && x.cranes.name ? '<div class="muted small req-line">👤 السائق: ' + F.esc(x.cranes.name) + '</div>' : '') +
+          (x.destination ? '<div class="muted small req-line">📍 الوجهة: ' + F.esc(x.destination) + '</div>' : '') +
+          (x.number ? '<div class="muted req-no">رقم الطلب ' + x.number + '</div>' : '') + '</div>';
+      }).join('') : 'ما عندك طلبات بعد.';
     }).catch(() => { const b = F.$('#p-reqs', el); if (b) b.textContent = 'تعذّر التحميل.'; });
     const drawBlk = () => {
       const l = F.blocks ? F.blocks.list() : [], card = F.$('#p-blocked', el); if (!card) return;
