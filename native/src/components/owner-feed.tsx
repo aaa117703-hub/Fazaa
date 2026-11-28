@@ -20,7 +20,7 @@ type Job = { id: string; number: number | null; issue: string; status: string; a
 const money = (n: number | null) => (n ? n.toLocaleString('en-US') + ' د.ع' : 'بدون سعر');
 
 /** رئيسية صاحب الكرين: الطلبات المتاحة بمنطقته، شغله الجاري، وما أنجزه اليوم مع الأسعار. */
-export function OwnerFeed() {
+export function OwnerFeed({ top }: { top?: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const uid = session?.user.id;
@@ -75,6 +75,7 @@ export function OwnerFeed() {
         <Btn small kind="secondary" label="المساعد" onPress={() => router.push('/assist')} />
         <Pressable onPress={() => router.push('/settings')} accessibilityLabel="الإعدادات" style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: C.surface2, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' }}><Icon name="settings" size={24} /></Pressable>
       </View>
+      {top}
       <Btn label="بحث عن سيارات بحاجة إلى سحب" onPress={doRefresh} />
       {!crane && !loading && (
         <Card style={{ gap: 8, borderColor: C.accent }}>

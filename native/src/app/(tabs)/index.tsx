@@ -171,7 +171,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const doRefresh = async () => { setRefreshing(true); try { if (pos) await load(pos); } catch { /* */ } finally { setRefreshing(false); } };
 
-  if (isOwner) return <OwnerFeed />;
+  if (isOwner) return <OwnerFeed top={pos ? <HomeMap pos={pos} src={src} cranes={list.map((x) => x.c)} height={240} /> : undefined} />;
 
   return (
     <>

@@ -5,7 +5,7 @@ import { DriverBid } from '@/components/bidding';
 import { PulseBtn } from '@/components/pulse-btn';
 import { newRequestAlert } from '@/lib/alerts';
 import { Icon, type IconName } from '@/components/icon';
-import { geoAlert, getFix } from '@/lib/geo';
+import { approxCoord, geoAlert, getApproxFix, getFix } from '@/lib/geo';
 import { shrink } from '@/lib/image';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
@@ -71,14 +71,14 @@ export default function Driver() {
   const [welcomed, setWelcomed] = useState(true);
   useEffect(() => { if (uid) AsyncStorage.getItem('sanad_welcome_' + uid).then((v) => setWelcomed(v === '1')).catch(() => {}); }, [uid]);
   useEffect(() => {
-    if (!uid) return;
+    if (!uid || loading) return;
     supabase.rpc('driver_billing_summary').then(({ data }) => { if (data) setBill(data as typeof bill); });
     supabase.rpc('driver_earnings').then(({ data }) => {
       const m: Record<string, { jobs: number; total: number; priced: number }> = {};
       for (const x of (data ?? []) as { period: string; jobs: number; total: number; priced: number }[]) m[x.period] = { jobs: x.jobs, total: Number(x.total), priced: x.priced };
       setEarn(m);
     });
-  }, [uid, jobs.length, stats.total]);
+  }, [uid, loading, jobs.length, stats.total]);
   const closeWelcome = () => { setWelcomed(true); if (uid) AsyncStorage.setItem('sanad_welcome_' + uid, '1').catch(() => {}); };
   const [editing, setEditing] = useState(false);
   const known = useRef<Record<string, boolean>>({});
@@ -87,6 +87,26 @@ export default function Driver() {
   const goingRef = useRef(false); // قفل «متاح»: يمنع تكرار الضغط وتراكم التنبيهات
   const openedJob = useRef<Set<string>>(new Set());
 
+  const extrasAt = useRef(0);
+  const cranePid = useRef<string | null>(null);
+
+  // أرقام ثانوية (المكالمات، التقييم، الرقم، الإحصاء): تنحدث بالخلفية بعد ما تطلع الصفحة
+  const loadExtras = useCallback(async (cid: string) => {
+    const day0 = new Date(); day0.setHours(0, 0, 0, 0);
+    const [ct, rs, tot, tod, w] = await Promise.all([
+      supabase.from('crane_contacts').select('phone').eq('crane_id', cid).maybeSingle(),
+      supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', cid).maybeSingle(),
+      supabase.from('calls').select('id', { count: 'exact', head: true }).eq('crane_id', cid),
+      supabase.from('calls').select('id', { count: 'exact', head: true }).eq('crane_id', cid).gte('created_at', day0.toISOString()),
+      supabase.rpc('my_crane_stats', {}),
+    ]);
+    setPhone((ct.data as { phone?: string } | null)?.phone ?? '');
+    const rsd = rs.data as { rating_avg: number; rating_count: number } | null;
+    setStats({ total: tot.count ?? 0, today: tod.count ?? 0, rating: rsd ? +rsd.rating_avg : null, count: rsd?.rating_count ?? 0 });
+    setWk((w.data as Wk) ?? null);
+  }, []);
+
+  // الأساسي فقط: الكرينات، الطلبات الواردة، الشغل الجاري، الوثائق. هذا اللي يخلي الصفحة تطلع بسرعة
   const load = useCallback(async () => {
     if (!uid || busy.current) return;
     busy.current = true;
@@ -97,27 +117,18 @@ export default function Driver() {
       const c = fl.find((x) => x.id === selId) ?? fl[0] ?? null;
       setCrane(c);
       const ids = fl.map((x) => x.id);
-      if (!c) { setIncoming([]); setJobs([]); return; }
-      const [ct, calls, rs, tg, jb, dc, w, ck, hist] = await Promise.all([
-        supabase.from('crane_contacts').select('phone').eq('crane_id', c.id).maybeSingle(),
-        supabase.from('calls').select('created_at').eq('crane_id', c.id).order('created_at', { ascending: false }).limit(500),
-        supabase.from('crane_rating_summary').select('rating_avg,rating_count').eq('crane_id', c.id).maybeSingle(),
+      if (!c) { setIncoming([]); setJobs([]); setTrips([]); return; }
+      cranePid.current = c.id;
+      const [tg, jb, dc, ck, hist] = await Promise.all([
         supabase.from('request_targets').select('request_id,crane_id,distance_km,sent_at,requests(id,number,lat,lng,issue,destination,note,status,created_at)').in('crane_id', ids).eq('status', 'sent').order('sent_at', { ascending: false }).limit(20),
         supabase.from('requests').select('*').in('accepted_crane_id', ids).eq('status', 'accepted').order('accepted_at', { ascending: false }),
         supabase.from('driver_documents').select('id,kind,status,note').eq('crane_id', c.id).is('purged_at', null).order('created_at', { ascending: false }),
-        supabase.rpc('my_crane_stats', {}),
         supabase.from('doc_checks').select('status,message').eq('crane_id', c.id).maybeSingle(),
         supabase.from('requests').select('id,number,issue,lat,lng,dest_lat,dest_lng,destination,accepted_crane_id,completed_at,agreed_price').in('accepted_crane_id', ids).eq('status', 'completed').order('completed_at', { ascending: false }).limit(30),
       ]);
       setTrips((hist.data ?? []) as Trip[]);
       setChk((ck.data as { status: string; message: string | null } | null) ?? null);
-      setPhone((ct.data as { phone?: string } | null)?.phone ?? '');
-      const cl = (calls.data ?? []) as { created_at: string }[];
-      const day = new Date().toDateString();
-      const rsd = rs.data as { rating_avg: number; rating_count: number } | null;
-      setStats({ total: cl.length, today: cl.filter((x) => new Date(x.created_at).toDateString() === day).length, rating: rsd ? +rsd.rating_avg : null, count: rsd?.rating_count ?? 0 });
       setDocs((dc.data ?? []) as Doc[]);
-      setWk((w.data as Wk) ?? null);
       const inc = ((tg.data ?? []) as unknown as Target[]).filter((t) => t.requests && t.requests.status === 'open');
       for (const t of inc) {
         if (!known.current[t.request_id]) {
@@ -136,13 +147,18 @@ export default function Driver() {
       const js: Job[] = jr.map((r) => ({ r, p: (pm.get(r.customer_id) ?? null) as Job['p'] }));
       setJobs(js);
       for (const j of js) { if (!openedJob.current.has(j.r.id) && !j.r.arrived_at) { openedJob.current.add(j.r.id); router.push({ pathname: '/job', params: { id: j.r.id } }); break; } }
+      if (Date.now() - extrasAt.current > 60000) { extrasAt.current = Date.now(); loadExtras(c.id).catch(() => {}); }
     } catch { /* صامت: يعيد المحاولة بالدورة الجاية */ }
-    busy.current = false;
-    setLoading(false);
-  }, [uid, selId]);
+    finally { busy.current = false; setLoading(false); }
+  }, [uid, selId, loadExtras]);
 
   useLive(() => { load(); });
-  useFocusEffect(useCallback(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, [load]));
+  useFocusEffect(useCallback(() => {
+    load();
+    const t = setInterval(load, 8000);
+    const x = setInterval(() => { const id = cranePid.current; if (id) { extrasAt.current = Date.now(); loadExtras(id).catch(() => {}); } }, 60000);
+    return () => { clearInterval(t); clearInterval(x); };
+  }, [load, loadExtras]));
   useEffect(() => { if (!uid) { setLoading(false); setCrane(null); } }, [uid]);
 
   // الموقع: فقط أثناء «متاح» والتطبيق مفتوح
@@ -159,7 +175,7 @@ export default function Driver() {
           const now = Date.now();
           if (dead || now - last < (fastUntil.current > now ? 12000 : 45000)) return;
           last = now;
-          supabase.from('cranes').update({ lat: p.coords.latitude, lng: p.coords.longitude, status: 'available' }).eq('id', id).then(() => {});
+          supabase.from('cranes').update({ lat: approxCoord(p.coords.latitude), lng: approxCoord(p.coords.longitude), status: 'available' }).eq('id', id).then(() => {});
         });
       } catch { /* */ }
     })();
@@ -188,9 +204,9 @@ export default function Driver() {
     goingRef.current = true;
     try {
       let p: { latitude: number; longitude: number };
-      try { p = await getFix(); } catch (e) { geoAlert(e, 'تحتاج موقعك حتى تظهر للزبائن.'); return; }
+      try { p = await getApproxFix(crane ? { latitude: crane.lat, longitude: crane.lng } : null); } catch (e) { geoAlert(e, 'تحتاج موقعك حتى تظهر للزبائن.'); return; }
       try {
-        const { data, error } = await supabase.from('cranes').update({ status: 'available', lat: p.latitude, lng: p.longitude }).eq('id', crane!.id).select().single();
+        const { data, error } = await supabase.from('cranes').update({ status: 'available', lat: approxCoord(p.latitude), lng: approxCoord(p.longitude) }).eq('id', crane!.id).select().single();
         if (error) throw error;
         setCrane(data as CraneRow);
       } catch { Alert.alert('تعذّر', 'ما كدرنا نحدّث حالتك. تأكد من الإنترنت وجرّب مرة ثانية.'); }
@@ -476,7 +492,7 @@ function RegForm({ crane, adding, phone, uid, onDone, onCancel }: { crane: Crane
         if (b.error) throw b.error;
       } else {
         let lat: number, lng: number;
-        try { const l = await getFix(); lat = l.latitude; lng = l.longitude; }
+        try { const l = await getFix(); lat = approxCoord(l.latitude); lng = approxCoord(l.longitude); }
         catch { const g = GOVS.find((x) => x.name === gov)!; lat = g.lat; lng = g.lng; }
         const { data, error } = await supabase.from('cranes').insert({ owner_id: uid, name: name.trim(), type, crane_make: make.make, crane_model: make.model, governorate: gov, lat, lng, status: 'busy', listed: false, verified: false, package: 'free', is_demo: false }).select().single();
         if (error) throw error;
